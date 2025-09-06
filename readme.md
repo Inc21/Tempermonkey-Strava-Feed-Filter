@@ -12,6 +12,7 @@ This userscript enhances your Strava experience by providing comprehensive filte
 ## ✨ Key Features
 
 ### 🎯 Advanced Filtering Options
+
 - **Keyword Filtering**: Hide activities containing specific keywords in titles
 - **Activity Type Filtering**: Granular control over 20+ activity types (Run, Ride, Virtual activities, etc.)
 - **Distance Filtering**: Set minimum and maximum distance thresholds
@@ -23,6 +24,7 @@ This userscript enhances your Strava experience by providing comprehensive filte
 - **Challenge Filtering**: Hide challenge announcements
 
 ### 🎨 User Interface
+
 - **Responsive Design**: Adapts to different screen sizes and Strava layouts
 - **Draggable Panel**: Move the settings panel anywhere on screen
 - **Memory Positioning**: Panel remembers its position between sessions
@@ -34,6 +36,7 @@ This userscript enhances your Strava experience by providing comprehensive filte
 *Organized sections with collapsible dropdowns*
 
 ### 🔧 Smart Functionality
+
 - **Unit System Support**: Switch between Metric and Imperial units
 - **Allowed Athletes**: Override filters for specific athletes you always want to see
 - **Auto-filtering**: Automatically filters new activities as they load
@@ -41,6 +44,7 @@ This userscript enhances your Strava experience by providing comprehensive filte
 - **SPA Navigation**: Works seamlessly with Strava's single-page application
 
 ### 🏗️ Technical Excellence
+
 - **Modular Architecture**: Clean separation of concerns (CSS, UI, Logic, Utils)
 - **Memory Optimization**: Efficient event handling and DOM manipulation
 - **Error Handling**: Robust error handling with graceful fallbacks
@@ -49,6 +53,7 @@ This userscript enhances your Strava experience by providing comprehensive filte
 ## 📱 Responsive Design
 
 The filter adapts to different screen sizes:
+
 - **Desktop**: Full-featured panel with all options
 - **Mobile/Tablet**: Compact secondary navigation bar
 - **Responsive Button**: Automatically repositions to avoid UI conflicts
@@ -73,12 +78,15 @@ The main settings panel features organized sections:
 ## 🚀 Installation
 
 ### Prerequisites
+
 You need a userscript manager extension:
+
 - **[Tampermonkey](https://www.tampermonkey.net/)** (Recommended - Chrome, Firefox, Safari, Edge)
 - **[Greasemonkey](https://www.greasespot.net/)** (Firefox)
 - **[Violentmonkey](https://violentmonkey.github.io/)** (Chrome, Firefox)
 
 ### Install the Script
+
 1. **Option A**: Install from [Greasy Fork](link-to-be-added) (Recommended)
 2. **Option B**: Download `strava-feed-filter-clean.js` and install manually
 3. **Option C**: Copy the script code and create a new userscript in Tampermonkey
@@ -86,6 +94,7 @@ You need a userscript manager extension:
 ## 📖 Usage Guide
 
 ### Getting Started
+
 1. Navigate to your [Strava Dashboard](https://www.strava.com/dashboard)
 2. Look for the **"Filter"** button (top-right on desktop, or secondary nav on mobile)
 3. Click the button to open the settings panel
@@ -96,11 +105,13 @@ You need a userscript manager extension:
 *Filter button in the Strava interface*
 
 ### Page Behavior
+
 - **Dashboard Pages**: Full filtering functionality available
 - **Other Strava Pages**: Global settings applied (e.g., "Give a Gift" button hiding)
 - **Auto-detection**: Script automatically detects page type and applies appropriate features
 
 ### Filtering Tips
+
 - Use **Keywords** to hide activities with specific terms (e.g., "warm up", "recovery")
 - Set **Distance ranges** to focus on activities of interest
 - Use **Allowed Athletes** to always see activities from favorite users
@@ -110,6 +121,7 @@ You need a userscript manager extension:
 ## 🛠️ Configuration Options
 
 ### Unit Systems
+
 - **Metric**: Kilometers, meters, min/km
 - **Imperial**: Miles, feet, min/mi
 
@@ -129,12 +141,14 @@ You need a userscript manager extension:
 ## 🎨 Customization
 
 ### Panel Positioning
+
 - **Drag** the panel by its header to reposition
 - **Automatic positioning** under the filter button when opened
 - **Viewport constraints**: Panel stays within browser window
 - **Memory**: Position saved between sessions
 
 ### Visual Integration
+
 - **Strava-native styling**: Matches Strava's design language
 - **Dark/Light themes**: Adapts to Strava's theme
 - **Smooth animations**: Fade in/out transitions
@@ -170,6 +184,7 @@ LogicModule {
 ## 🔧 Developer Information
 
 ### Key Technical Features
+
 - **Memory-efficient**: Uses debouncing and optimized DOM queries
 - **SPA-compatible**: Handles Strava's single-page application navigation
 - **Error resilient**: Comprehensive error handling with fallbacks
@@ -177,10 +192,13 @@ LogicModule {
 - **Performance optimized**: Minimal impact on Strava's performance
 
 ### Contributing
+
 Developed by [Inc21](https://github.com/Inc21). Contributions and suggestions welcome!
 
 ### Support the Developer
+
 If you find this script useful, consider:
+
 - ⭐ Starring the repository
 - ☕ [Buy me a coffee](https://www.buymeacoffee.com/inc21)
 - 🐛 Reporting bugs or suggesting features
@@ -198,12 +216,14 @@ See the difference filtering makes on your Strava feed:
 *Same feed with filters applied - notice the reduced activity count*
 
 ## 🎯 Activity Count Display
+
 ![Activity count feature](./src/readme-images/activity-count-display.png)
 *Real-time count showing "(X hidden / Y total)" for activity types*
 
 ## 🆕 Version History
 
 ### Current Version
+
 - ✅ Complete modular refactoring
 - ✅ Improved performance and maintainability
 - ✅ Enhanced responsive design
