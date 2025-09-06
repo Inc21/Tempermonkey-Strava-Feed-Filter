@@ -12,6 +12,9 @@
     'use strict';
 
     console.log('🚀 Clean Filter: Script starting...');
+    
+    // Ensure script runs in the correct context
+    if (window.self !== window.top) return;
 
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
@@ -141,11 +144,10 @@
         font-size: 14px !important;
         line-height: 1.1 !important;
         text-transform: uppercase !important;
-        padding: 3px 6px !important;
-        margin-left: 6px !important;
       }
 
       .sff-clean-btn .sff-btn-sub {
+        font-size: 10px !important;
         font-weight: 500 !important;
         text-transform: uppercase !important;
         color: white !important;
@@ -200,9 +202,6 @@
         font-family: Arial, sans-serif !important;
         overflow: visible !important;
         display: none !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        transition: none !important;
       }
 
       .sff-clean-panel.show {
@@ -224,8 +223,7 @@
 
       .sff-panel-header h3 {
         margin: 0 !important;
-        font-size: 14px !important;
-        user-select: none !important;
+        font-size: 16px !important;
         color: white !important;
         font-family: 'Poppins', 'Montserrat', sans-serif !important;
         font-weight: 800 !important;
@@ -644,37 +642,27 @@
         // Create button
         const btn = document.createElement('button');
         btn.className = 'sff-clean-btn';
-        btn.innerHTML = '<span class="sff-btn-title">Filter <span class="sff-btn-sub">(0)</span></span>';
-        btn.style.position = 'fixed';
-        btn.style.top = '10px';
-        btn.style.right = '10px';
-        btn.style.zIndex = '2147483647';
+        btn.title = 'Filter Activities';
+        btn.style.display = 'flex';
+        btn.style.flexDirection = 'column';
+        btn.style.alignItems = 'center';
+        btn.innerHTML = `
+            <span class="sff-btn-title">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
+            <span class="sff-btn-sub">HIDDEN 0</span>
+        `;
+        
+        // Ensure button is added to the body
+        document.body.appendChild(btn);
 
         // Create panel
         const panel = document.createElement('div');
         panel.className = 'sff-clean-panel';
-        
-        // Set initial styles - ensure it's hidden by default
-        panel.style.position = 'fixed';
-        panel.style.display = 'none';
-        panel.style.visibility = 'hidden';
-        panel.style.opacity = '0';
-        panel.style.zIndex = '2147483646';
-        panel.style.width = '320px';
-        panel.style.right = '10px';
-        panel.style.top = '60px';
-        panel.style.transition = 'opacity 0.2s ease, visibility 0.2s';
 
         // Load position
-        const savedPos = JSON.parse(localStorage.getItem('sffPanelPos') || '{}');
-        if (savedPos.left || savedPos.top) {
-            panel.style.left = savedPos.left || '';
-            panel.style.right = savedPos.left ? 'auto' : '10px';
-            panel.style.top = savedPos.top || '60px';
-        } else {
-            panel.style.left = '';
-            panel.style.right = '10px';
-            panel.style.top = '60px';
+        let pos = JSON.parse(localStorage.getItem(POS_KEY) || "null");
+        if (pos) {
+            panel.style.top = pos.top;
+            panel.style.right = pos.right || '10px';
         }
 
         // Build panel content
@@ -696,7 +684,7 @@
                     <span class="sff-slider"></span>
                 </label>
                 <span class="sff-label">
-                    <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
+                    <span class="sff-toggle-text">Filter ${settings.enabled ? 'on' : 'off'}</span>
                 </span>
             </div>
         ` + `
@@ -844,186 +832,14 @@
         return { btn, panel };
     }
 
-    function handleClickOutside(event, panel, btn) {
-        // Check if click is outside panel and not on the toggle button
-        if (!panel.contains(event.target) && !btn.contains(event.target)) {
-            panel.classList.remove('show');
-            panel.style.display = 'none';
-            document.removeEventListener('click', (e) => handleClickOutside(e, panel, btn));
-        }
-    }
-
-    function makeDraggable(panel) {
-        const header = panel.querySelector('.sff-panel-header');
-        if (!header) return () => {}; // Return empty cleanup if no header
-        
-        let isDragging = false;
-        let startX, startY, startLeft, startTop;
-
-        const onMouseDown = (e) => {
-            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-            if (panel.style.visibility !== 'visible') return; // Only drag when visible
-            
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            
-            // Get current position without forcing reflow
-            const rect = panel.getBoundingClientRect();
-            startLeft = rect.left;
-            startTop = rect.top;
-            
-            panel.style.cursor = 'grabbing';
-            e.preventDefault();
-            e.stopPropagation();
-        };
-
-        const onMouseMove = (e) => {
-            if (!isDragging) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            // Calculate new position
-            let newLeft = startLeft + dx;
-            let newTop = startTop + dy;
-            
-            // Get viewport and panel dimensions
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const panelRect = panel.getBoundingClientRect();
-            
-            // Keep panel within viewport bounds with some padding
-            const padding = 10;
-            newLeft = Math.max(padding, Math.min(newLeft, viewportWidth - panelRect.width - padding));
-            newTop = Math.max(padding, Math.min(newTop, viewportHeight - panelRect.height - padding));
-            
-            // Apply new position without affecting visibility
-            panel.style.left = newLeft + 'px';
-            panel.style.top = newTop + 'px';
-            panel.style.right = 'auto';
-            
-            // Save position
-            localStorage.setItem('sffPanelPos', JSON.stringify({
-                left: panel.style.left,
-                right: panel.style.right,
-                top: panel.style.top
-            }));
-        };
-
-        const onMouseUp = () => {
-            isDragging = false;
-            panel.style.cursor = '';
-        };
-
-        header.addEventListener('mousedown', onMouseDown);
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-
-        // Cleanup function
-        return () => {
-            header.removeEventListener('mousedown', onMouseDown);
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            
-            // Save final position
-            localStorage.setItem('sffPanelPos', JSON.stringify({
-                left: panel.style.left,
-                top: panel.style.top
-            }));
-        };
-    }
-
-    function keepInViewport(panel) {
-        const rect = panel.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const panelWidth = rect.width;
-        const panelHeight = rect.height;
-        
-        let left = parseInt(panel.style.left) || 0;
-        let top = parseInt(panel.style.top) || 0;
-        
-        // Adjust if panel is outside viewport
-        if (left + panelWidth > viewportWidth) {
-            left = viewportWidth - panelWidth - 10;
-        }
-        
-        if (top + panelHeight > viewportHeight) {
-            top = viewportHeight - panelHeight - 10;
-        }
-        
-        if (left < 0) {
-            left = 10;
-        }
-        
-        if (top < 0) {
-            top = 10;
-        }
-        
-        // Apply new position
-        panel.style.left = left + 'px';
-        panel.style.top = top + 'px';
-        panel.style.right = 'auto';
-        
-        // Save adjusted position
-        localStorage.setItem('sffPanelPos', JSON.stringify({
-            left: panel.style.left,
-            top: panel.style.top
-        }));
-    }
-
     function setupEvents(btn, panel) {
         console.log('🎯 Clean Filter: Setting up events...');
-        
-        // Initialize draggable
-        const cleanupDraggable = makeDraggable(panel);
-        
-        // Load saved position
-        const savedPos = JSON.parse(localStorage.getItem('sffPanelPos') || '{}');
-        if (savedPos.left || savedPos.top) {
-            panel.style.left = savedPos.left || '';
-            panel.style.top = savedPos.top || '';
-            panel.style.right = savedPos.left ? 'auto' : '10px';
-        }
-        
-        // Ensure panel is in viewport on load
-        setTimeout(() => keepInViewport(panel), 100);
-        
-        // Handle window resize
-        let resizeTimeout;
-        const handleResize = () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                const wasVisible = panel.style.display === 'block';
-                if (wasVisible) {
-                    panel.style.display = 'none';
-                }
-                
-                // Force reflow to ensure proper measurements
-                void panel.offsetHeight;
-                
-                // Update position to stay in viewport
-                keepInViewport(panel);
-                
-                if (wasVisible) {
-                    panel.style.display = 'block';
-                }
-                
-                // Save new position
-                localStorage.setItem('sffPanelPos', JSON.stringify({
-                    left: panel.style.left,
-                    top: panel.style.top
-                }));
-            }, 100);
-        };
-        
-        window.addEventListener('resize', handleResize);
-        
-        // Toggle panel function
+
+        // Toggle panel
         const togglePanel = () => {
-            const isVisible = panel.style.visibility === 'visible';
-            
+            console.log('🖱️ Toggle panel clicked');
+            const isVisible = panel.classList.contains('show');
+
             if (!isVisible) {
                 // Close all dropdowns before showing the panel
                 panel.querySelectorAll('.sff-dropdown.open').forEach(dropdown => {
@@ -1031,49 +847,23 @@
                     const content = dropdown.querySelector('.sff-dropdown-content');
                     if (content) content.style.display = 'none';
                 });
-                
-                // Show panel
+
+                panel.classList.add('show');
                 panel.style.display = 'block';
-                panel.style.visibility = 'visible';
-                panel.style.opacity = '1';
-                keepInViewport(panel);
-                
-                // Add click outside handler
-                setTimeout(() => {
-                    document.addEventListener('click', handleClickOutside);
-                }, 0);
+                console.log('✅ Panel shown');
             } else {
-                // Hide panel with transition
-                panel.style.opacity = '0';
-                panel.style.visibility = 'hidden';
-                document.removeEventListener('click', handleClickOutside);
-                
-                // After transition completes, update display
-                setTimeout(() => {
-                    if (panel.style.opacity === '0') {
-                        panel.style.display = 'none';
-                    }
-                }, 200);
+                panel.classList.remove('show');
+                panel.style.display = 'none';
+                console.log('❌ Panel hidden');
             }
         };
-        
-        // Handle click outside
-        const handleClickOutside = (e) => {
-            if (!panel.contains(e.target) && !btn.contains(e.target)) {
-                togglePanel();
-            }
-        };
-        
-        // Toggle panel on button click
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            togglePanel();
-        });
+
+        btn.addEventListener('click', togglePanel);
 
         // Close button
-        panel.querySelector('.sff-close').addEventListener('click', (e) => {
-            e.stopPropagation();
-            togglePanel();
+        panel.querySelector('.sff-close').addEventListener('click', () => {
+            panel.classList.remove('show');
+            panel.style.display = 'none';
         });
 
         // Main toggle switch
@@ -1109,10 +899,14 @@
                 if (e.target.classList.contains('sff-enabled-toggle')) {
                     settings.enabled = e.target.checked;
                     saveSettings(settings);
-                    // Update toggle text
+                    // Update toggle text and button
                     const toggleText = document.querySelector('.sff-toggle-text');
+                    const mainBtn = document.querySelector('.sff-clean-btn .sff-btn-sub');
                     if (toggleText) {
-                        toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
+                        toggleText.textContent = `Filter ${settings.enabled ? 'on' : 'off'}`;
+                    }
+                    if (mainBtn) {
+                        mainBtn.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
                     }
                     filterActivities();
                 } else if (e.target.classList.contains('sff-showKudosButton')) {
@@ -1146,8 +940,8 @@
             }
         });
 
-        // Dragging - Only use makeDraggable from setupEvents, not setupDragging
-        // setupDragging(panel);  // Remove duplicate dragging logic
+        // Dragging
+        setupDragging(panel);
         setupWindowResize(panel);
         setupButtonResponsive(btn);
         updateActivityCount(panel);
@@ -1162,36 +956,13 @@
                     settings.unitSystem = newUnit;
                     panel.querySelectorAll('.sff-unit-btn').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
-                    updateFilterLabels(panel, newUnit);
+                    const isMetric = newUnit === 'metric';
+                    panel.querySelector('[data-label-type="elevation"]').textContent = `Elevation Gain (${isMetric ? 'm' : 'ft'}):`;
+                    panel.querySelector('[data-label-type="pace"]').textContent = `Pace for Runs (${isMetric ? 'min/km' : 'min/mi'}):`;
+                    saveSettings(settings);
                 }
             }
         });
-
-        console.log('✅ Events attached');
-        
-        // Return cleanup function for when the script is unloaded
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            cleanupDraggable && cleanupDraggable();
-            document.removeEventListener('click', handleClickOutside);
-        };
-    }
-
-    function updateActivityCount(panel) {
-        const countEl = panel.querySelector('.sff-activity-count');
-        if (!countEl) return;
-
-        const total = TYPES.length;
-        const hidden = panel.querySelectorAll('.sff-types input[type="checkbox"]:checked').length;
-        countEl.textContent = `(${hidden} hidden / ${total} total)`;
-    }
-
-    function updateFilterLabels(panel, unitSystem) {
-        const isMetric = unitSystem === 'metric';
-        panel.querySelector('[data-label-type="distance"]').textContent = `Distance (${isMetric ? 'km' : 'mi'}):`;
-        panel.querySelector('[data-label-type="elevation"]').textContent = `Elevation Gain (${isMetric ? 'm' : 'ft'}):`;
-        panel.querySelector('[data-label-type="pace"]').textContent = `Pace for Runs (${isMetric ? 'min/km' : 'min/mi'}):`;
-    }
 
     function setupDragging(panel) {
         const header = panel.querySelector('.sff-panel-header');
@@ -1456,7 +1227,7 @@
                 activity.style.display = '';
             });
             const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-            if (btn) btn.textContent = '(0)';
+            if (btn) btn.textContent = 'HIDDEN 0';
             return;
         }
         let hiddenCount = 0;
@@ -1588,7 +1359,7 @@
 
         console.log(`🎯 Filtered ${hiddenCount}/${activities.length} activities`);
         const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-        if (btn) btn.textContent = `(${hiddenCount})`;
+        if (btn) btn.textContent = `HIDDEN ${hiddenCount}`;
     }
 
     // Debounce helper to limit how often filtering runs on rapid DOM changes/scroll
@@ -1713,15 +1484,35 @@
     // Initialize
     function init() {
         console.log('🚀 Clean Filter: Initializing...');
-        setTimeout(() => {
-            createElements();
+        console.log('Document readyState:', document.readyState);
+        console.log('Document body:', document.body ? 'exists' : 'not found');
+        
+        const initScript = () => {
+            console.log('🚀 Clean Filter: Running initialization script...');
+            const elements = createElements();
+            console.log('Created elements:', elements ? 'success' : 'failed');
             updateGiftVisibility();
             manageHeaderKudosButton();
             if (settings.enabled) {
                 filterActivities();
                 setupAutoFilter();
             }
-        }, 1500);
+            // Check if button exists in DOM
+            const button = document.querySelector('.sff-clean-btn');
+            console.log('Button in DOM:', button ? 'found' : 'not found');
+            if (button) {
+                console.log('Button styles:', window.getComputedStyle(button));
+            }
+        };
+
+        // Try to initialize immediately
+        try {
+            initScript();
+        } catch (e) {
+            console.error('Initial initialization failed, retrying...', e);
+            // Fallback to setTimeout
+            setTimeout(initScript, 500);
+        }
     }
 
     if (document.readyState === 'loading') {
