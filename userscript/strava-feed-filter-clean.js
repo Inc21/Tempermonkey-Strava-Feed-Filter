@@ -1,7 +1,8 @@
 // ==UserScript==
+// ==UserScript==
 // @name         Strava Feed Filter
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.2.2
 // @author       inc21
 // @match        https://www.strava.com/*
 // @grant        GM_addStyle
@@ -24,6 +25,11 @@
         hideGiveGift: false,
         hideClubPosts: false,
         hideChallenges: false,
+        hideSuggestedFriends: false,
+        hideYourClubs: false,
+        hideMyWindsock: false,
+        hideSummitbag: false,
+        hideRunHealth: false,
         showKudosButton: false,
         minKm: 0,
         maxKm: 0,
@@ -683,10 +689,10 @@
       /* Secondary navigation row for smaller screens */
       .sff-secondary-nav {
         position: fixed !important;
-        top: 56px !important;
+        top: 55px !important;
         left: 0 !important;
         right: 0 !important;
-        z-index: 1000 !important;
+        z-index: 10 !important;
         background: white !important;
         border-bottom: 1px solid #e5e5e5 !important;
         padding: 8px 16px !important;
@@ -715,7 +721,13 @@
         
         /* Adjust page content to account for secondary nav ONLY on dashboard */
         body[data-sff-dashboard="true"] {
-          padding-top: 48px !important;
+          padding-top: 60px !important;
+        }
+        
+        /* Additional margin for main content area to ensure no overlap */
+        body[data-sff-dashboard="true"] main,
+        body[data-sff-dashboard="true"] .view {
+          margin-top: 8px !important;
         }
       }
 
@@ -734,6 +746,8 @@
         font-size: 14px !important;
         line-height: 1.2 !important;
         text-transform: uppercase !important;
+        position: relative !important;
+        z-index: 1000 !important;
       }
 
       .sff-secondary-filter-btn:hover {
@@ -757,6 +771,8 @@
         gap: 6px !important;
         line-height: 1.2 !important;
         transition: background-color 0.15s ease !important;
+        position: relative !important;
+        z-index: 1000 !important;
       }
 
       .sff-secondary-kudos-btn:hover {
@@ -938,8 +954,14 @@
             settings.hideNoMap = panel.querySelector('.sff-hideNoMap').checked;
             settings.hideClubPosts = panel.querySelector('.sff-hideClubPosts').checked;
             settings.hideChallenges = panel.querySelector('.sff-hideChallenges').checked;
+            settings.hideSuggestedFriends = panel.querySelector('.sff-hideSuggestedFriends').checked;
+            settings.hideYourClubs = panel.querySelector('.sff-hideYourClubs').checked;
+            settings.hideMyWindsock = panel.querySelector('.sff-hideMyWindsock').checked;
+            settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
+            settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
             settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
-            manageHeaderKudosButton(); // Update button immediately on apply
+            LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
+            UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
             const giftChk = panel.querySelector('.sff-hideGift');
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
 
@@ -966,8 +988,14 @@
                 document.body.setAttribute('data-sff-dashboard', 'true');
             } else {
                 document.body.removeAttribute('data-sff-dashboard');
-                // On non-dashboard pages, only apply global settings like hiding gift button
+                // On non-dashboard pages, only apply global settings like hiding gift button and challenges
                 LogicModule.updateGiftVisibility();
+                LogicModule.updateChallengesVisibility();
+                LogicModule.updateSuggestedFriendsVisibility();
+                LogicModule.updateYourClubsVisibility();
+                LogicModule.updateMyWindsockVisibility();
+                LogicModule.updateSummitbagVisibility();
+                LogicModule.updateRunHealthVisibility();
                 return; // Exit early, no UI elements needed on non-dashboard pages
             }
             
@@ -985,11 +1013,15 @@
             secondaryKudosElement.className = 'sff-secondary-kudos-btn';
             secondaryKudosElement.href = 'javascript:void(0);';
             secondaryKudosElement.textContent = '👍 Give Kudos to Everyone';
-            secondaryKudosElement.style.display = settings.showKudosButton ? 'inline-flex' : 'none';
+            // Use setProperty with !important to override CSS rules
+            secondaryKudosElement.style.setProperty('display', settings.showKudosButton ? 'inline-flex' : 'none', 'important');
             
             secondaryNav.appendChild(secondaryKudosElement);
             secondaryNav.appendChild(secondaryFilterElement);
             document.body.appendChild(secondaryNav);
+            
+            // Ensure secondary kudos button visibility is properly synchronized
+            this.syncSecondaryKudosVisibility();
 
             // Create button
             const btn = document.createElement('button');
@@ -1014,6 +1046,17 @@
             
             this.setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn);
             return { btn, panel, secondaryFilterBtn, secondaryKudosBtn };
+        },
+        
+        // Synchronize secondary kudos button visibility with settings
+        syncSecondaryKudosVisibility() {
+            const secondaryKudosBtn = document.querySelector('.sff-secondary-kudos-btn');
+            if (secondaryKudosBtn) {
+                const shouldShow = settings.enabled && settings.showKudosButton;
+                // Use setProperty with !important to override CSS rules
+                secondaryKudosBtn.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
+                console.log('🔄 Secondary kudos button visibility updated:', shouldShow ? 'visible' : 'hidden');
+            }
         },
 
         _createPanel() {
@@ -1167,6 +1210,28 @@
                 </div>
                 <div class="sff-row sff-dropdown">
                     <div class="sff-dropdown-header">
+                        <span class="sff-label">External Service Embeds</span>
+                        <div class="sff-dropdown-right">
+                            <span class="sff-dropdown-indicator">▼</span>
+                        </div>
+                    </div>
+                    <div class="sff-dropdown-content">
+                        <label class="sff-chip ${settings.hideMyWindsock ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideMyWindsock" ${settings.hideMyWindsock ? 'checked' : ''}>
+                            Hide "myWindsock Report"
+                        </label>
+                        <label class="sff-chip ${settings.hideSummitbag ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideSummitbag" ${settings.hideSummitbag ? 'checked' : ''}>
+                            Hide "summitbag.com"
+                        </label>
+                        <label class="sff-chip ${settings.hideRunHealth ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
+                            Hide "Run Health"
+                        </label>
+                    </div>
+                </div>
+                <div class="sff-row sff-dropdown">
+                    <div class="sff-dropdown-header">
                         <span class="sff-label">Other</span>
                         <div class="sff-dropdown-right">
                             <span class="sff-dropdown-indicator">▼</span>
@@ -1183,7 +1248,15 @@
                         </label>
                         <label class="sff-chip ${settings.hideChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideChallenges" ${settings.hideChallenges ? 'checked' : ''}>
-                            Hide challenges
+                            Hide your challenges
+                        </label>
+                        <label class="sff-chip ${settings.hideSuggestedFriends ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideSuggestedFriends" ${settings.hideSuggestedFriends ? 'checked' : ''}>
+                            Hide "Suggested Friends" section
+                        </label>
+                        <label class="sff-chip ${settings.hideYourClubs ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideYourClubs" ${settings.hideYourClubs ? 'checked' : ''}>
+                            Hide "Your Clubs" section
                         </label>
                         <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
@@ -1240,6 +1313,9 @@
                     if (wasVisible) {
                         panel.style.display = 'none';
                     }
+                    
+                    // Sync secondary kudos button visibility on resize
+                    this.syncSecondaryKudosVisibility();
                     
                     // Force reflow to ensure proper measurements
                     void panel.offsetHeight;
@@ -1377,7 +1453,7 @@
             panel.querySelector('.sff-enabled-toggle').addEventListener('change', (e) => {
                 settings.enabled = e.target.checked;
                 UtilsModule.saveSettings(settings);
-                LogicModule.filterActivities();
+                filterActivities();
             });
 
             // Toggle all dropdowns
@@ -1411,16 +1487,13 @@
                         if (toggleText) {
                             toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
                         }
-                        LogicModule.filterActivities();
+                        LogicModule.applyAllFilters();
                     } else if (e.target.classList.contains('sff-showKudosButton')) {
                         settings.showKudosButton = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.manageHeaderKudosButton();
-                        // Also manage secondary kudos button
-                        const secondaryKudosBtn = document.querySelector('.sff-secondary-kudos-btn');
-                        if (secondaryKudosBtn) {
-                            secondaryKudosBtn.style.display = settings.showKudosButton ? 'inline-flex' : 'none';
-                        }
+                        // Sync secondary kudos button visibility
+                        this.syncSecondaryKudosVisibility();
                     }
 
                     this.updateActivityCount(panel);
@@ -1429,6 +1502,42 @@
                         settings.hideGiveGift = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateGiftVisibility();
+                    }
+                    // Live apply for Hide Challenges toggle
+                    if (e.target.classList.contains('sff-hideChallenges')) {
+                        settings.hideChallenges = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateChallengesVisibility();
+                    }
+                    // Live apply for Hide Suggested Friends toggle
+                    if (e.target.classList.contains('sff-hideSuggestedFriends')) {
+                        settings.hideSuggestedFriends = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateSuggestedFriendsVisibility();
+                    }
+                    // Live apply for Hide Your Clubs toggle
+                    if (e.target.classList.contains('sff-hideYourClubs')) {
+                        settings.hideYourClubs = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateYourClubsVisibility();
+                    }
+                    // Live apply for Hide myWindsock toggle
+                    if (e.target.classList.contains('sff-hideMyWindsock')) {
+                        settings.hideMyWindsock = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateMyWindsockVisibility();
+                    }
+                    // Live apply for Hide Summitbag toggle
+                    if (e.target.classList.contains('sff-hideSummitbag')) {
+                        settings.hideSummitbag = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateSummitbagVisibility();
+                    }
+                    // Live apply for Hide Run Health toggle
+                    if (e.target.classList.contains('sff-hideRunHealth')) {
+                        settings.hideRunHealth = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateRunHealthVisibility();
                     }
                 }
             });
@@ -1676,7 +1785,7 @@
             try {
                 const links = document.querySelectorAll('a[href*="/gift"][href*="origin=global_nav"]');
                 links.forEach(a => {
-                    if (settings.hideGiveGift) {
+                    if (settings.enabled && settings.hideGiveGift) {
                         if (a.dataset.sffHiddenBy !== 'sff') {
                             a.dataset.sffHiddenBy = 'sff';
                             a.style.display = 'none';
@@ -1691,6 +1800,180 @@
             }
         },
 
+        updateChallengesVisibility() {
+            try {
+                const challengesSection = document.querySelector('#your-challenges');
+                if (challengesSection) {
+                    if (settings.enabled && settings.hideChallenges) {
+                        if (challengesSection.dataset.sffHiddenBy !== 'sff') {
+                            challengesSection.dataset.sffHiddenBy = 'sff';
+                            challengesSection.style.display = 'none';
+                        }
+                    } else if (challengesSection.dataset.sffHiddenBy === 'sff') {
+                        challengesSection.style.display = '';
+                        delete challengesSection.dataset.sffHiddenBy;
+                    }
+                }
+            } catch (e) {
+                console.warn('updateChallengesVisibility error:', e);
+            }
+        },
+
+        updateSuggestedFriendsVisibility() {
+            try {
+                const suggestedFriendsSection = document.querySelector('#suggested-follows');
+                if (suggestedFriendsSection) {
+                    if (settings.enabled && settings.hideSuggestedFriends) {
+                        if (suggestedFriendsSection.dataset.sffHiddenBy !== 'sff') {
+                            suggestedFriendsSection.dataset.sffHiddenBy = 'sff';
+                            suggestedFriendsSection.style.display = 'none';
+                        }
+                    } else if (suggestedFriendsSection.dataset.sffHiddenBy === 'sff') {
+                        suggestedFriendsSection.style.display = '';
+                        delete suggestedFriendsSection.dataset.sffHiddenBy;
+                    }
+                }
+            } catch (e) {
+                console.warn('updateSuggestedFriendsVisibility error:', e);
+            }
+        },
+
+        updateYourClubsVisibility() {
+            try {
+                const yourClubsSection = document.querySelector('#your-clubs');
+                if (yourClubsSection) {
+                    if (settings.enabled && settings.hideYourClubs) {
+                        if (yourClubsSection.dataset.sffHiddenBy !== 'sff') {
+                            yourClubsSection.dataset.sffHiddenBy = 'sff';
+                            yourClubsSection.style.display = 'none';
+                        }
+                    } else if (yourClubsSection.dataset.sffHiddenBy === 'sff') {
+                        yourClubsSection.style.display = '';
+                        delete yourClubsSection.dataset.sffHiddenBy;
+                    }
+                }
+            } catch (e) {
+                console.warn('updateYourClubsVisibility error:', e);
+            }
+        },
+
+        updateMyWindsockVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for myWindsock content`);
+                
+                activities.forEach(activity => {
+                    // Find only text-containing elements (paragraphs and spans) that specifically contain myWindsock content
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text');
+                    
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Only hide if this element specifically contains the myWindsock report and not other content
+                        if (text.includes('-- myWindsock Report --') && text.length < 500) { // Limit to avoid hiding large containers
+                            console.log('🔮 Found myWindsock content in text element:', element);
+                            if (settings.enabled && settings.hideMyWindsock) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🔮 myWindsock text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateMyWindsockVisibility error:', e);
+            }
+        },
+
+        updateSummitbagVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for summitbag content`);
+                
+                activities.forEach(activity => {
+                    // Find only text-containing elements (paragraphs and spans) that specifically contain summitbag content
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text');
+                    
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Only hide if this element specifically contains summitbag and not other content
+                        if (text.includes('summitbag.com') && text.length < 500) { // Limit to avoid hiding large containers
+                            console.log('🏔️ Found summitbag content in text element:', element);
+                            if (settings.enabled && settings.hideSummitbag) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🏔️ summitbag text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateSummitbagVisibility error:', e);
+            }
+        },
+
+        updateRunHealthVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for Run Health content`);
+                
+                activities.forEach(activity => {
+                    // Find only text-containing elements (paragraphs and spans) that specifically contain Run Health content
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text');
+                    
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Only hide if this element specifically contains Run Health and not other content
+                        if (text.includes('www.myTF.run') && text.length < 500) { // Limit to avoid hiding large containers
+                            console.log('🏃 Found Run Health content in text element:', element);
+                            if (settings.enabled && settings.hideRunHealth) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🏃 Run Health text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateRunHealthVisibility error:', e);
+            }
+        },
+
+        // Count hidden sections for display in filter button
+        countHiddenSections() {
+            let hiddenSectionsCount = 0;
+            
+            // Count hidden sections
+            const sectionsToCheck = [
+                { selector: '#your-challenges', setting: 'hideChallenges' },
+                { selector: '#suggested-follows', setting: 'hideSuggestedFriends' },
+                { selector: '#your-clubs', setting: 'hideYourClubs' }
+            ];
+            
+            sectionsToCheck.forEach(({ selector, setting }) => {
+                const section = document.querySelector(selector);
+                if (section && settings[setting] && section.dataset.sffHiddenBy === 'sff') {
+                    hiddenSectionsCount++;
+                }
+            });
+            
+            return hiddenSectionsCount;
+        },
+
         filterActivities() {
             const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
 
@@ -1698,8 +1981,12 @@
                 activities.forEach(activity => {
                     activity.style.display = '';
                 });
+                
+                // Still count hidden sections even when activity filtering is disabled
+                const hiddenSectionsCount = this.countHiddenSections();
+                
                 const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-                if (btn) btn.textContent = '(0)';
+                if (btn) btn.textContent = `(${hiddenSectionsCount})`;
                 return;
             }
             let hiddenCount = 0;
@@ -1714,16 +2001,6 @@
                         hiddenCount++;
                     }
                     return; // Club posts are not subject to other filters
-                }
-
-                // Handle challenges
-                const isChallenge = activity.querySelector('[data-testid="challenge-card"], .challenge-card');
-                if (isChallenge) {
-                    if (settings.hideChallenges) {
-                        activity.style.display = 'none';
-                        hiddenCount++;
-                    }
-                    return; // Challenges are not subject to other filters
                 }
 
                 const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
@@ -1838,12 +2115,18 @@
             const placeButton = () => {
                 const kudosListItem = document.getElementById('gj-kudos-li');
 
-                if (!settings.showKudosButton) {
+                if (!settings.enabled || !settings.showKudosButton) {
                     if (kudosListItem) kudosListItem.remove();
+                    // Also ensure secondary button is hidden
+                    UIModule.syncSecondaryKudosVisibility();
                     return;
                 }
 
-                if (kudosListItem) return;
+                if (kudosListItem) {
+                    // Button exists, ensure secondary is also synced
+                    UIModule.syncSecondaryKudosVisibility();
+                    return;
+                }
 
                 const navList = document.querySelector('.user-nav.nav-group');
 
@@ -1885,6 +2168,9 @@
 
                     newListItem.appendChild(kudosBtn);
                     navList.prepend(newListItem);
+                    
+                    // Sync secondary button visibility after creating main button
+                    UIModule.syncSecondaryKudosVisibility();
                 } else {
                     attempts++;
                     if (attempts < maxAttempts) {
@@ -1901,6 +2187,12 @@
                 try {
                     this.filterActivities();
                     this.updateGiftVisibility();
+                    this.updateChallengesVisibility();
+                    this.updateSuggestedFriendsVisibility();
+                    this.updateYourClubsVisibility();
+                    this.updateMyWindsockVisibility();
+                    this.updateSummitbagVisibility();
+                    this.updateRunHealthVisibility();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
@@ -1927,6 +2219,71 @@
 
             window.addEventListener('scroll', debouncedFilter, { passive: true });
             window.__sffObserver = observer;
+        },
+
+        // Master function to apply all filters (activities and sections) based on enabled state
+        applyAllFilters() {
+            if (settings.enabled) {
+                // When filter is enabled, apply all filtering
+                this.filterActivities();
+                this.updateGiftVisibility();
+                this.updateChallengesVisibility();
+                this.updateSuggestedFriendsVisibility();
+                this.updateYourClubsVisibility();
+                this.updateMyWindsockVisibility();
+                this.updateSummitbagVisibility();
+                this.updateRunHealthVisibility();
+                this.manageHeaderKudosButton();
+                UIModule.syncSecondaryKudosVisibility();
+            } else {
+                // When filter is disabled, show all activities and reset sections
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                activities.forEach(activity => {
+                    activity.style.display = '';
+                });
+                
+                // Reset all sections to visible
+                const challengesSection = document.querySelector('#your-challenges');
+                if (challengesSection && challengesSection.dataset.sffHiddenBy === 'sff') {
+                    challengesSection.style.display = '';
+                    delete challengesSection.dataset.sffHiddenBy;
+                }
+                
+                const suggestedFriendsSection = document.querySelector('#suggested-follows');
+                if (suggestedFriendsSection && suggestedFriendsSection.dataset.sffHiddenBy === 'sff') {
+                    suggestedFriendsSection.style.display = '';
+                    delete suggestedFriendsSection.dataset.sffHiddenBy;
+                }
+                
+                const yourClubsSection = document.querySelector('#your-clubs');
+                if (yourClubsSection && yourClubsSection.dataset.sffHiddenBy === 'sff') {
+                    yourClubsSection.style.display = '';
+                    delete yourClubsSection.dataset.sffHiddenBy;
+                }
+                
+                const giftLinks = document.querySelectorAll('a[href*="/gift"][href*="origin=global_nav"]');
+                giftLinks.forEach(a => {
+                    if (a.dataset.sffHiddenBy === 'sff') {
+                        a.style.display = '';
+                        delete a.dataset.sffHiddenBy;
+                    }
+                });
+                
+                // Reset external service embed activities
+                this.updateMyWindsockVisibility();
+                this.updateSummitbagVisibility();
+                this.updateRunHealthVisibility();
+                
+                // Hide kudos buttons when master toggle is off
+                this.manageHeaderKudosButton();
+                UIModule.syncSecondaryKudosVisibility();
+                
+                // Update button counter to 0
+                const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
+                const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
+                if (btn) btn.textContent = '(0)';
+                if (secondaryBtn) secondaryBtn.textContent = '(0)';
+            }
         }
     };
 
@@ -2141,16 +2498,13 @@
                     if (toggleText) {
                         toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
                     }
-                    LogicModule.filterActivities();
+                    LogicModule.applyAllFilters();
                 } else if (e.target.classList.contains('sff-showKudosButton')) {
                     settings.showKudosButton = e.target.checked;
                     UtilsModule.saveSettings(settings);
                     LogicModule.manageHeaderKudosButton();
-                    // Also manage secondary kudos button
-                    const secondaryKudosBtn = document.querySelector('.sff-secondary-kudos-btn');
-                    if (secondaryKudosBtn) {
-                        secondaryKudosBtn.style.display = settings.showKudosButton ? 'inline-flex' : 'none';
-                    }
+                    // Sync secondary kudos button visibility
+                    UIModule.syncSecondaryKudosVisibility();
                 }
 
                 UIModule.updateActivityCount(panel);
@@ -2159,6 +2513,42 @@
                     settings.hideGiveGift = e.target.checked;
                     UtilsModule.saveSettings(settings);
                     LogicModule.updateGiftVisibility();
+                }
+                // Live apply for Hide Challenges toggle
+                if (e.target.classList.contains('sff-hideChallenges')) {
+                    settings.hideChallenges = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateChallengesVisibility();
+                }
+                // Live apply for Hide Suggested Friends toggle
+                if (e.target.classList.contains('sff-hideSuggestedFriends')) {
+                    settings.hideSuggestedFriends = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateSuggestedFriendsVisibility();
+                }
+                // Live apply for Hide Your Clubs toggle
+                if (e.target.classList.contains('sff-hideYourClubs')) {
+                    settings.hideYourClubs = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateYourClubsVisibility();
+                }
+                // Live apply for Hide myWindsock toggle
+                if (e.target.classList.contains('sff-hideMyWindsock')) {
+                    settings.hideMyWindsock = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateMyWindsockVisibility();
+                }
+                // Live apply for Hide Summitbag toggle
+                if (e.target.classList.contains('sff-hideSummitbag')) {
+                    settings.hideSummitbag = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateSummitbagVisibility();
+                }
+                // Live apply for Hide Run Health toggle
+                if (e.target.classList.contains('sff-hideRunHealth')) {
+                    settings.hideRunHealth = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateRunHealthVisibility();
                 }
             }
         });
@@ -2276,7 +2666,6 @@
 
 
 
-    // Main filtering logic
     function filterActivities() {
         const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
 
@@ -2300,16 +2689,6 @@
                     hiddenCount++;
                 }
                 return; // Club posts are not subject to other filters
-            }
-
-            // Handle challenges (assuming a selector)
-            const isChallenge = activity.querySelector('[data-testid="challenge-card"], .challenge-card');
-            if (isChallenge) {
-                if (settings.hideChallenges) {
-                    activity.style.display = 'none';
-                    hiddenCount++;
-                }
-                return; // Challenges are not subject to other filters
             }
 
             const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
@@ -2416,10 +2795,15 @@
         });
 
         console.log(`🎯 Filtered ${hiddenCount}/${activities.length} activities`);
+        
+        // Add hidden sections count to the total
+        const hiddenSectionsCount = this.countHiddenSections();
+        const totalHiddenCount = hiddenCount + hiddenSectionsCount;
+        
         const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
         const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
-        if (btn) btn.textContent = `(${hiddenCount})`;
-        if (secondaryBtn) secondaryBtn.textContent = `(${hiddenCount})`;
+        if (btn) btn.textContent = `(${totalHiddenCount})`;
+        if (secondaryBtn) secondaryBtn.textContent = `(${totalHiddenCount})`;
     }
 
 
@@ -2435,11 +2819,16 @@
             // If button should be hidden, remove it and stop.
             if (!settings.showKudosButton) {
                 if (kudosListItem) kudosListItem.remove();
+                // Also ensure secondary button is hidden
+                UIModule.syncSecondaryKudosVisibility();
                 return;
             }
 
-            // If button already exists, do nothing.
-            if (kudosListItem) return;
+            // If button already exists, ensure secondary is synced
+            if (kudosListItem) {
+                UIModule.syncSecondaryKudosVisibility();
+                return;
+            }
 
             const navList = document.querySelector('.user-nav.nav-group');
 
@@ -2481,6 +2870,9 @@
 
                 newListItem.appendChild(kudosBtn);
                 navList.prepend(newListItem);
+                
+                // Sync secondary button visibility after creating main button
+                UIModule.syncSecondaryKudosVisibility();
             } else {
                 attempts++;
                 if (attempts < maxAttempts) {
@@ -2498,6 +2890,9 @@
             try {
                 LogicModule.filterActivities();
                 LogicModule.updateGiftVisibility();
+                LogicModule.updateChallengesVisibility();
+                LogicModule.updateSuggestedFriendsVisibility();
+                LogicModule.updateYourClubsVisibility();
             } catch (e) {
                 console.error('Auto-filter error:', e);
             }
@@ -2542,9 +2937,29 @@
         // Apply gift button hiding immediately
         LogicModule.updateGiftVisibility();
         
-        // Setup observer for dynamically loaded content to hide gift buttons
+        // Apply challenges section hiding immediately
+        LogicModule.updateChallengesVisibility();
+        
+        // Apply suggested friends section hiding immediately
+        LogicModule.updateSuggestedFriendsVisibility();
+        
+        // Apply your clubs section hiding immediately
+        LogicModule.updateYourClubsVisibility();
+        
+        // Apply external service embed hiding immediately
+        LogicModule.updateMyWindsockVisibility();
+        LogicModule.updateSummitbagVisibility();
+        LogicModule.updateRunHealthVisibility();
+        
+        // Setup observer for dynamically loaded content to hide gift buttons and challenges
         const observer = new MutationObserver(() => {
             LogicModule.updateGiftVisibility();
+            LogicModule.updateChallengesVisibility();
+            LogicModule.updateSuggestedFriendsVisibility();
+            LogicModule.updateYourClubsVisibility();
+            LogicModule.updateMyWindsockVisibility();
+            LogicModule.updateSummitbagVisibility();
+            LogicModule.updateRunHealthVisibility();
         });
         observer.observe(document.body, { childList: true, subtree: true });
         
@@ -2564,6 +2979,8 @@
             if (UtilsModule.isOnDashboard()) {
                 UIModule.createElements();
                 LogicModule.manageHeaderKudosButton();
+                // Ensure secondary kudos button is properly synchronized
+                UIModule.syncSecondaryKudosVisibility();
                 if (settings.enabled) {
                     LogicModule.filterActivities();
                     LogicModule.setupAutoFilter();
@@ -2594,6 +3011,8 @@
                         init();
                     }
                 }
+                // Ensure secondary kudos button visibility is synchronized after navigation
+                setTimeout(() => UIModule.syncSecondaryKudosVisibility(), 100);
             } else {
                 // We navigated away from dashboard, cleanup dashboard-specific elements
                 document.body.removeAttribute('data-sff-dashboard');

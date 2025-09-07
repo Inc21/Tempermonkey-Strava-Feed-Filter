@@ -6,9 +6,46 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [v0.2.2] - 2025-09-07
 
-- Work in progress features and fixes not yet released.
+### Added
+
+- **External Service Embeds Filtering**: New dedicated section for hiding
+  third-party service embeds within activity descriptions
+  - **Hide "myWindsock Report"**: Filter out myWindsock weather impact
+    reports from activity descriptions
+  - **Hide "summitbag.com"**: Remove summitbag.com elevation tracking
+    embeds from activities
+  - **Hide "Run Health"**: Filter out Run Health analysis content
+    (www.myTF.run) from activities
+- **Hide "Suggested Friends" Section**: Option to hide the "Suggested Friends"
+  section from Strava pages
+- **Hide "Your Clubs" Section**: Option to hide the "Your Clubs" section
+  from Strava pages
+- **Precise Content Filtering**: External service filters only hide the
+  specific text content, preserving activity icons, titles, and stats
+- **Real-time External Service Filtering**: All external service filters
+  take effect immediately without requiring page refresh
+- **Enhanced Debugging**: Comprehensive console logging for external
+  service filter troubleshooting
+
+### Improved
+
+- **Granular Hiding Logic**: External service filters target only specific
+  text elements (paragraphs, spans) with size limitations to avoid hiding
+  important activity information
+- **Master Toggle Integration**: External service filters respect the main
+  filter toggle and are properly integrated with the master control system
+- **Real-time Section Hiding**: Both new options take effect immediately
+  without requiring page refresh
+- **Global Section Management**: Section hiding works across all Strava
+  pages where these sections appear
+
+### Changed
+
+- **Improved Challenge Filtering**: Updated "Hide challenges" to
+  "Hide your challenges" for better clarity and now targets the specific
+  "Your Challenges" section instead of individual challenge activities
 
 ---
 
@@ -27,7 +64,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Allowed Athletes Override**: Whitelist specific athletes whose activities
   always show regardless of filters
 - **Club Posts Filtering**: Option to hide club-related posts
-- **Challenge Filtering**: Hide challenge announcements and related posts
+- **Challenge Filtering**: Hide your challenges section
 - **Unit System Support**: Switch between Metric (km, m, min/km) and Imperial
   (mi, ft, min/mi) units
 - **"Give Kudos to Everyone" Button**: Convenience button to kudos all visible

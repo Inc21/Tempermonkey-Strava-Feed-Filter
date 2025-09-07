@@ -28,7 +28,7 @@ with Strava's design.
 - **Pace Filtering**: Filter running activities by pace (min/km or min/mi)
 - **Map Filtering**: Hide activities without GPS maps
 - **Club Posts**: Option to hide club-related posts
-- **Challenge Filtering**: Hide challenge announcements
+- **Challenge Filtering**: Hide your challenges section
 
 ### 🎨 User Interface
 
