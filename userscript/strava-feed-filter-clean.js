@@ -1,16 +1,28 @@
 // ==UserScript==
-// ==UserScript==
 // @name         Strava Feed Filter
-// @namespace    http://tampermonkey.net/
-// @version      0.2.2
-// @author       inc21
+// @name:en      Strava Feed Filter
+// @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
+// @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
+// @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
+// @version      0.2.3
+// @license      MIT
+// @author       Inc21
 // @match        https://www.strava.com/*
 // @grant        GM_addStyle
 // @run-at       document-end
+// @homepageURL  https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
+// @supportURL   https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues
+// @downloadURL  https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js
+// @updateURL    https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js
 // ==/UserScript==
 
 (function() {
     'use strict';
+
+    /*
+     * Copyright (c) 2025 Inc21
+     * Licensed under the MIT License. See LICENSE file in the project root for full license text.
+     */
 
     console.log('🚀 Clean Filter: Script starting...');
 
@@ -184,7 +196,7 @@
         top: 60px !important;
         right: 10px !important;
         z-index: 2147483646 !important;
-        width: 320px !important;
+        width: 360px !important;
         min-height: 180px !important;
         max-height: 70vh !important;
         background: white !important;
@@ -305,7 +317,7 @@
       .sff-panel-content {
         padding: 16px !important;
         max-height: calc(70vh - 100px) !important;
-        overflow-y: auto !important;
+        overflow-y: scroll !important;
       }
 
       .sff-clean-panel .sff-row {
@@ -1304,7 +1316,7 @@
                     </div>
                 </div>
                 <div class="sff-copyright">
-                    <p>All rights reserved</p>
+                    <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
                 </div>
             `;
         },

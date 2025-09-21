@@ -1,0 +1,22 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Dependencies / builds (if any in future)
+node_modules/
+dist/
+build/
+coverage/
+
+# Environment
+.env
+.env.*
+
+# Local docs and scratch space
+.docs/
