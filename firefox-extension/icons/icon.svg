@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff7a3d"/>
+      <stop offset="100%" stop-color="#fc5200"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#g)" filter="url(#shadow)"/>
+
+  <!-- Stacked title: STRAVA / FEED / FILTER, all caps, same size, centered -->
+  <g fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif" font-weight="800" text-anchor="middle">
+    <!-- Use a size that fits within 112px box with margins -->
+    <text x="64" y="46" font-size="20" letter-spacing="1.2" text-rendering="geometricPrecision">STRAVA</text>
+    <text x="64" y="74" font-size="20" letter-spacing="2" text-rendering="geometricPrecision">FEED</text>
+    <text x="64" y="102" font-size="20" letter-spacing="1.2" text-rendering="geometricPrecision">FILTER</text>
+  </g>
+</svg>
