@@ -4,6 +4,8 @@ A powerful Tampermonkey userscript that provides advanced filtering
 capabilities for your Strava activity feed. Built with a modular architecture
 for maximum performance and maintainability.
 
+> Note: As of v1.2.4, this project also includes a Firefox Extension (desktop and Firefox for Android). The userscript remains available. Currently, this release has been tested primarily on Firefox (Desktop) and Firefox for Android.
+
 ![Strava Feed Filter in action](.\src\readme-images\filter-panel-overview.png)
 *Filter panel*
 
@@ -14,6 +16,17 @@ filtering capabilities directly on your feed. Hide activities based on
 keywords, activity types, distance, duration, elevation, pace, and more.
 The script features a clean, draggable interface that works seamlessly
 with Strava's design.
+
+## 🆕 What's New in v1.2.4 (27.09.2025)
+
+- Firefox Extension (Desktop and Firefox for Android)
+  - Toolbar popup with Enable/Disable toggle and ON/OFF badge
+  - Quick link to GitHub issues and informational disclaimer
+- New feed filters
+  - Hide "JOIN workout" embed in activity descriptions
+  - Hide "CoachCat Training Summary" embed in activity descriptions
+  - Hide "Athlete joined a club" feed entries
+- More robust detection for "joined a club" entries (header anchor + CTA detection)
 
 ## 🆕 What's New in v0.2.3 (21.09.2025)
 

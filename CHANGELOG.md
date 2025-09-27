@@ -6,6 +6,32 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v1.2.4] - 27.09.2025
+
+### Added
+
+- Firefox Extension (Desktop)
+  - Toolbar popup with Enable/Disable toggle
+  - ON/OFF toolbar badge (green/red)
+  - Quick link to GitHub issues and an informational disclaimer
+- Firefox for Android support for the Firefox extension (tested)
+- New feed filters
+  - Hide "JOIN workout" embed in activity descriptions
+  - Hide "CoachCat Training Summary" embed in activity descriptions
+  - Hide "Athlete joined a club" feed entries
+
+### Changed
+
+- Userscript and extension now share consistent external-embed detection logic
+- More robust detection for "joined a club" (uses group header anchor and CTA detection)
+- UI copy and placement adjustments for the new filters
+
+### Notes
+
+- Disclaimer: Strava occasionally changes the site. If something breaks, please report it on GitHub Issues before leaving a negative review so we can address it quickly.
+
+---
+
 ## [v0.2.3] - 21.09.2025
 
 ### Added

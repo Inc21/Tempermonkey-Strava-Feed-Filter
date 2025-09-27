@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Strava Feed Filter",
-  "version": "0.2.3",
+  "version": "1.2.4",
   "description": "Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.",
   "permissions": [
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://www.strava.com/*"
@@ -25,6 +26,10 @@
       "run_at": "document_end"
     }
   ],
+  "action": {
+    "default_title": "Strava Feed Filter",
+    "default_popup": "popup/popup.html"
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "strava-feed-filter@inc21",

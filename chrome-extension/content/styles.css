@@ -1,0 +1,38 @@
+:root {
+  --sffc-bg: #111827ee;
+  --sffc-fg: #e5e7eb;
+  --sffc-accent: #fc5200;
+  --sffc-border: #374151;
+}
+
+#sff-chrome-ui {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  z-index: 2147483647;
+  background: var(--sffc-bg);
+  color: var(--sffc-fg);
+  padding: 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  border: 1px solid var(--sffc-border);
+  width: 320px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+#sff-chrome-ui .sffc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+#sff-chrome-ui .sffc-title { font-weight: 700; font-size: 14px; }
+
+/* Toggle switch */
+.sffc-switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+.sffc-switch input { opacity: 0; width: 0; height: 0; }
+.sffc-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #6b7280; transition: .2s; border-radius: 999px; }
+.sffc-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 999px; }
+.sffc-switch input:checked + .sffc-slider { background: var(--sffc-accent); }
+.sffc-switch input:checked + .sffc-slider:before { transform: translateX(22px); }
+
+#sff-chrome-ui .sffc-body { font-size: 12px; line-height: 1.4; }
+#sff-chrome-ui .sffc-link { color: #93c5fd; text-decoration: underline; }
+#sff-chrome-ui .sffc-link:hover { color: #bfdbfe; }
+#sff-chrome-ui .sffc-row { margin: 6px 0; }
+#sff-chrome-ui .sffc-note { color: #d1d5db; opacity: .9; margin-top: 6px; }

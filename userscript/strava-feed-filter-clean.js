@@ -4,7 +4,7 @@
 // @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
-// @version      0.2.3
+// @version      1.2.4
 // @license      MIT
 // @author       Inc21
 // @match        https://www.strava.com/*
@@ -23,6 +23,9 @@
      * Copyright (c) 2025 Inc21
      * Licensed under the MIT License. See LICENSE file in the project root for full license text.
      */
+
+    // DISCLAIMER: Currently tested with Firefox (Desktop) and Firefox for Android.
+    // Other browsers may work but are not yet fully verified for this release.
 
     console.log('🚀 Clean Filter: Script starting...');
 
@@ -43,6 +46,9 @@
         hideMyWindsock: false,
         hideSummitbag: false,
         hideRunHealth: false,
+        hideJoinWorkout: false,
+        hideCoachCat: false,
+        hideAthleteJoinedClub: false,
         hideFooter: false,
         showKudosButton: false,
         minKm: 0,
@@ -974,6 +980,9 @@
             settings.hideMyWindsock = panel.querySelector('.sff-hideMyWindsock').checked;
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
+            settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
+            settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
+            settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
             settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
             LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
@@ -1004,7 +1013,7 @@
                 document.body.setAttribute('data-sff-dashboard', 'true');
             } else {
                 document.body.removeAttribute('data-sff-dashboard');
-                // On non-dashboard pages, only apply global settings like hiding gift button and challenges
+                // On non-dashboard pages, apply global and embed settings
                 LogicModule.updateGiftVisibility();
                 LogicModule.updateChallengesVisibility();
                 LogicModule.updateSuggestedFriendsVisibility();
@@ -1012,6 +1021,9 @@
                 LogicModule.updateMyWindsockVisibility();
                 LogicModule.updateSummitbagVisibility();
                 LogicModule.updateRunHealthVisibility();
+                LogicModule.updateJoinWorkoutVisibility();
+                LogicModule.updateCoachCatVisibility();
+                LogicModule.updateAthleteJoinedClubVisibility();
                 return; // Exit early, no UI elements needed on non-dashboard pages
             }
 
@@ -1244,6 +1256,14 @@
                             <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
                             Hide "Run Health"
                         </label>
+                        <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
+                            Hide "JOIN workout"
+                        </label>
+                        <label class="sff-chip ${settings.hideCoachCat ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideCoachCat" ${settings.hideCoachCat ? 'checked' : ''}>
+                            Hide "CoachCat Training Summary"
+                        </label>
                     </div>
                 </div>
                 <div class="sff-row sff-dropdown">
@@ -1286,7 +1306,11 @@
                         </label>
                         <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
-                            Hide joined challenge cards
+                            Hide "Athlete joined a challenge"
+                        </label>
+                        <label class="sff-chip ${settings.hideAthleteJoinedClub ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideAthleteJoinedClub" ${settings.hideAthleteJoinedClub ? 'checked' : ''}>
+                            Hide "Athlete joined a club"
                         </label>
                         <label class="sff-chip ${settings.hideClubPosts ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideClubPosts" ${settings.hideClubPosts ? 'checked' : ''}>
@@ -1582,6 +1606,22 @@
                         settings.hideRunHealth = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateRunHealthVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideJoinWorkout')) {
+                        settings.hideJoinWorkout = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateJoinWorkoutVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCoachCat')) {
+                        settings.hideCoachCat = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCoachCatVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
+                        settings.hideAthleteJoinedClub = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateAthleteJoinedClubVisibility();
+                        LogicModule.filterActivities();
                     }
                     // Footer
                     if (e.target.classList.contains('sff-hideFooter')) {
@@ -2102,6 +2142,115 @@
                 });
             } catch (e) {
                 console.warn('updateRunHealthVisibility error:', e);
+            }
+        },
+
+        updateJoinWorkoutVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for JOIN workout content`);
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        const hasJoin = /\bJOIN workout\b/i.test(text) || text.includes('strava.com/clubs/join-cycling');
+                        if (hasJoin && text.length < 800) {
+                            console.log('🧩 Found JOIN workout content in text element:', element);
+                            if (settings.enabled && settings.hideJoinWorkout) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🧩 JOIN workout text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateJoinWorkoutVisibility error:', e);
+            }
+        },
+
+        updateCoachCatVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for CoachCat content`);
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        const hasCoachCat = /\bCoachCat Training Summary\b/i.test(text) || text.includes('fascatcoaching.com/app');
+                        if (hasCoachCat && text.length < 800) {
+                            console.log('🐱 Found CoachCat content in text element:', element);
+                            if (settings.enabled && settings.hideCoachCat) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🐱 CoachCat text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateCoachCatVisibility error:', e);
+            }
+        },
+
+        updateAthleteJoinedClubVisibility() {
+            try {
+                const toHide = new Set();
+
+                // 1) Header-based detection
+                const headers = document.querySelectorAll('[data-testid="group-header"]');
+                headers.forEach(header => {
+                    const text = header.textContent?.trim() || '';
+                    if (/joined a club/i.test(text)) {
+                        const entry = header.closest('[data-testid="web-feed-entry"], .feed-entry, .activity');
+                        if (!entry) return;
+                        const container = entry.closest('[id^="feed-entry-"]') || entry;
+                        toHide.add(container);
+                    }
+                });
+
+                // 2) Button-based detection (fallback): entries containing a "Join Club" button
+                const entries = document.querySelectorAll('[data-testid="web-feed-entry"], .feed-entry, .activity');
+                entries.forEach(entry => {
+                    // find any button or link that looks like a Join Club CTA
+                    const cta = entry.querySelector('button, a[role="button"], a');
+                    const hasJoinCta = !![...(entry.querySelectorAll('button, a[role="button"], a'))]
+                        .some(el => /\bjoin club\b/i.test(el.textContent?.trim() || ''));
+                    if (hasJoinCta) {
+                        const container = entry.closest('[id^="feed-entry-"]') || entry;
+                        toHide.add(container);
+                    }
+                });
+
+                // Apply/hide or restore
+                toHide.forEach(container => {
+                    if (settings.enabled && settings.hideAthleteJoinedClub) {
+                        if (container.dataset.sffHiddenJoinedClub !== 'sff') {
+                            container.dataset.sffHiddenJoinedClub = 'sff';
+                            container.style.setProperty('display', 'none', 'important');
+                            console.log('🙅 Hiding "Athlete joined a club" entry:', container);
+                        }
+                    } else if (container.dataset.sffHiddenJoinedClub === 'sff') {
+                        container.style.removeProperty('display');
+                        delete container.dataset.sffHiddenJoinedClub;
+                    }
+                });
+            } catch (e) {
+                console.warn('updateAthleteJoinedClubVisibility error:', e);
             }
         },
 
@@ -3048,6 +3197,9 @@
         LogicModule.updateMyWindsockVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
+        LogicModule.updateJoinWorkoutVisibility();
+        LogicModule.updateCoachCatVisibility();
+        LogicModule.updateAthleteJoinedClubVisibility();
 
         // Setup observer for dynamically loaded content to hide gift buttons and challenges
         const observer = new MutationObserver(() => {
@@ -3060,6 +3212,9 @@
             LogicModule.updateMyWindsockVisibility();
             LogicModule.updateSummitbagVisibility();
             LogicModule.updateRunHealthVisibility();
+            LogicModule.updateJoinWorkoutVisibility();
+            LogicModule.updateCoachCatVisibility();
+            LogicModule.updateAthleteJoinedClubVisibility();
         });
         observer.observe(document.body, { childList: true, subtree: true });
 

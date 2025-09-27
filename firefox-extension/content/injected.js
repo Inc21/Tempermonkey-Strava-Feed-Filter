@@ -27,10 +27,7 @@
      * Licensed under the MIT License. See LICENSE file in the project root for full license text.
      */
 
-    // Debug flag: set to true to enable verbose logs, false to silence them (mutable, synced from settings)
-    let DEBUG = false;
-    const __origLog = console.log.bind(console);
-    console.log = (...args) => { if (DEBUG) __origLog(...args); };
+    // Debug mode removed: keep console.log default behavior
 
     // Storage shim: uses browser.storage.local if available (content script),
     // falls back to localStorage when not available.
@@ -84,6 +81,9 @@
         hideMyWindsock: false,
         hideSummitbag: false,
         hideRunHealth: false,
+        hideJoinWorkout: false,
+        hideCoachCat: false,
+        hideAthleteJoinedClub: false,
         hideFooter: false,
         showKudosButton: false,
         minKm: 0,
@@ -1011,9 +1011,11 @@
             settings.hideMyWindsock = panel.querySelector('.sff-hideMyWindsock').checked;
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
+            settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
+            settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
+            settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
             settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
-            settings.debug = panel.querySelector('.sff-debug') ? panel.querySelector('.sff-debug').checked : !!settings.debug;
             LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
             UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
             const giftChk = panel.querySelector('.sff-hideGift');
@@ -1042,7 +1044,7 @@
                 document.body.setAttribute('data-sff-dashboard', 'true');
             } else {
                 document.body.removeAttribute('data-sff-dashboard');
-                // On non-dashboard pages, only apply global settings like hiding gift button and challenges
+                // On non-dashboard pages, apply global and embed settings
                 LogicModule.updateGiftVisibility();
                 LogicModule.updateChallengesVisibility();
                 LogicModule.updateSuggestedFriendsVisibility();
@@ -1050,6 +1052,9 @@
                 LogicModule.updateMyWindsockVisibility();
                 LogicModule.updateSummitbagVisibility();
                 LogicModule.updateRunHealthVisibility();
+                LogicModule.updateJoinWorkoutVisibility();
+                LogicModule.updateCoachCatVisibility();
+                LogicModule.updateAthleteJoinedClubVisibility();
                 return; // Exit early, no UI elements needed on non-dashboard pages
             }
 
@@ -1284,6 +1289,14 @@
                             <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
                             Hide "Run Health"
                         </label>
+                        <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
+                            Hide "JOIN workout"
+                        </label>
+                        <label class="sff-chip ${settings.hideCoachCat ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideCoachCat" ${settings.hideCoachCat ? 'checked' : ''}>
+                            Hide "CoachCat Training Summary"
+                        </label>
                     </div>
                 </div>
                 <div class="sff-row sff-dropdown">
@@ -1326,7 +1339,11 @@
                         </label>
                         <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
-                            Hide joined challenge cards
+                            Hide "Athlete joined a challenge"
+                        </label>
+                        <label class="sff-chip ${settings.hideAthleteJoinedClub ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideAthleteJoinedClub" ${settings.hideAthleteJoinedClub ? 'checked' : ''}>
+                            Hide "Athlete joined a club"
                         </label>
                         <label class="sff-chip ${settings.hideClubPosts ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideClubPosts" ${settings.hideClubPosts ? 'checked' : ''}>
@@ -1339,10 +1356,6 @@
                         <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
                             <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
                             Show "Give 👍 to Everyone"
-                        </label>
-                        <label class="sff-chip ${settings.debug ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-debug" ${settings.debug ? 'checked' : ''}>
-                            Debug mode (verbose logs)
                         </label>
                         <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
                     </div>
@@ -1628,20 +1641,29 @@
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateRunHealthVisibility();
                     }
+                    if (e.target.classList.contains('sff-hideJoinWorkout')) {
+                        settings.hideJoinWorkout = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateJoinWorkoutVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCoachCat')) {
+                        settings.hideCoachCat = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCoachCatVisibility();
+                    }
                     // Footer
                     if (e.target.classList.contains('sff-hideFooter')) {
                         settings.hideFooter = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateFooterVisibility();
                     }
-
-                    // Debug
-                    if (e.target.classList.contains('sff-debug')) {
-                        settings.debug = e.target.checked;
+                    if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
+                        settings.hideAthleteJoinedClub = e.target.checked;
                         UtilsModule.saveSettings(settings);
-                        DEBUG = !!settings.debug;
+                        LogicModule.updateAthleteJoinedClubVisibility();
+                        LogicModule.filterActivities();
                     }
-
+                    
                     // Activity visibility rules
                     if (e.target.classList.contains('sff-hideNoMap')) {
                         settings.hideNoMap = e.target.checked;
@@ -2160,6 +2182,115 @@
             }
         },
 
+        updateJoinWorkoutVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for JOIN workout content`);
+
+                activities.forEach(activity => {
+                    // Find only text-containing elements (paragraphs and spans) that specifically contain JOIN workout content
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Detect JOIN workout embeds
+                        const hasJoin = /\bJOIN workout\b/i.test(text) || text.includes('strava.com/clubs/join-cycling');
+                        if (hasJoin && text.length < 800) { // Limit to avoid hiding large containers
+                            console.log('🧩 Found JOIN workout content in text element:', element);
+                            if (settings.enabled && settings.hideJoinWorkout) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🧩 JOIN workout text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateJoinWorkoutVisibility error:', e);
+            }
+        },
+
+        updateCoachCatVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for CoachCat content`);
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        const hasCoachCat = /\bCoachCat Training Summary\b/i.test(text) || text.includes('fascatcoaching.com/app');
+                        if (hasCoachCat && text.length < 800) {
+                            console.log('🐱 Found CoachCat content in text element:', element);
+                            if (settings.enabled && settings.hideCoachCat) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🐱 CoachCat text content hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateCoachCatVisibility error:', e);
+            }
+        },
+
+        updateAthleteJoinedClubVisibility() {
+            try {
+                const toHide = new Set();
+
+                // 1) Header-based detection
+                const headers = document.querySelectorAll('[data-testid="group-header"]');
+                headers.forEach(header => {
+                    const text = header.textContent?.trim() || '';
+                    if (/joined a club/i.test(text)) {
+                        const entry = header.closest('[data-testid="web-feed-entry"], .feed-entry, .activity');
+                        if (!entry) return;
+                        const container = entry.closest('[id^="feed-entry-"]') || entry;
+                        toHide.add(container);
+                    }
+                });
+
+                // 2) Button-based detection: entries containing a "Join Club" button/CTA
+                const entries = document.querySelectorAll('[data-testid="web-feed-entry"], .feed-entry, .activity');
+                entries.forEach(entry => {
+                    const hasJoinCta = !![...(entry.querySelectorAll('button, a[role="button"], a'))]
+                        .some(el => /\bjoin club\b/i.test(el.textContent?.trim() || ''));
+                    if (hasJoinCta) {
+                        const container = entry.closest('[id^="feed-entry-"]') || entry;
+                        toHide.add(container);
+                    }
+                });
+
+                // Apply or restore
+                toHide.forEach(container => {
+                    if (settings.enabled && settings.hideAthleteJoinedClub) {
+                        if (container.dataset.sffHiddenJoinedClub !== 'sff') {
+                            container.dataset.sffHiddenJoinedClub = 'sff';
+                            container.style.setProperty('display', 'none', 'important');
+                            console.log('🙅 Hiding "Athlete joined a club" entry:', container);
+                        }
+                    } else if (container.dataset.sffHiddenJoinedClub === 'sff') {
+                        container.style.removeProperty('display');
+                        delete container.dataset.sffHiddenJoinedClub;
+                    }
+                });
+            } catch (e) {
+                console.warn('updateAthleteJoinedClubVisibility error:', e);
+            }
+        },
+
         // Count hidden sections for display in filter button
         countHiddenSections() {
             let hiddenSectionsCount = 0;
@@ -2406,7 +2537,6 @@
 
             placeButton();
         },
-
         setupAutoFilter() {
             const debouncedFilter = UtilsModule.debounce(() => {
                 try {
@@ -2415,17 +2545,16 @@
                     this.updateChallengesVisibility();
                     this.updateSuggestedFriendsVisibility();
                     this.updateYourClubsVisibility();
-                    this.updateFooterVisibility();
-                    this.updateJoinedChallengesVisibility();
                     this.updateMyWindsockVisibility();
                     this.updateSummitbagVisibility();
                     this.updateRunHealthVisibility();
+                    this.updateJoinWorkoutVisibility();
+                    this.updateCoachCatVisibility();
+                    this.updateAthleteJoinedClubVisibility();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
             }, 250);
-
-            this.filterActivities();
 
             const observer = new MutationObserver((mutations) => {
                 for (const m of mutations) {
@@ -2462,6 +2591,9 @@
                 this.updateMyWindsockVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateJoinWorkoutVisibility();
+                this.updateCoachCatVisibility();
+                this.updateAthleteJoinedClubVisibility();
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
             } else {
@@ -2512,6 +2644,7 @@
                 this.updateMyWindsockVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateJoinWorkoutVisibility();
 
                 // Hide kudos buttons when master toggle is off
                 this.manageHeaderKudosButton();
@@ -3104,6 +3237,8 @@
         LogicModule.updateMyWindsockVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
+        LogicModule.updateJoinWorkoutVisibility();
+        LogicModule.updateCoachCatVisibility();
 
         // Setup observer for dynamically loaded content to hide gift buttons and challenges
         const observer = new MutationObserver(() => {
@@ -3116,47 +3251,78 @@
             LogicModule.updateMyWindsockVisibility();
             LogicModule.updateSummitbagVisibility();
             LogicModule.updateRunHealthVisibility();
+            LogicModule.updateJoinWorkoutVisibility();
+            LogicModule.updateCoachCatVisibility();
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
         // Store observer for cleanup if needed
         window.__sffGlobalObserver = observer;
+
+        // Popup-based controls are handled via browser action; no content panel needed
     }
 
     // Initialize
     async function init() {
         console.log(' Clean Filter: Initializing...');
 
-        setTimeout(() => {
-            // no-op placeholder to keep timing consistent
-        }, 0);
-
-        setTimeout(async () => {
-            // Load settings before any feature uses them
-            if (!settings) {
-                try {
-                    settings = await UtilsModule.loadSettings();
-                } catch (e) {
-                    console.error('Failed to load settings, using defaults:', e);
-                    settings = { ...DEFAULTS };
-                }
+        // Load settings before any feature uses them
+        if (!settings) {
+            try {
+                settings = await UtilsModule.loadSettings();
+            } catch (e) {
+                console.error('Failed to load settings, using defaults:', e);
+                settings = { ...DEFAULTS };
             }
+        }
 
-            // Always setup global features on all pages (requires settings)
-            setupGlobalFeatures();
+        // Always setup global features on all pages
+        setupGlobalFeatures();
 
-            // Only create UI elements and run filtering on dashboard
-            if (UtilsModule.isOnDashboard()) {
-                UIModule.createElements();
-                LogicModule.manageHeaderKudosButton();
+        // Only create UI elements and run filtering on dashboard
+        if (UtilsModule.isOnDashboard()) {
+            if (settings.enabled) {
+                if (!document.querySelector('.sff-clean-panel')) {
+                    UIModule.createElements();
+                }
                 // Ensure secondary kudos button is properly synchronized
                 UIModule.syncSecondaryKudosVisibility();
-                if (settings.enabled) {
-                    LogicModule.filterActivities();
-                    LogicModule.setupAutoFilter();
-                }
+                LogicModule.filterActivities();
+                LogicModule.setupAutoFilter();
+            } else {
+                // Remove in-page UI if present
+                document.querySelectorAll('.sff-clean-btn, .sff-clean-panel, .sff-secondary-nav').forEach(el => el.remove());
+                LogicModule.applyAllFilters();
             }
-        }, 1500);
+        }
+    }
+
+    // Listen for popup toggle messages to enable/disable and re-apply filters
+    try {
+        if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
+            browser.runtime.onMessage.addListener((msg) => {
+                if (msg && msg.type === 'SFF_TOGGLE_ENABLED') {
+                    settings.enabled = !!msg.enabled;
+                    try { UtilsModule.saveSettings(settings); } catch (e) {}
+                    // On dashboard: create or remove UI based on enabled state
+                    if (UtilsModule.isOnDashboard()) {
+                        if (settings.enabled) {
+                            if (!document.querySelector('.sff-clean-panel')) {
+                                try { UIModule.createElements(); } catch (e) {}
+                            }
+                            try { UIModule.syncSecondaryKudosVisibility(); } catch (e) {}
+                            try { LogicModule.filterActivities(); } catch (e) {}
+                            try { LogicModule.setupAutoFilter(); } catch (e) {}
+                        } else {
+                            document.querySelectorAll('.sff-clean-btn, .sff-clean-panel, .sff-secondary-nav').forEach(el => el.remove());
+                        }
+                    }
+                    try { LogicModule.applyAllFilters(); } catch (e) {}
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('Failed to attach runtime message listener:', e);
     }
 
     if (document.readyState === 'loading') {
