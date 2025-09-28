@@ -1209,29 +1209,29 @@
                         <div class="sff-row">
                             <label class="sff-label" data-label-type="distance">Distance (km):</label>
                             <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minKm" min="0" step="0.1" value="${settings.minKm}" placeholder="Min">
-                                <input type="number" class="sff-input sff-maxKm" min="0" step="0.1" value="${settings.maxKm}" placeholder="Max">
+                                <input type="number" class="sff-input sff-minKm" min="0" step="0.1" value="${settings.minKm || ''}" placeholder="Min">
+                                <input type="number" class="sff-input sff-maxKm" min="0" step="0.1" value="${settings.maxKm || ''}" placeholder="Max">
                             </div>
                         </div>
                         <div class="sff-row">
                             <label class="sff-label" data-label-type="duration">Duration (minutes):</label>
                             <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minMins" min="0" value="${settings.minMins}" placeholder="Min">
-                                <input type="number" class="sff-input sff-maxMins" min="0" value="${settings.maxMins}" placeholder="Max">
+                                <input type="number" class="sff-input sff-minMins" min="0" value="${settings.minMins || ''}" placeholder="Min">
+                                <input type="number" class="sff-input sff-maxMins" min="0" value="${settings.maxMins || ''}" placeholder="Max">
                             </div>
                         </div>
                         <div class="sff-row">
                             <label class="sff-label" data-label-type="elevation">Elevation Gain (m):</label>
                             <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minElevM" min="0" value="${settings.minElevM}" placeholder="Min">
-                                <input type="number" class="sff-input sff-maxElevM" min="0" step="0.1" value="${settings.maxElevM}" placeholder="Max">
+                                <input type="number" class="sff-input sff-minElevM" min="0" value="${settings.minElevM || ''}" placeholder="Min">
+                                <input type="number" class="sff-input sff-maxElevM" min="0" step="0.1" value="${settings.maxElevM || ''}" placeholder="Max">
                             </div>
                         </div>
                         <div class="sff-row">
                             <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
                             <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace}" placeholder="Min (Fastest)">
-                                <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace}" placeholder="Max (Slowest)">
+                                <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace || ''}" placeholder="Min (Slowest)">
+                                <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace || ''}" placeholder="Max (Fastest)">
                             </div>
                         </div>
                     </div>
@@ -2373,18 +2373,40 @@
                 }
 
                 if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && type && type.toLowerCase().includes('run')) {
-                    const paceEl = activity.querySelector('.pace .value, [data-testid="pace"] .value');
-                    if (paceEl) {
-                        const paceText = paceEl.textContent || '';
-                        const paceParts = paceText.split(':').map(Number);
-                        if (paceParts.length === 2 && !isNaN(paceParts[0]) && !isNaN(paceParts[1])) {
-                            const paceInMinutes = paceParts[0] + paceParts[1] / 60;
-                            const km = UtilsModule.parseDistanceKm(activity);
-                            if (km !== null && km > 0) {
-                                const pacePerKm = paceInMinutes / km;
-                                const paceVal = settings.unitSystem === 'metric' ? pacePerKm : pacePerKm * 1.60934;
-                                if (settings.minPace > 0 && paceVal < settings.minPace) shouldHide = true;
-                                if (!shouldHide && settings.maxPace > 0 && paceVal > settings.maxPace) shouldHide = true;
+                    // Robustly locate the Pace value within this activity card
+                    let valueDiv = null;
+                    const paceLabel = [...activity.querySelectorAll('span')].find(s => /(^|\b)pace(\b|$)/i.test(s.textContent || ''));
+                    if (paceLabel) {
+                        const metricContainer = paceLabel.closest('div');
+                        valueDiv = metricContainer?.querySelector('div');
+                        // Prefer specific class if present
+                        if (metricContainer) {
+                            const specific = metricContainer.querySelector('.vNsSU');
+                            if (specific) valueDiv = specific;
+                        }
+                    }
+                    // Fallbacks to older selectors
+                    if (!valueDiv) valueDiv = activity.querySelector('.pace .value, [data-testid="pace"] .value');
+
+                    if (valueDiv) {
+                        const timeText = (valueDiv.childNodes[0]?.textContent || valueDiv.textContent || '').trim();
+                        const match = timeText.match(/^(\d+):(\d{1,2})/);
+                        if (match) {
+                            const mm = parseInt(match[1], 10);
+                            const ss = parseInt(match[2], 10);
+                            if (!isNaN(mm) && !isNaN(ss)) {
+                                let paceMinPerUnit = mm + ss / 60;
+                                const abbr = valueDiv.querySelector('abbr');
+                                const abbrTxt = (abbr?.textContent || '').trim().toLowerCase();
+                                const abbrTitle = (abbr?.getAttribute('title') || '').toLowerCase();
+                                const isPerMile = abbrTxt.includes('/mi') || abbrTitle.includes('mile');
+                                // Convert min/mi to min/km if necessary
+                                const paceVal = isPerMile ? paceMinPerUnit * 1.60934 : paceMinPerUnit;
+                                // Semantics:
+                                // - minPace: hide anything SLOWER than this (greater minutes per km)
+                                // - maxPace: hide anything FASTER than this (smaller minutes per km)
+                                if (settings.minPace > 0 && paceVal > settings.minPace) shouldHide = true;
+                                if (!shouldHide && settings.maxPace > 0 && paceVal < settings.maxPace) shouldHide = true;
                             }
                         }
                     }
@@ -2993,18 +3015,31 @@
 
             // Pace for runs
             if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && type && type.toLowerCase().includes('run')) {
-                const paceEl = activity.querySelector('.pace .value, [data-testid="pace"] .value');
-                if (paceEl) {
-                    const paceText = paceEl.textContent || '';
-                    const paceParts = paceText.split(':').map(Number);
-                    if (paceParts.length === 2 && !isNaN(paceParts[0]) && !isNaN(paceParts[1])) {
-                        const paceInMinutes = paceParts[0] + paceParts[1] / 60;
-                        const km = UtilsModule.parseDistanceKm(activity);
-                        if (km !== null && km > 0) {
-                            const pacePerKm = paceInMinutes / km;
-                            const paceVal = settings.unitSystem === 'metric' ? pacePerKm : pacePerKm * 1.60934;
-                            if (settings.minPace > 0 && paceVal < settings.minPace) shouldHide = true; // Faster than min
-                            if (!shouldHide && settings.maxPace > 0 && paceVal > settings.maxPace) shouldHide = true; // Slower than max
+                let valueDiv = null;
+                const paceLabel = [...activity.querySelectorAll('span')].find(s => /(^|\b)pace(\b|$)/i.test(s.textContent || ''));
+                if (paceLabel) {
+                    const metricContainer = paceLabel.closest('div');
+                    valueDiv = metricContainer?.querySelector('div');
+                    const specific = metricContainer?.querySelector('.vNsSU');
+                    if (specific) valueDiv = specific;
+                }
+                if (!valueDiv) valueDiv = activity.querySelector('.pace .value, [data-testid="pace"] .value');
+
+                if (valueDiv) {
+                    const timeText = (valueDiv.childNodes[0]?.textContent || valueDiv.textContent || '').trim();
+                    const match = timeText.match(/^(\d+):(\d{1,2})/);
+                    if (match) {
+                        const mm = parseInt(match[1], 10);
+                        const ss = parseInt(match[2], 10);
+                        if (!isNaN(mm) && !isNaN(ss)) {
+                            let paceMinPerUnit = mm + ss / 60;
+                            const abbr = valueDiv.querySelector('abbr');
+                            const abbrTxt = (abbr?.textContent || '').trim().toLowerCase();
+                            const abbrTitle = (abbr?.getAttribute('title') || '').toLowerCase();
+                            const isPerMile = abbrTxt.includes('/mi') || abbrTitle.includes('mile');
+                            const paceVal = isPerMile ? paceMinPerUnit * 1.60934 : paceMinPerUnit;
+                            if (settings.minPace > 0 && paceVal > settings.minPace) shouldHide = true;
+                            if (!shouldHide && settings.maxPace > 0 && paceVal < settings.maxPace) shouldHide = true;
                         }
                     }
                 }

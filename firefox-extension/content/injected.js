@@ -86,14 +86,14 @@
         hideAthleteJoinedClub: false,
         hideFooter: false,
         showKudosButton: false,
-        minKm: 0,
-        maxKm: 0,
-        minMins: 0,
-        maxMins: 0,
-        minElevM: 0,
-        maxElevM: 0,
-        minPace: 0,
-        maxPace: 0,
+        minKm: "",
+        maxKm: "",
+        minMins: "",
+        maxMins: "",
+        minElevM: "",
+        maxElevM: "",
+        minPace: "",
+        maxPace: "",
         unitSystem: 'metric', // 'metric' or 'imperial'
         enabled: true
     };
@@ -843,7 +843,13 @@
         // Settings management
         async loadSettings() {
             const s = await Storage.get(STORAGE_KEY, DEFAULTS);
-            return { ...DEFAULTS, ...(s || {}) };
+            const merged = { ...DEFAULTS, ...(s || {}) };
+            // Migration: convert stored zeros to empty strings so placeholders show
+            const numKeys = ['minKm','maxKm','minMins','maxMins','minElevM','maxElevM','minPace','maxPace'];
+            for (const k of numKeys) {
+                if (merged[k] === 0 || merged[k] === '0') merged[k] = '';
+            }
+            return merged;
         },
 
         async saveSettings(s) {
@@ -993,14 +999,19 @@
                 .map(x => x.trim())
                 .filter(Boolean);
 
-            settings.minKm = +panel.querySelector('.sff-minKm').value || 0;
-            settings.maxKm = +panel.querySelector('.sff-maxKm').value || 0;
-            settings.minMins = +panel.querySelector('.sff-minMins').value || 0;
-            settings.maxMins = +panel.querySelector('.sff-maxMins').value || 0;
-            settings.minElevM = +panel.querySelector('.sff-minElevM').value || 0;
-            settings.maxElevM = +panel.querySelector('.sff-maxElevM').value || 0;
-            settings.minPace = +panel.querySelector('.sff-minPace').value || 0;
-            settings.maxPace = +panel.querySelector('.sff-maxPace').value || 0;
+            const getNumOrEmpty = (selector) => {
+                const v = panel.querySelector(selector).value.trim();
+                return v === '' ? '' : +v;
+            };
+
+            settings.minKm = getNumOrEmpty('.sff-minKm');
+            settings.maxKm = getNumOrEmpty('.sff-maxKm');
+            settings.minMins = getNumOrEmpty('.sff-minMins');
+            settings.maxMins = getNumOrEmpty('.sff-maxMins');
+            settings.minElevM = getNumOrEmpty('.sff-minElevM');
+            settings.maxElevM = getNumOrEmpty('.sff-maxElevM');
+            settings.minPace = getNumOrEmpty('.sff-minPace');
+            settings.maxPace = getNumOrEmpty('.sff-maxPace');
             settings.unitSystem = panel.querySelector('.sff-unit-btn.active').dataset.unit;
             settings.hideNoMap = panel.querySelector('.sff-hideNoMap').checked;
             settings.hideClubPosts = panel.querySelector('.sff-hideClubPosts').checked;
@@ -1262,9 +1273,8 @@
                         <div class="sff-row">
                             <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
                             <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace}" placeholder="Min (Fastest)">
-                                <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace}" placeholder="Max (Slowest)
-                                ">
+                                <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace}" placeholder="Min (Slowest)">
+                                <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace}" placeholder="Max (Fastest)">
                             </div>
                         </div>
                     </div>
@@ -2409,19 +2419,43 @@
                     }
                 }
 
-                if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && type && type.toLowerCase().includes('run')) {
-                    const paceEl = activity.querySelector('.pace .value, [data-testid="pace"] .value');
-                    if (paceEl) {
-                        const paceText = paceEl.textContent || '';
-                        const paceParts = paceText.split(':').map(Number);
-                        if (paceParts.length === 2 && !isNaN(paceParts[0]) && !isNaN(paceParts[1])) {
-                            const paceInMinutes = paceParts[0] + paceParts[1] / 60;
-                            const km = UtilsModule.parseDistanceKm(activity);
-                            if (km !== null && km > 0) {
-                                const pacePerKm = paceInMinutes / km;
-                                const paceVal = settings.unitSystem === 'metric' ? pacePerKm : pacePerKm * 1.60934;
-                                if (settings.minPace > 0 && paceVal < settings.minPace) shouldHide = true;
-                                if (!shouldHide && settings.maxPace > 0 && paceVal > settings.maxPace) shouldHide = true;
+                {
+                    // Robust userscript-based pace parsing
+                    const hasMinPace = (typeof settings.minPace === 'number' && settings.minPace > 0);
+                    const hasMaxPace = (typeof settings.maxPace === 'number' && settings.maxPace > 0);
+                    if (!shouldHide && (hasMinPace || hasMaxPace) && type && type.toLowerCase().includes('run')) {
+                        let valueDiv = null;
+                        const paceLabel = [...activity.querySelectorAll('span')]
+                            .find(s => /(^|\b)pace(\b|$)/i.test(s.textContent || ''));
+                        if (paceLabel) {
+                            const metricContainer = paceLabel.closest('div');
+                            valueDiv = metricContainer?.querySelector('div') || null;
+                            if (metricContainer) {
+                                const specific = metricContainer.querySelector('[data-testid="metric_value"], .vNsSU');
+                                if (specific) valueDiv = specific;
+                            }
+                        }
+                        // Fallbacks to older selectors
+                        if (!valueDiv) valueDiv = activity.querySelector('.pace .value, [data-testid="pace"] .value');
+
+                        if (valueDiv) {
+                            const timeText = (valueDiv.childNodes[0]?.textContent || valueDiv.textContent || '').trim();
+                            const match = timeText.match(/(\d{1,2}):(\d{2})/);
+                            if (match) {
+                                const mm = parseInt(match[1], 10);
+                                const ss = parseInt(match[2], 10);
+                                if (!isNaN(mm) && !isNaN(ss)) {
+                                    let paceMinPerUnit = mm + ss / 60;
+                                    const abbr = valueDiv.querySelector('abbr');
+                                    const abbrTxt = (abbr?.textContent || '').trim().toLowerCase();
+                                    const abbrTitle = (abbr?.getAttribute('title') || '').toLowerCase();
+                                    const isPerMile = abbrTxt.includes('/mi') || abbrTitle.includes('mile');
+                                    // Convert to min/km if necessary
+                                    const paceVal = isPerMile ? paceMinPerUnit * 1.60934 : paceMinPerUnit;
+                                    // Option B: Min = Slowest (hide if slower), Max = Fastest (hide if faster)
+                                    if (hasMinPace && paceVal > settings.minPace) shouldHide = true;
+                                    if (!shouldHide && hasMaxPace && paceVal < settings.maxPace) shouldHide = true;
+                                }
                             }
                         }
                     }
@@ -2662,554 +2696,18 @@
     // Initialize utilities and update settings references
     let settings = null;
 
-    function handleClickOutside(event, panel, btn) {
-        // Check if click is outside panel and not on the toggle button
-        if (!panel.contains(event.target) && !btn.contains(event.target)) {
-            panel.classList.remove('show');
-            panel.style.display = 'none';
-            document.removeEventListener('click', (e) => handleClickOutside(e, panel, btn));
-        }
-    }
 
 
 
-    function setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
-        console.log('🎯 Clean Filter: Setting up events...');
 
-        // Initialize draggable
-        const cleanupDraggable = makeDraggable(panel);
 
-        // Load saved position
-        Storage.get('sffPanelPos', {}).then((savedPos) => {
-            if (savedPos && (savedPos.left || savedPos.top)) {
-                panel.style.left = savedPos.left || '';
-                panel.style.top = savedPos.top || '';
-                panel.style.right = savedPos.left ? 'auto' : '10px';
-            }
-        });
 
-        // Ensure panel is in viewport on load
-        setTimeout(() => keepInViewport(panel), 100);
 
-        // Handle window resize
-        let resizeTimeout;
-        const handleResize = () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                const wasVisible = panel.style.display === 'block';
-                if (wasVisible) {
-                    panel.style.display = 'none';
-                }
 
-                // Force reflow to ensure proper measurements
-                void panel.offsetHeight;
 
-                // Update position to stay in viewport
-                keepInViewport(panel);
 
-                if (wasVisible) {
-                    panel.style.display = 'block';
-                }
-
-                // Save new position
-                Storage.set('sffPanelPos', {
-                    left: panel.style.left,
-                    top: panel.style.top
-                });
-            }, 100);
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        // Handle click outside (define first)
-        const handleClickOutside = (e) => {
-            const clickedSecondaryBtn = secondaryFilterBtn && secondaryFilterBtn.contains(e.target);
-            if (!panel.contains(e.target) && !btn.contains(e.target) && !clickedSecondaryBtn) {
-                const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
-                if (isVisible) {
-                    togglePanel();
-                }
-            }
-        };
-
-        // Toggle panel function
-        const togglePanel = () => {
-            const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
-            console.log('🔄 Toggle panel called. Currently visible:', isVisible);
-
-            if (!isVisible) {
-                console.log('📁 Showing panel...');
-                // Close all dropdowns before showing the panel
-                panel.querySelectorAll('.sff-dropdown.open').forEach(dropdown => {
-                    dropdown.classList.remove('open');
-                    const content = dropdown.querySelector('.sff-dropdown-content');
-                    if (content) content.style.display = 'none';
-                });
-
-                // Position panel directly under the active button
-                const activeBtn = (window.innerWidth <= 1479 && secondaryFilterBtn) ? secondaryFilterBtn : btn;
-                const btnRect = activeBtn.getBoundingClientRect();
-                const gap = 5; // Small gap between button and panel
-
-                panel.style.left = btnRect.left + 'px';
-                panel.style.top = (btnRect.bottom + gap) + 'px';
-                panel.style.right = 'auto';
-
-                // Show panel
-                panel.style.display = 'block';
-                panel.style.visibility = 'visible';
-                panel.style.opacity = '1';
-                panel.classList.add('show');
-
-                // Ensure panel stays within viewport after positioning
-                keepInViewport(panel);
-                console.log('✅ Panel should now be visible');
-
-                // Add click outside handler
-                setTimeout(() => {
-                    document.addEventListener('click', handleClickOutside);
-                }, 0);
-            } else {
-                console.log('🚫 Hiding panel...');
-                // Hide panel
-                panel.classList.remove('show');
-                panel.style.opacity = '0';
-                panel.style.visibility = 'hidden';
-                document.removeEventListener('click', handleClickOutside);
-
-                // After transition completes, update display
-                setTimeout(() => {
-                    if (panel.style.visibility === 'hidden') {
-                        panel.style.display = 'none';
-                    }
-                }, 200);
-            }
-        };
-
-        // Toggle panel on button click
-        btn.addEventListener('click', (e) => {
-            console.log('🔥 Filter button clicked!');
-            e.stopPropagation();
-            togglePanel();
-        });
-
-        // Setup secondary filter button event (only if exists)
-        if (secondaryFilterBtn) {
-            secondaryFilterBtn.addEventListener('click', (e) => {
-                console.log('🔥 Secondary filter button clicked!');
-                e.stopPropagation();
-                togglePanel();
-            });
-        }
-
-        // Setup secondary kudos button event (only if exists)
-        if (secondaryKudosBtn) {
-            secondaryKudosBtn.addEventListener('click', () => {
-                let kudosGiven = 0;
-                const kudosButtons = document.querySelectorAll("button[data-testid='kudos_button']");
-
-                kudosButtons.forEach(button => {
-                    const feedEntry = button.closest('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                    if (feedEntry && feedEntry.style.display !== 'none' && button.title !== 'View all kudos') {
-                        button.click();
-                        kudosGiven++;
-                    }
-                });
-
-                const originalText = secondaryKudosBtn.textContent;
-                secondaryKudosBtn.textContent = `Gave ${kudosGiven} 👍`;
-                secondaryKudosBtn.style.pointerEvents = 'none';
-
-                setTimeout(() => {
-                    secondaryKudosBtn.textContent = originalText;
-                    secondaryKudosBtn.style.pointerEvents = 'auto';
-                }, 3000);
-            });
-        }
-
-        // Close button
-        panel.querySelector('.sff-close').addEventListener('click', (e) => {
-            e.stopPropagation();
-            togglePanel();
-        });
-
-        // Main toggle switch
-        panel.querySelector('.sff-enabled-toggle').addEventListener('change', (e) => {
-            settings.enabled = e.target.checked;
-            UtilsModule.saveSettings(settings);
-            LogicModule.applyAllFilters();
-        });
-
-        // Toggle all dropdowns
-        panel.querySelectorAll('.sff-dropdown-header').forEach(header => {
-            header.addEventListener('click', (e) => {
-                const dropdown = e.currentTarget.closest('.sff-dropdown');
-                if (!dropdown) return;
-
-                const content = dropdown.querySelector('.sff-dropdown-content');
-                const isVisible = content.style.display === 'block';
-                content.style.display = isVisible ? 'none' : 'block';
-                dropdown.classList.toggle('open', !isVisible);
-            });
-        });
-
-        // Dragging - Only use makeDraggable from setupEvents, not setupDragging
-        // setupDragging(panel);  // Remove duplicate dragging logic
-        setupWindowResize(panel);
-        setupButtonResponsive(btn);
-        UIModule.updateActivityCount(panel);
-        UIModule.updateFilterLabels(panel, settings.unitSystem);
-
-
-        // Unit system toggle
-        panel.querySelector('.sff-unit-toggle').addEventListener('click', (e) => {
-            if (e.target.matches('.sff-unit-btn')) {
-                const newUnit = e.target.dataset.unit;
-                if (newUnit !== settings.unitSystem) {
-                    settings.unitSystem = newUnit;
-                    panel.querySelectorAll('.sff-unit-btn').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    UIModule.updateFilterLabels(panel, newUnit);
-                }
-            }
-        });
-
-        console.log('✅ Events attached');
-
-        // Return cleanup function for when the script is unloaded
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            cleanupDraggable && cleanupDraggable();
-            document.removeEventListener('click', handleClickOutside);
-        };
-    }
-
-
-
-    function setupDragging(panel) {
-        const header = panel.querySelector('.sff-panel-header');
-        let isDragging = false;
-        let startX, startY, startLeft, startTop;
-
-        header.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            startLeft = parseInt(window.getComputedStyle(panel).right, 10);
-            startTop = parseInt(window.getComputedStyle(panel).top, 10);
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-
-            const deltaX = startX - e.clientX;
-            const deltaY = e.clientY - startY;
-
-            const newRight = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, startLeft + deltaX));
-            const newTop = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, startTop + deltaY));
-
-            panel.style.right = newRight + 'px';
-            panel.style.top = newTop + 'px';
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                Storage.set(POS_KEY, {
-                    top: panel.style.top,
-                    right: panel.style.right
-                });
-            }
-            isDragging = false;
-        });
-    }
-
-    // Hide/show the Strava header "Give a Gift" button based on settings
-    function updateGiftVisibility() {
-        try {
-            const links = document.querySelectorAll('a[href*="/gift"][href*="origin=global_nav"]');
-            links.forEach(a => {
-                if (settings.hideGiveGift) {
-                    if (a.dataset.sffHiddenBy !== 'sff') {
-                        a.dataset.sffHiddenBy = 'sff';
-                        a.style.display = 'none';
-                    }
-                } else if (a.dataset.sffHiddenBy === 'sff') {
-                    a.style.display = '';
-                    delete a.dataset.sffHiddenBy;
-                }
-            });
-        } catch (e) {
-            console.warn('updateGiftVisibility error:', e);
-        }
-    }
-
-
-
-
-
-
-
-    function filterActivities() {
-        const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-
-        if (!settings.enabled) {
-            activities.forEach(activity => {
-                activity.style.display = '';
-            });
-            const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-            if (btn) btn.textContent = '(0)';
-            return;
-        }
-        let hiddenCount = 0;
-
-        activities.forEach(activity => {
-            const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
-
-            // Handle club posts
-            if (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/')) {
-                if (settings.hideClubPosts) {
-                    activity.style.display = 'none';
-                    hiddenCount++;
-                }
-                return; // Club posts are not subject to other filters
-            }
-
-            const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
-            const athleteName = ownerLink?.textContent || '';
-            const svgIcon = activity.querySelector('svg[data-testid="activity-icon"] title');
-            const typeEl = activity.querySelector('[data-testid="tag"]') || activity.querySelector('.entry-head, .activity-type');
-            const type = svgIcon?.textContent || typeEl?.textContent || '';
-
-            let shouldHide = false;
-
-            // Keywords
-            if (!shouldHide && settings.keywords.length > 0 && title) {
-                const hasKeyword = settings.keywords.some(keyword => keyword && title.toLowerCase().includes(keyword.toLowerCase()));
-                if (hasKeyword) shouldHide = true;
-            }
-
-            // Activity types
-            if (!shouldHide && type) {
-                const typeLower = type.toLowerCase();
-                const matched = TYPES.find(t => typeLower.includes(t.label.toLowerCase()));
-                if (matched && settings.types[matched.key]) {
-                    shouldHide = true;
-                } else if (typeLower.includes('virtual')) {
-                    const hideAnyVirtual = TYPES.filter(t => t.label.toLowerCase().includes('virtual')).some(t => settings.types[t.key]);
-                    if (hideAnyVirtual) shouldHide = true;
-                }
-            }
-
-            // Distance
-            if (!shouldHide && (settings.minKm > 0 || settings.maxKm > 0)) {
-                const km = UtilsModule.parseDistanceKm(activity);
-                if (km !== null) {
-                    const val = settings.unitSystem === 'metric' ? km : km * 0.621371;
-                    if (settings.minKm > 0 && val < settings.minKm) shouldHide = true;
-                    if (!shouldHide && settings.maxKm > 0 && val > settings.maxKm) shouldHide = true;
-                }
-            }
-
-            // Duration (minutes)
-            if (!shouldHide && (settings.minMins > 0 || settings.maxMins > 0)) {
-                const secs = UtilsModule.parseDurationSeconds(activity);
-                if (secs !== null) {
-                    const mins = secs / 60;
-                    if (settings.minMins > 0 && mins < settings.minMins) shouldHide = true;
-                    if (!shouldHide && settings.maxMins > 0 && mins > settings.maxMins) shouldHide = true;
-                }
-            }
-
-            // Elevation Gain
-            if (!shouldHide && (settings.minElevM > 0 || settings.maxElevM > 0)) {
-                const elevM = UtilsModule.parseElevationM(activity);
-                if (elevM !== null) {
-                    const val = settings.unitSystem === 'metric' ? elevM : elevM * 3.28084;
-                    if (settings.minElevM > 0 && val < settings.minElevM) shouldHide = true;
-                    if (!shouldHide && settings.maxElevM > 0 && val > settings.maxElevM) shouldHide = true;
-                }
-            }
-
-            // Pace for runs
-            if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && type && type.toLowerCase().includes('run')) {
-                const paceEl = activity.querySelector('.pace .value, [data-testid="pace"] .value');
-                if (paceEl) {
-                    const paceText = paceEl.textContent || '';
-                    const paceParts = paceText.split(':').map(Number);
-                    if (paceParts.length === 2 && !isNaN(paceParts[0]) && !isNaN(paceParts[1])) {
-                        const paceInMinutes = paceParts[0] + paceParts[1] / 60;
-                        const km = UtilsModule.parseDistanceKm(activity);
-                        if (km !== null && km > 0) {
-                            const pacePerKm = paceInMinutes / km;
-                            const paceVal = settings.unitSystem === 'metric' ? pacePerKm : pacePerKm * 1.60934;
-                            if (settings.minPace > 0 && paceVal < settings.minPace) shouldHide = true; // Faster than min
-                            if (!shouldHide && settings.maxPace > 0 && paceVal > settings.maxPace) shouldHide = true; // Slower than max
-                        }
-                    }
-                }
-            }
-
-            // Hide activities without a map
-            if (!shouldHide && settings.hideNoMap) {
-                const map = activity.querySelector('img[data-testid="map"], svg.map, .activity-map, [data-testid="activity-map"]');
-                if (!map) shouldHide = true;
-            }
-
-            // Allowed Athletes override
-            if (shouldHide && settings.allowedAthletes.length > 0 && athleteName) {
-                const nameParts = athleteName.toLowerCase().split(/\s+/);
-                const isAllowed = settings.allowedAthletes.some(allowedName => {
-                    if (!allowedName) return false;
-                    const allowedNameParts = allowedName.toLowerCase().split(/\s+/);
-                    return allowedNameParts.every(part => nameParts.includes(part));
-                });
-
-                if (isAllowed) {
-                    shouldHide = false; // It's an allowed athlete, so don't hide it
-                }
-            }
-
-            if (shouldHide) {
-                activity.style.display = 'none';
-                hiddenCount++;
-            } else {
-                activity.style.display = '';
-            }
-        });
-
-        console.log(`🎯 Filtered ${hiddenCount}/${activities.length} activities`);
-
-        // Add hidden sections count to the total
-        const hiddenSectionsCount = LogicModule.countHiddenSections();
-        const totalHiddenCount = hiddenCount + hiddenSectionsCount;
-
-        const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-        const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
-        if (btn) btn.textContent = `(${totalHiddenCount})`;
-        if (secondaryBtn) secondaryBtn.textContent = `(${totalHiddenCount})`;
-    }
-
-
-
-    function manageHeaderKudosButton() {
-        let attempts = 0;
-        const maxAttempts = 10; // Try for 5 seconds
-        const interval = 500; // 0.5 seconds
-
-        const placeButton = () => {
-            const kudosListItem = document.getElementById('gj-kudos-li');
-
-            // If button should be hidden, remove it and stop.
-            if (!settings.showKudosButton) {
-                if (kudosListItem) kudosListItem.remove();
-                // Also ensure secondary button is hidden
-                UIModule.syncSecondaryKudosVisibility();
-                return;
-            }
-
-            // If button already exists, ensure secondary is synced
-            if (kudosListItem) {
-                UIModule.syncSecondaryKudosVisibility();
-                return;
-            }
-
-            const navList = document.querySelector('.user-nav.nav-group');
-
-            if (navList) {
-                const newListItem = document.createElement('li');
-                newListItem.id = 'gj-kudos-li';
-                newListItem.className = 'nav-item';
-                newListItem.dataset.addedByScript = 'true'; // Mark for cleanup
-                newListItem.style.paddingRight = '10px';
-                newListItem.style.display = 'flex';
-                newListItem.style.alignItems = 'center';
-
-                const kudosBtn = document.createElement('a');
-                kudosBtn.className = 'sff-header-kudos-btn';
-                kudosBtn.href = 'javascript:void(0);';
-                kudosBtn.textContent = 'Give 👍 to Everyone';
-
-                kudosBtn.addEventListener('click', () => {
-                    let kudosGiven = 0;
-                    const kudosButtons = document.querySelectorAll("button[data-testid='kudos_button']");
-
-                    kudosButtons.forEach(button => {
-                        const feedEntry = button.closest('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                        if (feedEntry && feedEntry.style.display !== 'none' && button.title !== 'View all kudos') {
-                            button.click();
-                            kudosGiven++;
-                        }
-                    });
-
-                    const originalText = kudosBtn.textContent;
-                    kudosBtn.textContent = `Gave ${kudosGiven} 👍`;
-                    kudosBtn.style.pointerEvents = 'none';
-
-                    setTimeout(() => {
-                        kudosBtn.textContent = originalText;
-                        kudosBtn.style.pointerEvents = 'auto';
-                    }, 3000);
-                });
-
-                newListItem.appendChild(kudosBtn);
-                navList.prepend(newListItem);
-
-                // Sync secondary button visibility after creating main button
-                UIModule.syncSecondaryKudosVisibility();
-            } else {
-                attempts++;
-                if (attempts < maxAttempts) {
-                    setTimeout(placeButton, interval);
-                }
-            }
-        };
-
-        placeButton();
-    }
 
     // Observe DOM for new activities and re-apply filters automatically
-    function setupAutoFilter() {
-        const debouncedFilter = UtilsModule.debounce(() => {
-            try {
-                LogicModule.filterActivities();
-                LogicModule.updateGiftVisibility();
-                LogicModule.updateChallengesVisibility();
-                LogicModule.updateSuggestedFriendsVisibility();
-                LogicModule.updateYourClubsVisibility();
-            } catch (e) {
-                console.error('Auto-filter error:', e);
-            }
-        }, 250);
-
-        // Initial filter
-        filterActivities();
-
-        // MutationObserver for dynamically inserted feed entries
-        const observer = new MutationObserver((mutations) => {
-            for (const m of mutations) {
-                if (!m.addedNodes || m.addedNodes.length === 0) continue;
-                for (const node of m.addedNodes) {
-                    if (!(node instanceof HTMLElement)) continue;
-                    // If the added node is an activity or contains one, trigger filtering
-                    if (
-                        (node.matches && node.matches('.activity, .feed-entry, [data-testid="web-feed-entry"]')) ||
-                        node.querySelector?.('.activity, .feed-entry, [data-testid="web-feed-entry"]')
-                    ) {
-                        debouncedFilter();
-                        break;
-                    }
-                }
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-
-        // Fallback: when user scrolls and Strava lazy-loads content, re-run filtering
-        window.addEventListener('scroll', debouncedFilter, { passive: true });
-
-        // Store on window for potential debugging/cleanup
-        window.__sffObserver = observer;
-    }
 
     // ==== SFF SECTION: INIT BOOTSTRAP ====
     // Setup global features that work on all pages
