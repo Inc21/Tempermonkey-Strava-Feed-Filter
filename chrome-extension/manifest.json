@@ -2,10 +2,29 @@
   "manifest_version": 3,
   "name": "Strava Feed Filter (Chrome)",
   "description": "Filters the Strava feed and provides quick controls.",
-  "version": "1.0.0",
+  "version": "2.2.5",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png",
+    "256": "icons/icon-256.png"
+  },
   "permissions": [
-    "storage"
+    "storage",
+    "tabs"
   ],
+  "host_permissions": [
+    "https://www.strava.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Strava Feed Filter",
+    "default_popup": "popup/popup.html"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -14,7 +33,7 @@
       ],
       "js": ["content/injected.js"],
       "css": ["content/styles.css"],
-      "run_at": "document_idle"
+      "run_at": "document_end"
     }
   ]
 }

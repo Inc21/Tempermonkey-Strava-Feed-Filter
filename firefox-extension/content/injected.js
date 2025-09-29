@@ -2779,12 +2779,16 @@
 
         // Only create UI elements and run filtering on dashboard
         if (UtilsModule.isOnDashboard()) {
+            // Mark body as dashboard for responsive CSS that relies on this flag
+            document.body.setAttribute('data-sff-dashboard', 'true');
             if (settings.enabled) {
                 if (!document.querySelector('.sff-clean-panel')) {
                     UIModule.createElements();
                 }
                 // Ensure secondary kudos button is properly synchronized
                 UIModule.syncSecondaryKudosVisibility();
+                // Ensure header kudos button is created/removed according to settings immediately
+                LogicModule.manageHeaderKudosButton();
                 LogicModule.filterActivities();
                 LogicModule.setupAutoFilter();
             } else {

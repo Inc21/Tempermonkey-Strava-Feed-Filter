@@ -4,7 +4,7 @@ A powerful Tampermonkey userscript that provides advanced filtering
 capabilities for your Strava activity feed. Built with a modular architecture
 for maximum performance and maintainability.
 
-> Note: As of v1.2.4, this project also includes a Firefox Extension (desktop and Firefox for Android). The userscript remains available. Currently, this release has been tested primarily on Firefox (Desktop) and Firefox for Android.
+> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. The userscript remains available for all browsers.
 
 ![Strava Feed Filter in action](.\src\readme-images\filter-panel-overview.png)
 *Filter panel*
@@ -16,6 +16,24 @@ filtering capabilities directly on your feed. Hide activities based on
 keywords, activity types, distance, duration, elevation, pace, and more.
 The script features a clean, draggable interface that works seamlessly
 with Strava's design.
+
+## 🆕 What's New in v2.2.5 (29.09.2025) - Chrome Extension
+
+- **Complete Chrome Extension** with full Firefox feature parity:
+  - All filter sections: keywords, activity types, distance/duration/elevation/pace ranges, map filtering, section hiding
+  - Draggable panel with position memory and responsive design
+  - Secondary navigation for smaller screens
+  - "Give Kudos to Everyone" header button with first-load visibility
+  - Real-time activity counting and auto-filtering
+  - Unit system toggle (Metric/Imperial)
+  - Popup toggle with badge ON/OFF state management
+
+## 🆕 What's New in v1.2.5 (29.09.2025) - Firefox Fixes
+
+- Firefox (Desktop & Android)
+  - "Give Kudos to Everyone" header button now appears immediately on first load when enabled.
+  - Toolbar badge (ON/OFF) initializes on browser startup without requiring opening the popup.
+- Development convenience: Firefox manifest uses `background.scripts` for temporary add-on installations.
 
 ## 🆕 What's New in v1.2.4 (27.09.2025)
 
@@ -246,7 +264,7 @@ If you find this script useful, consider:
 
 - ⭐ Starring the repository
 - ☕ [Buy me a coffee](https://www.buymeacoffee.com/inc21)
-- 🐛 Reporting bugs or suggesting features: [HERE](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues)
+- 🐛 Reporting bugs or suggesting features: [GitHub Issues](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues)
 
 ## 🔄 Filtering Results
 

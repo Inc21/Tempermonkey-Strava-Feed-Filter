@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Strava Feed Filter",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.",
   "permissions": [
     "storage",
     "tabs"
   ],
+  "background": {
+    "scripts": ["background.js"]
+  },
   "host_permissions": [
     "https://www.strava.com/*"
   ],
