@@ -9,11 +9,13 @@ Strava Feed Filter is a browser extension that helps users customize their Strav
 ## Data Collection and Storage
 
 ### What We Store
+
 - User filter preferences (keywords, activity types, distance ranges, pace settings)
 - UI settings (panel position, enable/disable state)
 - Extension configuration options
 
 ### How We Store It
+
 - All data is stored locally on your device using Chrome's storage API
 - No data is transmitted to external servers
 - We do not have access to your stored preferences
@@ -50,10 +52,11 @@ We may update this privacy policy occasionally. Changes will be posted in this r
 ## Contact
 
 For questions about this privacy policy, please:
+
 - Open an issue on our [GitHub repository](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues)
 - Contact us through the repository's issue tracker
 
 ---
 
-**Repository:** https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter  
+**Repository:** [GitHub](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter)  
 **License:** MIT License
