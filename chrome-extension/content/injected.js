@@ -47,6 +47,35 @@
                 return defaults;
             }
         },
+
+        updateWandrerVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for Wandrer content`);
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        const hasWandrer = /\bfrom\s+wandrer\b/i.test(text) || /\bwandrer\b/i.test(text);
+                        if (hasWandrer && text.length < 800) {
+                            if (settings.enabled && settings.hideWandrer) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateWandrerVisibility error:', e);
+            }
+        },
         async set(key, value) {
             try {
                 if (ext && ext.storage && ext.storage.local) {
@@ -81,6 +110,7 @@
         hideMyWindsock: false,
         hideSummitbag: false,
         hideRunHealth: false,
+        hideWandrer: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -1022,6 +1052,7 @@
             settings.hideMyWindsock = panel.querySelector('.sff-hideMyWindsock').checked;
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
+            settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
@@ -1298,6 +1329,10 @@
                         <label class="sff-chip ${settings.hideRunHealth ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
                             Hide "Run Health"
+                        </label>
+                        <label class="sff-chip ${settings.hideWandrer ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideWandrer" ${settings.hideWandrer ? 'checked' : ''}>
+                            Hide "Wandrer" embeds
                         </label>
                         <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
@@ -1651,6 +1686,11 @@
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateRunHealthVisibility();
                     }
+                    if (e.target.classList.contains('sff-hideWandrer')) {
+                        settings.hideWandrer = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateWandrerVisibility();
+                    }
                     if (e.target.classList.contains('sff-hideJoinWorkout')) {
                         settings.hideJoinWorkout = e.target.checked;
                         UtilsModule.saveSettings(settings);
@@ -1941,6 +1981,21 @@
 
     // Logic Module - Step 6 of modular refactoring
     const LogicModule = {
+        // Determine if a feed node is a club post
+        isClubPost(node) {
+            if (!node) return false;
+            const el = (node.matches?.('[data-testid="web-feed-entry"]') ? node : node.closest?.('[data-testid="web-feed-entry"]')) || node;
+            try {
+                if (el.querySelector?.('.clubMemberPostHeaderLinks a.clubLink[href^="/clubs/"]')) return true;
+                if (el.querySelector?.('a[data-testid="club-avatar"][href^="/clubs/"]')) return true;
+                const postLink = el.querySelector?.('a[data-testid="post-details-url"]');
+                if (postLink && /^\/clubs\//.test(postLink.getAttribute('href') || '')) return true;
+                if (el.querySelector?.('a[href^="/clubs/"]')) return true;
+                return false;
+            } catch (_) {
+                return false;
+            }
+        },
         // Determine if a feed node is a challenge card ("joined a challenge")
         isChallengeEntry(node) {
             if (!node) return false;
@@ -2343,13 +2398,13 @@
             activities.forEach(activity => {
                 const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
 
-                // Handle club posts
-                if (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/')) {
+                // Handle club posts (robust detection)
+                const isClub = this.isClubPost(activity) || (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/'));
+                if (isClub) {
                     if (settings.hideClubPosts) {
                         activity.style.display = 'none';
                         hiddenCount++;
                     } else {
-                        // Ensure previously hidden club posts are shown again when toggled off
                         activity.style.display = '';
                     }
                     return; // Club posts are not subject to other filters
@@ -2580,6 +2635,7 @@
                     this.updateSuggestedFriendsVisibility();
                     this.updateYourClubsVisibility();
                     this.updateMyWindsockVisibility();
+                    this.updateWandrerVisibility();
                     this.updateSummitbagVisibility();
                     this.updateRunHealthVisibility();
                     this.updateJoinWorkoutVisibility();
@@ -2623,6 +2679,7 @@
                 this.updateSuggestedFriendsVisibility();
                 this.updateYourClubsVisibility();
                 this.updateMyWindsockVisibility();
+                this.updateWandrerVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
                 this.updateJoinWorkoutVisibility();
@@ -2733,6 +2790,7 @@
 
         // Apply external service embed hiding immediately
         LogicModule.updateMyWindsockVisibility();
+        LogicModule.updateWandrerVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
         LogicModule.updateJoinWorkoutVisibility();
@@ -2747,6 +2805,7 @@
             LogicModule.updateSuggestedFriendsVisibility();
             LogicModule.updateYourClubsVisibility();
             LogicModule.updateMyWindsockVisibility();
+            LogicModule.updateWandrerVisibility();
             LogicModule.updateSummitbagVisibility();
             LogicModule.updateRunHealthVisibility();
             LogicModule.updateJoinWorkoutVisibility();

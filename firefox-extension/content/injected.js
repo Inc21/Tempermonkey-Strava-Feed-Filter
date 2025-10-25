@@ -1941,6 +1941,21 @@
 
     // Logic Module - Step 6 of modular refactoring
     const LogicModule = {
+        // Determine if a feed node is a club post
+        isClubPost(node) {
+            if (!node) return false;
+            const el = (node.matches?.('[data-testid="web-feed-entry"]') ? node : node.closest?.('[data-testid="web-feed-entry"]')) || node;
+            try {
+                if (el.querySelector?.('.clubMemberPostHeaderLinks a.clubLink[href^="/clubs/"]')) return true;
+                if (el.querySelector?.('a[data-testid="club-avatar"][href^="/clubs/"]')) return true;
+                const postLink = el.querySelector?.('a[data-testid="post-details-url"]');
+                if (postLink && /^\/clubs\//.test(postLink.getAttribute('href') || '')) return true;
+                if (el.querySelector?.('a[href^="/clubs/"]')) return true;
+                return false;
+            } catch (_) {
+                return false;
+            }
+        },
         // Determine if a feed node is a challenge card ("joined a challenge")
         isChallengeEntry(node) {
             if (!node) return false;
@@ -2343,13 +2358,13 @@
             activities.forEach(activity => {
                 const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
 
-                // Handle club posts
-                if (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/')) {
+                // Handle club posts (robust detection)
+                const isClub = this.isClubPost(activity) || (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/'));
+                if (isClub) {
                     if (settings.hideClubPosts) {
                         activity.style.display = 'none';
                         hiddenCount++;
                     } else {
-                        // Ensure previously hidden club posts are shown again when toggled off
                         activity.style.display = '';
                     }
                     return; // Club posts are not subject to other filters
