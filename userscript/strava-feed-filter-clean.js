@@ -47,6 +47,7 @@
         hideSummitbag: false,
         hideRunHealth: false,
         hideWandrer: false,
+        hideCommuteTag: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -816,6 +817,29 @@
             return s ? {...DEFAULTS, ...s} : {...DEFAULTS};
         },
 
+        updateCommuteTagVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                activities.forEach(activity => {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const isCommute = tags.some(t => t === 'commute');
+                    if (isCommute) {
+                        if (settings.enabled && settings.hideCommuteTag) {
+                            if (activity.dataset.sffHiddenCommute !== 'sff') {
+                                activity.dataset.sffHiddenCommute = 'sff';
+                                activity.style.display = 'none';
+                            }
+                        } else if (activity.dataset.sffHiddenCommute === 'sff') {
+                            activity.style.display = '';
+                            delete activity.dataset.sffHiddenCommute;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('updateCommuteTagVisibility error:', e);
+            }
+        },
+
         saveSettings(s) {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
@@ -982,6 +1006,7 @@
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
+            settings.hideCommuteTag = panel.querySelector('.sff-hideCommuteTag') ? panel.querySelector('.sff-hideCommuteTag').checked : settings.hideCommuteTag;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
@@ -1310,6 +1335,10 @@
                             <input type="checkbox" class="sff-hideNoMap" ${settings.hideNoMap ? 'checked' : ''}>
                             Hide activities without map
                         </label>
+                        <label class="sff-chip ${settings.hideCommuteTag ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideCommuteTag" ${settings.hideCommuteTag ? 'checked' : ''}>
+                            Hide commute (tag)
+                        </label>
                         <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
                             Hide "Athlete joined a challenge"
@@ -1617,6 +1646,13 @@
                         settings.hideRunHealth = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateRunHealthVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCommuteTag')) {
+                        settings.hideCommuteTag = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        // apply both visibility update and filter for counts
+                        LogicModule.updateCommuteTagVisibility();
+                        LogicModule.filterActivities();
                     }
                     if (e.target.classList.contains('sff-hideJoinWorkout')) {
                         settings.hideJoinWorkout = e.target.checked;
@@ -2366,6 +2402,17 @@
                     return; // Club posts are not subject to other filters
                 }
 
+                // Hide commute-tagged activities early
+                try {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const hasCommute = tags.some(t => t === 'commute');
+                    if (hasCommute && settings.hideCommuteTag) {
+                        activity.style.display = 'none';
+                        hiddenCount++;
+                        return;
+                    }
+                } catch (_) {}
+
                 // Handle joined challenge cards separately
                 if (this.isChallengeEntry(activity)) {
                     if (settings.hideJoinedChallenges) {
@@ -3008,6 +3055,17 @@
 
         activities.forEach(activity => {
             const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
+
+            // Hide commute-tagged activities early
+            try {
+                const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                const hasCommute = tags.some(t => t === 'commute');
+                if (hasCommute && settings.hideCommuteTag) {
+                    activity.style.display = 'none';
+                    hiddenCount++;
+                    return;
+                }
+            } catch (_) {}
 
             // Handle club posts (robust detection)
             const isClub = (typeof LogicModule !== 'undefined' && LogicModule.isClubPost ? LogicModule.isClubPost(activity) : false) || (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/'));

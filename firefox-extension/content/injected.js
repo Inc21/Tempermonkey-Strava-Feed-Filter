@@ -47,6 +47,58 @@
                 return defaults;
             }
         },
+
+        updateCommuteTagVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                activities.forEach(activity => {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const isCommute = tags.some(t => t === 'commute');
+                    if (isCommute) {
+                        if (settings.enabled && settings.hideCommuteTag) {
+                            if (activity.dataset.sffHiddenCommute !== 'sff') {
+                                activity.dataset.sffHiddenCommute = 'sff';
+                                activity.style.display = 'none';
+                            }
+                        } else if (activity.dataset.sffHiddenCommute === 'sff') {
+                            activity.style.display = '';
+                            delete activity.dataset.sffHiddenCommute;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('updateCommuteTagVisibility error:', e);
+            }
+        },
+        
+        updateWandrerVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for Wandrer content`);
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        const hasWandrer = /\bfrom\s+wandrer\b/i.test(text) || /\bwandrer\b/i.test(text);
+                        if (hasWandrer && text.length < 800) {
+                            if (settings.enabled && settings.hideWandrer) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateWandrerVisibility error:', e);
+            }
+        },
         async set(key, value) {
             try {
                 if (ext && ext.storage && ext.storage.local) {
@@ -81,6 +133,8 @@
         hideMyWindsock: false,
         hideSummitbag: false,
         hideRunHealth: false,
+        hideWandrer: false,
+        hideCommuteTag: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -1022,6 +1076,8 @@
             settings.hideMyWindsock = panel.querySelector('.sff-hideMyWindsock').checked;
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
+            settings.hideCommuteTag = panel.querySelector('.sff-hideCommuteTag') ? panel.querySelector('.sff-hideCommuteTag').checked : settings.hideCommuteTag;
+            settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
@@ -1299,6 +1355,10 @@
                             <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
                             Hide "Run Health"
                         </label>
+                        <label class="sff-chip ${settings.hideWandrer ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideWandrer" ${settings.hideWandrer ? 'checked' : ''}>
+                            Hide "Wandrer" embeds
+                        </label>
                         <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
                             Hide "JOIN workout"
@@ -1346,6 +1406,10 @@
                         <label class="sff-chip ${settings.hideNoMap ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideNoMap" ${settings.hideNoMap ? 'checked' : ''}>
                             Hide activities without map
+                        </label>
+                        <label class="sff-chip ${settings.hideCommuteTag ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideCommuteTag" ${settings.hideCommuteTag ? 'checked' : ''}>
+                            Hide commute (tag)
                         </label>
                         <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
@@ -1650,6 +1714,17 @@
                         settings.hideRunHealth = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateRunHealthVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCommuteTag')) {
+                        settings.hideCommuteTag = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCommuteTagVisibility();
+                        LogicModule.filterActivities();
+                    }
+                    if (e.target.classList.contains('sff-hideWandrer')) {
+                        settings.hideWandrer = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateWandrerVisibility();
                     }
                     if (e.target.classList.contains('sff-hideJoinWorkout')) {
                         settings.hideJoinWorkout = e.target.checked;
@@ -2358,6 +2433,17 @@
             activities.forEach(activity => {
                 const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
 
+                // Hide commute-tagged activities early
+                try {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const hasCommute = tags.some(t => t === 'commute');
+                    if (hasCommute && settings.hideCommuteTag) {
+                        activity.style.display = 'none';
+                        hiddenCount++;
+                        return;
+                    }
+                } catch (_) {}
+
                 // Handle club posts (robust detection)
                 const isClub = this.isClubPost(activity) || (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/'));
                 if (isClub) {
@@ -2595,7 +2681,9 @@
                     this.updateSuggestedFriendsVisibility();
                     this.updateYourClubsVisibility();
                     this.updateMyWindsockVisibility();
+                    this.updateWandrerVisibility();
                     this.updateSummitbagVisibility();
+                    this.updateCommuteTagVisibility();
                     this.updateRunHealthVisibility();
                     this.updateJoinWorkoutVisibility();
                     this.updateCoachCatVisibility();
@@ -2638,8 +2726,10 @@
                 this.updateSuggestedFriendsVisibility();
                 this.updateYourClubsVisibility();
                 this.updateMyWindsockVisibility();
+                this.updateWandrerVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateCommuteTagVisibility();
                 this.updateJoinWorkoutVisibility();
                 this.updateCoachCatVisibility();
                 this.updateAthleteJoinedClubVisibility();
@@ -2689,17 +2779,6 @@
                     }
                 });
 
-                // Reset external service embed activities
-                this.updateMyWindsockVisibility();
-                this.updateSummitbagVisibility();
-                this.updateRunHealthVisibility();
-                this.updateJoinWorkoutVisibility();
-
-                // Hide kudos buttons when master toggle is off
-                this.manageHeaderKudosButton();
-                UIModule.syncSecondaryKudosVisibility();
-
-                // Update button counter to 0
                 const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
                 const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
                 if (btn) btn.textContent = '(0)';
@@ -2748,6 +2827,7 @@
 
         // Apply external service embed hiding immediately
         LogicModule.updateMyWindsockVisibility();
+        LogicModule.updateWandrerVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
         LogicModule.updateJoinWorkoutVisibility();
@@ -2762,6 +2842,7 @@
             LogicModule.updateSuggestedFriendsVisibility();
             LogicModule.updateYourClubsVisibility();
             LogicModule.updateMyWindsockVisibility();
+            LogicModule.updateWandrerVisibility();
             LogicModule.updateSummitbagVisibility();
             LogicModule.updateRunHealthVisibility();
             LogicModule.updateJoinWorkoutVisibility();

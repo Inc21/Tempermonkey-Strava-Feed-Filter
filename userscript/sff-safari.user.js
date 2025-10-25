@@ -47,6 +47,7 @@
         hideSummitbag: false,
         hideRunHealth: false,
         hideWandrer: false,
+        hideCommuteTag: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -1040,6 +1041,29 @@
             } catch(e) {}
             return s ? {...DEFAULTS, ...s} : {...DEFAULTS};
         },
+
+        updateCommuteTagVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                activities.forEach(activity => {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const isCommute = tags.some(t => t === 'commute');
+                    if (isCommute) {
+                        if (settings.enabled && settings.hideCommuteTag) {
+                            if (activity.dataset.sffHiddenCommute !== 'sff') {
+                                activity.dataset.sffHiddenCommute = 'sff';
+                                activity.style.display = 'none';
+                            }
+                        } else if (activity.dataset.sffHiddenCommute === 'sff') {
+                            activity.style.display = '';
+                            delete activity.dataset.sffHiddenCommute;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('updateCommuteTagVisibility error:', e);
+            }
+        },
     
         saveSettings(s) {
             try {
@@ -1207,6 +1231,7 @@
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
+            settings.hideCommuteTag = panel.querySelector('.sff-hideCommuteTag') ? panel.querySelector('.sff-hideCommuteTag').checked : settings.hideCommuteTag;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
@@ -1534,6 +1559,10 @@
                         <label class="sff-chip ${settings.hideNoMap ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideNoMap" ${settings.hideNoMap ? 'checked' : ''}>
                             Hide activities without map
+                        </label>
+                        <label class="sff-chip ${settings.hideCommuteTag ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideCommuteTag" ${settings.hideCommuteTag ? 'checked' : ''}>
+                            Hide commute (tag)
                         </label>
                         <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
@@ -2142,6 +2171,16 @@
     
     // Logic Module - Step 6 of modular refactoring
     const LogicModule = {
+        updateCommuteTagVisibility() {
+            try {
+                // Delegate to UtilsModule version to keep single-point logic
+                if (UtilsModule && typeof UtilsModule.updateCommuteTagVisibility === 'function') {
+                    UtilsModule.updateCommuteTagVisibility();
+                }
+            } catch (e) {
+                console.warn('LogicModule.updateCommuteTagVisibility error:', e);
+            }
+        },
         // Determine if a feed node is a club post
         isClubPost(node) {
             if (!node) return false;
@@ -2611,6 +2650,17 @@
                     return; // Club posts are not subject to other filters
                 }
     
+                // Hide commute-tagged activities early
+                try {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const hasCommute = tags.some(t => t === 'commute');
+                    if (hasCommute && settings.hideCommuteTag) {
+                        activity.style.display = 'none';
+                        hiddenCount++;
+                        return;
+                    }
+                } catch (_) {}
+
                 // Handle joined challenge cards separately
                 if (this.isChallengeEntry(activity)) {
                     if (settings.hideJoinedChallenges) {
@@ -2838,6 +2888,7 @@
                     this.updateJoinedChallengesVisibility();
                     this.updateMyWindsockVisibility();
                     this.updateSummitbagVisibility();
+                    this.updateCommuteTagVisibility();
                     this.updateRunHealthVisibility();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
@@ -2881,6 +2932,7 @@
                 this.updateMyWindsockVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateCommuteTagVisibility();
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
             } else {
@@ -2974,6 +3026,7 @@
         LogicModule.updateMyWindsockVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
+        LogicModule.updateCommuteTagVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
         LogicModule.updateAthleteJoinedClubVisibility();
