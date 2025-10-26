@@ -5,12 +5,15 @@ A step-by-step guide to installing and enabling the Strava Feed Filter userscrip
 ## Requirements
 
 - iOS/iPadOS 15 or later.
-- A userscript manager that supports Safari on iOS. Recommended: "Userscripts" app from the App Store (free).
+- A userscript manager that supports Safari on iOS. Recommended: "Userscripts" by Quoid (free).
+  - GitHub: https://github.com/quoid/userscripts
+  - App Store: https://apps.apple.com/ie/app/userscripts/id1463298887
 - The userscript file: `sff-safari.user.js`.
 
 ## 1) Install the Userscripts manager
 
-- Open the App Store and install the app named "Userscripts" by Quoid.
+- Open the App Store and install "Userscripts" by Quoid: https://apps.apple.com/ie/app/userscripts/id1463298887
+- Project page for reference: https://github.com/quoid/userscripts
 - After install, open the app at least once so it can create its folder.
 
 ## 2) Enable Userscripts in Safari

@@ -6,7 +6,7 @@ for maximum performance and maintainability.
 
 > Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. The userscript remains available for all browsers.
 
-![Strava Feed Filter in action](.\src\readme-images\filter-panel-overview.png)
+![Strava Feed Filter in action](./src/readme-images/filter-panel-overview.png)
 *Filter panel*
 
 ## Description
@@ -120,6 +120,7 @@ Choose the option that fits your browser/platform.
 - ▶️ Follow the dedicated guide: [ios-safari-install.md](./ios-safari-install.md)
 - Install from GitHub (Raw): [sff-safari.user.js](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/sff-safari.user.js)
 - Manual installation: Download `userscript/sff-safari.user.js` and install manually using your userscript manager.
+- Userscripts manager (Quoid): [GitHub](https://github.com/quoid/userscripts) · [App Store](https://apps.apple.com/ie/app/userscripts/id1463298887)
 
 **Disclaimer:** While this userscript is designed to work on multiple browsers, it has been primarily tested on Chrome, Firefox, and Safari. Support for other browsers may vary.
 
