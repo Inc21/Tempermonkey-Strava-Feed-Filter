@@ -4,7 +4,7 @@
 // @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
-// @version      1.2.4-safari-ios
+// @version      2.3.1-safari-ios
 // @license      MIT
 // @author       Inc21
 // @match        https://www.strava.com/*

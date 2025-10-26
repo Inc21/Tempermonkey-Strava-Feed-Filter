@@ -4,7 +4,7 @@ A powerful Tampermonkey userscript that provides advanced filtering
 capabilities for your Strava activity feed. Built with a modular architecture
 for maximum performance and maintainability.
 
-> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. The userscript remains available for all browsers.
+> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. The userscript remains available for all browsers.
 
 ![Strava Feed Filter in action](.\src\readme-images\filter-panel-overview.png)
 *Filter panel*
@@ -17,43 +17,10 @@ keywords, activity types, distance, duration, elevation, pace, and more.
 The script features a clean, draggable interface that works seamlessly
 with Strava's design.
 
-## 🆕 What's New in v2.2.5 (29.09.2025) - Chrome Extension
+## 🆕 What's New
 
-- **Complete Chrome Extension** with full Firefox feature parity:
-  - All filter sections: keywords, activity types, distance/duration/elevation/pace ranges, map filtering, section hiding
-  - Draggable panel with position memory and responsive design
-  - Secondary navigation for smaller screens
-  - "Give Kudos to Everyone" header button with first-load visibility
-  - Real-time activity counting and auto-filtering
-  - Unit system toggle (Metric/Imperial)
-  - Popup toggle with badge ON/OFF state management
-
-## 🆕 What's New in v1.2.5 (29.09.2025) - Firefox Fixes
-
-- Firefox (Desktop & Android)
-  - "Give Kudos to Everyone" header button now appears immediately on first load when enabled.
-  - Toolbar badge (ON/OFF) initializes on browser startup without requiring opening the popup.
-- Development convenience: Firefox manifest uses `background.scripts` for temporary add-on installations.
-
-## 🆕 What's New in v1.2.4 (27.09.2025)
-
-- Firefox Extension (Desktop and Firefox for Android)
-  - Toolbar popup with Enable/Disable toggle and ON/OFF badge
-  - Quick link to GitHub issues and informational disclaimer
-- New feed filters
-  - Hide "JOIN workout" embed in activity descriptions
-  - Hide "CoachCat Training Summary" embed in activity descriptions
-  - Hide "Athlete joined a club" feed entries
-- More robust detection for "joined a club" entries (header anchor + CTA detection)
-
-## 🆕 What's New in v0.2.3 (21.09.2025)
-
-- New dropdown in the separate sidebar for quicker access
-- New filter to hide athletes' joined challenges from the feed
-- Settings panel slightly widened for better readability
-- Panel content scrollbar is now always visible to prevent layout flicker
-- Options to hide "Suggested Friends" and "Your Clubs" sections site-wide
-- External service embeds filtering (e.g., myWindsock report, summitbag.com, Run Health)
+- Latest: v2.3.1 — Safari iOS userscript, Commute filter, Wandrer embed filtering, Kudos visibility preference, UI tweaks.
+- Read the full history in the Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
 ## ✨ Key Features
 
@@ -67,10 +34,11 @@ with Strava's design.
 - **Elevation Filtering**: Control based on elevation gain
 - **Pace Filtering**: Filter running activities by pace (min/km or min/mi)
 - **Map Filtering**: Hide activities without GPS maps
+- **Commute Tag Filtering**: Hide activities marked with the Commute tag
 - **Club Posts**: Option to hide club-related posts
 - **Challenge Filtering**: Hide your challenges section
 - **Hide Joined Challenges**: Hide athletes' joined challenge cards from the feed
-- **External Service Embeds Filtering**: Option to hide text embeds from third-party services in activity descriptions (e.g., myWindsock report, summitbag.com, Run Health)
+- **External Service Embeds Filtering**: Option to hide text embeds from third-party services in activity descriptions (e.g., myWindsock report, summitbag.com, Run Health, Wandrer)
 - **UI Sections Hiding**: Hide "Suggested Friends" and "Your Clubs" sections site-wide
 
 ### 🎨 User Interface
@@ -131,22 +99,29 @@ The main settings panel features organized sections:
 
 ## 🚀 Installation
 
-### Prerequisites
+Choose the option that fits your browser/platform.
 
-You need a userscript manager extension:
+### Chrome Extension
 
-- **[Tampermonkey](https://www.tampermonkey.net/)** (Recommended - Chrome,
-  Firefox, Safari, Edge)
-- **[Greasemonkey](https://www.greasespot.net/)** (Firefox)
-- **[Violentmonkey](https://violentmonkey.github.io/)** (Chrome, Firefox)
+- Install from Chrome Web Store: https://chromewebstore.google.com/detail/geihkfcdimdmlckcgkebcdajdlmeppff?utm_source=item-share-cb
 
-### Install the Script
+### Firefox Extension
 
-1. **Option A**: Install from GitHub (Raw): [strava-feed-filter-clean.js](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js)
-2. **Option B**: Install from Greasy Fork (coming soon)
-3. **Option C**: Download `userscript/strava-feed-filter-clean.js` and install manually
-4. **Option D**: Copy the script code and create a new userscript in
-   Tampermonkey
+- Install from Firefox Add-ons: https://addons.mozilla.org/en-US/firefox/addon/strava-feed-filter/
+
+### Userscript (Desktop Browsers)
+
+- Install from Greasy Fork: https://greasyfork.org/en/scripts/550272-strava-feed-filter
+- Or install from GitHub (Raw): https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js
+- Manual installation: Download `userscript/strava-feed-filter-clean.js` and install via your userscript manager.
+
+### Userscript (Safari on iOS)
+
+- ▶️ Follow the dedicated guide: [ios-safari-install.md](./ios-safari-install.md)
+- Install from GitHub (Raw): [sff-safari.user.js](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/sff-safari.user.js)
+- Manual installation: Download `userscript/sff-safari.user.js` and install manually using your userscript manager.
+
+**Disclaimer:** While this userscript is designed to work on multiple browsers, it has been primarily tested on Chrome, Firefox, and Safari. Support for other browsers may vary.
 
 ## 📖 Usage Guide
 
@@ -283,16 +258,10 @@ See the difference filtering makes on your Strava feed:
 ![Activity count feature](./src/readme-images/activity-count-display.png)
 *Real-time count showing "(X hidden / Y total)" for activity types*
 
-## 🆕 Version History
+## Changelog
 
-### v0.2.3 (21.09.2025)
-
-- New dropdown in the separate sidebar for easier navigation
-- New filter to hide athletes' joined challenges from the feed
-- Settings panel slightly widened for better readability
-- Panel content scrollbar is now always visible to prevent layout flicker
-- Added options to hide "Suggested Friends" and "Your Clubs" sections site-wide
-- Added external service embeds filtering (e.g., myWindsock report, summitbag.com, Run Health)
+For the complete release notes, see [CHANGELOG.md](./CHANGELOG.md).
+Latest release: v2.3.1 (26.10.2025).
 
 ## 📄 License
 

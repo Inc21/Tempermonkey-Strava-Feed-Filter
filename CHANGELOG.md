@@ -6,6 +6,21 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v2.3.1] - 26.10.2025 (Userscript)
+
+### Added
+
+- Safari iOS–compatible userscript: `userscript/sff-safari.user.js`
+- New filter: Hide activities tagged as "Commute"
+- External service embeds: Added Wandrer to the hide list
+- Preference to show/hide the "Give Kudos to Everyone" button; synced visibility for secondary nav button on smaller screens
+
+### Changed
+
+- Minor responsive/UI tweaks for the settings panel and secondary navigation
+
+---
+
 ## [v1.2.5] - 29.09.2025
 
 ### Fixed
