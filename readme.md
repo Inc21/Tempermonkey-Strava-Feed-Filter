@@ -117,7 +117,8 @@ Choose the option that fits your browser/platform.
 
 ### Userscript (Safari on iOS)
 
-- ▶️ Follow the dedicated guide: [ios-safari-install.md](./ios-safari-install.md)
+- ▶️ Follow the dedicated guide: [ios-safari-install.md](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/blob/main/ios-safari-install.md)
+- Fallback (Raw): https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/ios-safari-install.md
 - Install from GitHub (Raw): [sff-safari.user.js](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/sff-safari.user.js)
 - Manual installation: Download `userscript/sff-safari.user.js` and install manually using your userscript manager.
 - Userscripts manager (Quoid): [GitHub](https://github.com/quoid/userscripts) · [App Store](https://apps.apple.com/ie/app/userscripts/id1463298887)
