@@ -4,7 +4,7 @@ A powerful Tampermonkey userscript that provides advanced filtering
 capabilities for your Strava activity feed. Built with a modular architecture
 for maximum performance and maintainability.
 
-> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. The userscript remains available for all browsers.
+> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. In v2.3.2 we refreshed activity-type detection across every platform so specialised activities and group posts filter correctly. The userscript remains available for all browsers.
 
 ![Strava Feed Filter in action](./src/readme-images/filter-panel-overview.png)
 *Filter panel*
@@ -19,7 +19,7 @@ with Strava's design.
 
 ## 🆕 What's New
 
-- Latest: v2.3.1 — Safari iOS userscript, Commute filter, Wandrer embed filtering, Kudos visibility preference, UI tweaks.
+- Latest: v2.3.2 — smarter activity-type matching (specific sub-types and group posts), shipped simultaneously to the userscripts and both browser extensions.
 - Read the full history in the Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
 ## ✨ Key Features
@@ -29,8 +29,12 @@ with Strava's design.
 - **Keyword Filtering**: Hide activities containing specific keywords in titles
 - **Activity Type Filtering**: Granular control over 40+ activity types
   (Run, Ride, Virtual activities, etc.)
+- **Quick tip – isolate one type fast**: Click “Select All”, then deselect the activity you’d like to keep hidden. For example, to see only hikes: open **Activity Types**, press **Select All**, then untick **Hike**. The feed will show only hikes while hiding every other category.
+
+  > 💡 Want the opposite? Hit **Clear All** and tick just the one type you want to hide.
+
 - **Distance Filtering**: Set minimum and maximum distance thresholds
-- **Duration Filtering**: Filter by activity time (minutes)
+- **Duration Filtering**: Specify minimum and maximum duration for activities
 - **Elevation Filtering**: Control based on elevation gain
 - **Pace Filtering**: Filter running activities by pace (min/km or min/mi)
 - **Map Filtering**: Hide activities without GPS maps
@@ -103,22 +107,22 @@ Choose the option that fits your browser/platform.
 
 ### Chrome Extension
 
-- Install from Chrome Web Store: https://chromewebstore.google.com/detail/geihkfcdimdmlckcgkebcdajdlmeppff?utm_source=item-share-cb
+- Install from [Chrome Web Store](https://chromewebstore.google.com/detail/geihkfcdimdmlckcgkebcdajdlmeppff?utm_source=item-share-cb)
 
 ### Firefox Extension
 
-- Install from Firefox Add-ons: https://addons.mozilla.org/en-US/firefox/addon/strava-feed-filter/
+- Install from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/strava-feed-filter/)
 
 ### Userscript (Desktop Browsers)
 
-- Install from Greasy Fork: https://greasyfork.org/en/scripts/550272-strava-feed-filter
-- Or install from GitHub (Raw): https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js
+- Install from [Greasy Fork](https://greasyfork.org/en/scripts/550272-strava-feed-filter)
+- Or install from [GitHub Raw](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js)
 - Manual installation: Download `userscript/strava-feed-filter-clean.js` and install via your userscript manager.
 
 ### Userscript (Safari on iOS)
 
 - ▶️ Follow the dedicated guide: [ios-safari-install.md](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/blob/main/ios-safari-install.md)
-- Fallback (Raw): https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/ios-safari-install.md
+- Fallback (Raw): [ios-safari-install.md (raw)](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/ios-safari-install.md)
 - Install from GitHub (Raw): [sff-safari.user.js](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/sff-safari.user.js)
 - Manual installation: Download `userscript/sff-safari.user.js` and install manually using your userscript manager.
 - Userscripts manager (Quoid): [GitHub](https://github.com/quoid/userscripts) · [App Store](https://apps.apple.com/ie/app/userscripts/id1463298887)
@@ -263,7 +267,7 @@ See the difference filtering makes on your Strava feed:
 ## Changelog
 
 For the complete release notes, see [CHANGELOG.md](./CHANGELOG.md).
-Latest release: v2.3.1 (26.10.2025).
+Latest release: v2.3.2 (10.11.2025).
 
 ## 📄 License
 

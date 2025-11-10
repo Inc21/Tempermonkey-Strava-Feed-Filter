@@ -205,6 +205,95 @@
         { key: "Yoga", label: "Yoga" }
     ];
 
+    const normalizeTypeLabel = (str = '') => str.toLowerCase().replace(/\s+/g, ' ').trim();
+    const condenseTypeLabel = (str = '') => normalizeTypeLabel(str).replace(/[^a-z0-9]/g, '');
+    const TYPE_LABEL_METADATA = TYPES.map(t => ({
+        ...t,
+        normalized: normalizeTypeLabel(t.label),
+        condensed: condenseTypeLabel(t.label)
+    }));
+
+    const TYPE_SYNONYMS = {
+        Ride: /\b(ride|rode|riding|cycle|cycling|cycled|bike|biked|biking|spin)\b/i,
+        Run: /\b(run|ran|running|jog|jogged|jogging)\b/i,
+        Walk: /\b(walk|walked|walking|stroll|strolling)\b/i,
+        Hike: /\b(hike|hiked|hiking|trek|trekking)\b/i,
+        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
+        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
+        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
+        Swim: /\b(swim|swam|swimming)\b/i,
+        VirtualRide: /\b(virtual\s*ride)\b/i,
+        VirtualRun: /\b(virtual\s*run)\b/i,
+        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
+        Workout: /\b(workout|strength\s*training|gym)\b/i,
+        Yoga: /\b(yoga)\b/i
+    };
+
+    function matchActivityType(rawType) {
+        const normalized = normalizeTypeLabel(rawType);
+        if (!normalized) return null;
+
+        const exact = TYPE_LABEL_METADATA.find(t => t.normalized === normalized);
+        if (exact) return exact;
+
+        const condensed = condenseTypeLabel(rawType);
+        const compactMatch = TYPE_LABEL_METADATA.find(t => t.condensed === condensed);
+        if (compactMatch) return compactMatch;
+
+        const partialMatches = TYPE_LABEL_METADATA
+            .filter(t => normalized.includes(t.normalized))
+            .sort((a, b) => b.normalized.length - a.normalized.length);
+
+        if (partialMatches[0]) return partialMatches[0];
+
+        return matchTypeBySynonym(rawType);
+    }
+
+    function matchTypeBySynonym(rawType = '') {
+        if (!rawType) return null;
+        for (const [key, regex] of Object.entries(TYPE_SYNONYMS)) {
+            if (regex.test(rawType)) {
+                return TYPE_LABEL_METADATA.find(t => t.key === key) || null;
+            }
+        }
+        return null;
+    }
+
+    function collectActivityTypeCandidates(activity) {
+        const texts = new Set();
+        const push = (txt) => {
+            if (!txt) return;
+            const value = txt.trim();
+            if (value) texts.add(value);
+        };
+
+        push(activity.querySelector('svg[data-testid="activity-icon"] title, svg[data-testid="activity_icon"] title')?.textContent);
+        const icon = activity.querySelector('svg[data-testid="activity-icon"], svg[data-testid="activity_icon"]');
+        if (icon) {
+            push(icon.getAttribute('aria-label'));
+            push(icon.getAttribute('title'));
+        }
+        push(activity.querySelector('[data-testid="tag"]')?.textContent);
+        push(activity.querySelector('.entry-head, .activity-type')?.textContent);
+        push(activity.querySelector('[data-testid="entry-header"] button')?.textContent);
+        push(activity.querySelector('[data-testid="entry-header"]')?.textContent);
+        push(activity.querySelector('[data-testid="activity_name"]')?.textContent);
+        push(activity.getAttribute('data-activity-type'));
+
+        return Array.from(texts);
+    }
+
+    function resolveActivityType(activity) {
+        const candidates = collectActivityTypeCandidates(activity);
+        for (const candidate of candidates) {
+            const match = matchActivityType(candidate);
+            if (match) {
+                return { match, raw: candidate };
+            }
+        }
+        return { match: null, raw: candidates[0] || '' };
+    }
+
 
 
     // CSS Module - Step 1 of modular refactoring
@@ -1280,6 +1369,10 @@
                         </div>
                     </div>
                     <div class="sff-dropdown-content">
+                        <div class="sff-types-actions">
+                            <button type="button" class="sff-types-select" data-action="select-all">Select All</button>
+                            <button type="button" class="sff-types-select" data-action="clear-all">Clear All</button>
+                        </div>
                         <div class="sff-types">
                             ${TYPES.map(t => `
                                 <label class="sff-chip ${settings.types[t.key] ? 'checked' : ''}">
@@ -1773,6 +1866,34 @@
                     UIModule.updateActivityCount(panel);
                 }
             });
+
+            const typesActions = panel.querySelector('.sff-types-actions');
+            if (typesActions) {
+                typesActions.addEventListener('click', (event) => {
+                    const button = event.target instanceof Element ? event.target.closest('button[data-action]') : null;
+                    if (!button) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const shouldCheck = button.dataset.action === 'select-all';
+                    const checkboxes = [...panel.querySelectorAll('.sff-types input[type="checkbox"][data-typ]')];
+                    if (!checkboxes.length) {
+                        console.warn('⚠️ No activity type checkboxes found for bulk toggle');
+                        return;
+                    }
+
+                    checkboxes.forEach(cb => {
+                        const typ = cb.dataset.typ;
+                        cb.checked = shouldCheck;
+                        settings.types[typ] = shouldCheck;
+                        cb.closest('.sff-chip')?.classList.toggle('checked', shouldCheck);
+                    });
+
+                    UtilsModule.saveSettings(settings);
+                    UIModule.updateActivityCount(panel);
+                    LogicModule.filterActivities();
+                });
+            }
 
             // Apply button
             panel.querySelector('.sff-save').addEventListener('click', async () => {
@@ -2469,9 +2590,10 @@
 
                 const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
                 const athleteName = ownerLink?.textContent || '';
-                const svgIcon = activity.querySelector('svg[data-testid="activity-icon"] title');
-                const typeEl = activity.querySelector('[data-testid="tag"]') || activity.querySelector('.entry-head, .activity-type');
-                const type = svgIcon?.textContent || typeEl?.textContent || '';
+                const { match: resolvedType, raw: resolvedRawType } = resolveActivityType(activity);
+                const typeText = resolvedRawType || '';
+                const normalizedTypeText = normalizeTypeLabel(typeText);
+                const isRunActivity = resolvedType ? /run$/i.test(resolvedType.key) : normalizedTypeText.includes('run');
 
                 let shouldHide = false;
 
@@ -2482,13 +2604,11 @@
                     if (hasKeyword) shouldHide = true;
                 }
 
-                if (!shouldHide && type) {
-                    const typeLower = type.toLowerCase();
-                    const matched = TYPES.find(t => typeLower.includes(t.label.toLowerCase()));
-                    if (matched && settings.types[matched.key]) {
+                if (!shouldHide && (resolvedType || typeText)) {
+                    if (resolvedType && settings.types[resolvedType.key]) {
                         shouldHide = true;
-                    } else if (typeLower.includes('virtual')) {
-                        const hideAnyVirtual = TYPES.filter(t => t.label.toLowerCase().includes('virtual')).some(t => settings.types[t.key]);
+                    } else if (normalizedTypeText.includes('virtual')) {
+                        const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                         if (hideAnyVirtual) shouldHide = true;
                     }
                 }
@@ -2524,7 +2644,7 @@
                     // Robust userscript-based pace parsing
                     const hasMinPace = (typeof settings.minPace === 'number' && settings.minPace > 0);
                     const hasMaxPace = (typeof settings.maxPace === 'number' && settings.maxPace > 0);
-                    if (!shouldHide && (hasMinPace || hasMaxPace) && type && type.toLowerCase().includes('run')) {
+                    if (!shouldHide && (hasMinPace || hasMaxPace) && isRunActivity) {
                         let valueDiv = null;
                         const paceLabel = [...activity.querySelectorAll('span')]
                             .find(s => /(^|\b)pace(\b|$)/i.test(s.textContent || ''));

@@ -4,7 +4,7 @@
 // @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
-// @version      2.3.1
+// @version      2.3.2
 // @license      MIT
 // @author       Inc21
 // @match        https://www.strava.com/*
@@ -117,6 +117,95 @@
         { key: "Workout", label: "Workout" },
         { key: "Yoga", label: "Yoga" }
     ];
+
+    const normalizeTypeLabel = (str = '') => str.toLowerCase().replace(/\s+/g, ' ').trim();
+    const condenseTypeLabel = (str = '') => normalizeTypeLabel(str).replace(/[^a-z0-9]/g, '');
+    const TYPE_LABEL_METADATA = TYPES.map(t => ({
+        ...t,
+        normalized: normalizeTypeLabel(t.label),
+        condensed: condenseTypeLabel(t.label)
+    }));
+
+    const TYPE_SYNONYMS = {
+        Ride: /\b(ride|rode|riding|cycle|cycling|cycled|bike|biked|biking|spin)\b/i,
+        Run: /\b(run|ran|running|jog|jogged|jogging)\b/i,
+        Walk: /\b(walk|walked|walking|stroll|strolling)\b/i,
+        Hike: /\b(hike|hiked|hiking|trek|trekking)\b/i,
+        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
+        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
+        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
+        Swim: /\b(swim|swam|swimming)\b/i,
+        VirtualRide: /\b(virtual\s*ride)\b/i,
+        VirtualRun: /\b(virtual\s*run)\b/i,
+        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
+        Workout: /\b(workout|strength\s*training|gym)\b/i,
+        Yoga: /\b(yoga)\b/i
+    };
+
+    function matchActivityType(rawType) {
+        const normalized = normalizeTypeLabel(rawType);
+        if (!normalized) return null;
+
+        const exact = TYPE_LABEL_METADATA.find(t => t.normalized === normalized);
+        if (exact) return exact;
+
+        const condensed = condenseTypeLabel(rawType);
+        const compactMatch = TYPE_LABEL_METADATA.find(t => t.condensed === condensed);
+        if (compactMatch) return compactMatch;
+
+        const partialMatches = TYPE_LABEL_METADATA
+            .filter(t => normalized.includes(t.normalized))
+            .sort((a, b) => b.normalized.length - a.normalized.length);
+
+        if (partialMatches[0]) return partialMatches[0];
+
+        return matchTypeBySynonym(rawType);
+    }
+
+    function matchTypeBySynonym(rawType = '') {
+        if (!rawType) return null;
+        for (const [key, regex] of Object.entries(TYPE_SYNONYMS)) {
+            if (regex.test(rawType)) {
+                return TYPE_LABEL_METADATA.find(t => t.key === key) || null;
+            }
+        }
+        return null;
+    }
+
+    function collectActivityTypeCandidates(activity) {
+        const texts = new Set();
+        const push = (txt) => {
+            if (!txt) return;
+            const value = txt.trim();
+            if (value) texts.add(value);
+        };
+
+        push(activity.querySelector('svg[data-testid="activity-icon"] title, svg[data-testid="activity_icon"] title')?.textContent);
+        const icon = activity.querySelector('svg[data-testid="activity-icon"], svg[data-testid="activity_icon"]');
+        if (icon) {
+            push(icon.getAttribute('aria-label'));
+            push(icon.getAttribute('title'));
+        }
+        push(activity.querySelector('[data-testid="tag"]')?.textContent);
+        push(activity.querySelector('.entry-head, .activity-type')?.textContent);
+        push(activity.querySelector('[data-testid="entry-header"] button')?.textContent);
+        push(activity.querySelector('[data-testid="entry-header"]')?.textContent);
+        push(activity.querySelector('[data-testid="activity_name"]')?.textContent);
+        push(activity.getAttribute('data-activity-type'));
+
+        return Array.from(texts);
+    }
+
+    function resolveActivityType(activity) {
+        const candidates = collectActivityTypeCandidates(activity);
+        for (const candidate of candidates) {
+            const match = matchActivityType(candidate);
+            if (match) {
+                return { match, raw: candidate };
+            }
+        }
+        return { match: null, raw: candidates[0] || '' };
+    }
 
 
 
@@ -1208,6 +1297,10 @@
                         </div>
                     </div>
                     <div class="sff-dropdown-content">
+                        <div class="sff-types-actions">
+                            <button type="button" class="sff-types-select" data-action="select-all">Select All</button>
+                            <button type="button" class="sff-types-select" data-action="clear-all">Clear All</button>
+                        </div>
                         <div class="sff-types">
                             ${TYPES.map(t => `
                                 <label class="sff-chip ${settings.types[t.key] ? 'checked' : ''}">
@@ -1565,142 +1658,170 @@
 
             // Checkbox styling and real-time updates
             panel.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const chip = e.target.closest('.sff-chip');
-                    if (chip) chip.classList.toggle('checked', e.target.checked);
+                if (e.target.type !== 'checkbox') return;
 
-                    // Master enable toggle
-                    if (e.target.classList.contains('sff-enabled-toggle')) {
-                        settings.enabled = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        const toggleText = document.querySelector('.sff-toggle-text');
-                        if (toggleText) toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
-                        LogicModule.applyAllFilters();
-                        return; // Other toggles not relevant when flipping master
-                    }
+                const chip = e.target.closest('.sff-chip');
+                if (chip) chip.classList.toggle('checked', e.target.checked);
 
-                    // Header kudos toggle
-                    if (e.target.classList.contains('sff-showKudosButton')) {
-                        settings.showKudosButton = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.manageHeaderKudosButton();
-                        UIModule.syncSecondaryKudosVisibility();
-                    }
-
-                    // Gift button
-                    if (e.target.classList.contains('sff-hideGift')) {
-                        settings.hideGiveGift = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateGiftVisibility();
-                    }
-
-                    // Your challenges section
-                    if (e.target.classList.contains('sff-hideChallenges')) {
-                        settings.hideChallenges = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateChallengesVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // Joined challenge cards
-                    if (e.target.classList.contains('sff-hideJoinedChallenges')) {
-                        settings.hideJoinedChallenges = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateJoinedChallengesVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // Suggested Friends
-                    if (e.target.classList.contains('sff-hideSuggestedFriends')) {
-                        settings.hideSuggestedFriends = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateSuggestedFriendsVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // Your Clubs
-                    if (e.target.classList.contains('sff-hideYourClubs')) {
-                        settings.hideYourClubs = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateYourClubsVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // External embeds
-                    if (e.target.classList.contains('sff-hideMyWindsock')) {
-                        settings.hideMyWindsock = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateMyWindsockVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideSummitbag')) {
-                        settings.hideSummitbag = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateSummitbagVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideWandrer')) {
-                        settings.hideWandrer = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateWandrerVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideRunHealth')) {
-                        settings.hideRunHealth = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateRunHealthVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideCommuteTag')) {
-                        settings.hideCommuteTag = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        // apply both visibility update and filter for counts
-                        LogicModule.updateCommuteTagVisibility();
-                        LogicModule.filterActivities();
-                    }
-                    if (e.target.classList.contains('sff-hideJoinWorkout')) {
-                        settings.hideJoinWorkout = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateJoinWorkoutVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideCoachCat')) {
-                        settings.hideCoachCat = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateCoachCatVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
-                        settings.hideAthleteJoinedClub = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateAthleteJoinedClubVisibility();
-                        LogicModule.filterActivities();
-                    }
-                    // Footer
-                    if (e.target.classList.contains('sff-hideFooter')) {
-                        settings.hideFooter = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateFooterVisibility();
-                    }
-
-                    // Activity visibility rules
-                    if (e.target.classList.contains('sff-hideNoMap')) {
-                        settings.hideNoMap = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.filterActivities();
-                    }
-                    if (e.target.classList.contains('sff-hideClubPosts')) {
-                        settings.hideClubPosts = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.filterActivities();
-                    }
-
-                    // Activity type chips
-                    if (e.target.hasAttribute('data-typ')) {
-                        const typ = e.target.getAttribute('data-typ');
-                        settings.types[typ] = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.filterActivities();
-                    }
-
-                    // Update count display
-                    UIModule.updateActivityCount(panel);
+                // Master enable toggle
+                if (e.target.classList.contains('sff-enabled-toggle')) {
+                    settings.enabled = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    const toggleText = document.querySelector('.sff-toggle-text');
+                    if (toggleText) toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
+                    LogicModule.applyAllFilters();
+                    return; // Other toggles not relevant when flipping master
                 }
+
+                // Header kudos toggle
+                if (e.target.classList.contains('sff-showKudosButton')) {
+                    settings.showKudosButton = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.manageHeaderKudosButton();
+                    UIModule.syncSecondaryKudosVisibility();
+                }
+
+                // Gift button
+                if (e.target.classList.contains('sff-hideGift')) {
+                    settings.hideGiveGift = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateGiftVisibility();
+                }
+
+                // Your challenges section
+                if (e.target.classList.contains('sff-hideChallenges')) {
+                    settings.hideChallenges = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateChallengesVisibility();
+                    LogicModule.filterActivities();
+                }
+
+                // Joined challenge cards
+                if (e.target.classList.contains('sff-hideJoinedChallenges')) {
+                    settings.hideJoinedChallenges = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateJoinedChallengesVisibility();
+                    LogicModule.filterActivities();
+                }
+
+                // Suggested Friends
+                if (e.target.classList.contains('sff-hideSuggestedFriends')) {
+                    settings.hideSuggestedFriends = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateSuggestedFriendsVisibility();
+                    LogicModule.filterActivities();
+                }
+
+                // Your Clubs
+                if (e.target.classList.contains('sff-hideYourClubs')) {
+                    settings.hideYourClubs = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateYourClubsVisibility();
+                    LogicModule.filterActivities();
+                }
+
+                // External embeds
+                if (e.target.classList.contains('sff-hideMyWindsock')) {
+                    settings.hideMyWindsock = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateMyWindsockVisibility();
+                }
+                if (e.target.classList.contains('sff-hideSummitbag')) {
+                    settings.hideSummitbag = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateSummitbagVisibility();
+                }
+                if (e.target.classList.contains('sff-hideWandrer')) {
+                    settings.hideWandrer = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateWandrerVisibility();
+                }
+                if (e.target.classList.contains('sff-hideRunHealth')) {
+                    settings.hideRunHealth = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateRunHealthVisibility();
+                }
+                if (e.target.classList.contains('sff-hideCommuteTag')) {
+                    settings.hideCommuteTag = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    // apply both visibility update and filter for counts
+                    LogicModule.updateCommuteTagVisibility();
+                    LogicModule.filterActivities();
+                }
+                if (e.target.classList.contains('sff-hideJoinWorkout')) {
+                    settings.hideJoinWorkout = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateJoinWorkoutVisibility();
+                }
+                if (e.target.classList.contains('sff-hideCoachCat')) {
+                    settings.hideCoachCat = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateCoachCatVisibility();
+                }
+                if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
+                    settings.hideAthleteJoinedClub = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateAthleteJoinedClubVisibility();
+                    LogicModule.filterActivities();
+                }
+                // Footer
+                if (e.target.classList.contains('sff-hideFooter')) {
+                    settings.hideFooter = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateFooterVisibility();
+                }
+
+                // Activity visibility rules
+                if (e.target.classList.contains('sff-hideNoMap')) {
+                    settings.hideNoMap = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                }
+                if (e.target.classList.contains('sff-hideClubPosts')) {
+                    settings.hideClubPosts = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                }
+
+                // Activity type chips
+                if (e.target.hasAttribute('data-typ')) {
+                    const typ = e.target.getAttribute('data-typ');
+                    settings.types[typ] = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                }
+
+                // Update count display
+                UIModule.updateActivityCount(panel);
             });
+
+            const typesActions = panel.querySelector('.sff-types-actions');
+            if (typesActions) {
+                typesActions.addEventListener('click', (event) => {
+                    const button = event.target instanceof Element ? event.target.closest('button[data-action]') : null;
+                    if (!button) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const shouldCheck = button.dataset.action === 'select-all';
+                    const checkboxes = [...panel.querySelectorAll('.sff-types input[type="checkbox"][data-typ]')];
+                    if (!checkboxes.length) {
+                        console.warn('⚠️ No activity type checkboxes found for bulk toggle');
+                        return;
+                    }
+
+                    checkboxes.forEach(cb => {
+                        const typ = cb.dataset.typ;
+                        cb.checked = shouldCheck;
+                        settings.types[typ] = shouldCheck;
+                        cb.closest('.sff-chip')?.classList.toggle('checked', shouldCheck);
+                    });
+
+                    UtilsModule.saveSettings(settings);
+                    UIModule.updateActivityCount(panel);
+                    LogicModule.filterActivities();
+                });
+            }
 
             // Apply button
             panel.querySelector('.sff-save').addEventListener('click', () => {
@@ -2426,9 +2547,10 @@
 
                 const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
                 const athleteName = ownerLink?.textContent || '';
-                const svgIcon = activity.querySelector('svg[data-testid="activity-icon"] title');
-                const typeEl = activity.querySelector('[data-testid="tag"]') || activity.querySelector('.entry-head, .activity-type');
-                const type = svgIcon?.textContent || typeEl?.textContent || '';
+                const { match: resolvedType, raw: resolvedRawType } = resolveActivityType(activity);
+                const typeText = resolvedRawType || '';
+                const normalizedTypeText = normalizeTypeLabel(typeText);
+                const isRunActivity = resolvedType ? /run$/i.test(resolvedType.key) : normalizedTypeText.includes('run');
 
                 let shouldHide = false;
 
@@ -2439,13 +2561,11 @@
                     if (hasKeyword) shouldHide = true;
                 }
 
-                if (!shouldHide && type) {
-                    const typeLower = type.toLowerCase();
-                    const matched = TYPES.find(t => typeLower.includes(t.label.toLowerCase()));
-                    if (matched && settings.types[matched.key]) {
+                if (!shouldHide && (resolvedType || typeText)) {
+                    if (resolvedType && settings.types[resolvedType.key]) {
                         shouldHide = true;
-                    } else if (typeLower.includes('virtual')) {
-                        const hideAnyVirtual = TYPES.filter(t => t.label.toLowerCase().includes('virtual')).some(t => settings.types[t.key]);
+                    } else if (normalizedTypeText.includes('virtual')) {
+                        const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                         if (hideAnyVirtual) shouldHide = true;
                     }
                 }
@@ -2477,7 +2597,7 @@
                     }
                 }
 
-                if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && type && type.toLowerCase().includes('run')) {
+                if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && isRunActivity) {
                     // Robustly locate the Pace value within this activity card
                     let valueDiv = null;
                     const paceLabel = [...activity.querySelectorAll('span')].find(s => /(^|\b)pace(\b|$)/i.test(s.textContent || ''));
@@ -3093,12 +3213,11 @@
 
             // Activity types
             if (!shouldHide && type) {
-                const typeLower = type.toLowerCase();
-                const matched = TYPES.find(t => typeLower.includes(t.label.toLowerCase()));
+                const matched = matchActivityType(type);
                 if (matched && settings.types[matched.key]) {
                     shouldHide = true;
-                } else if (typeLower.includes('virtual')) {
-                    const hideAnyVirtual = TYPES.filter(t => t.label.toLowerCase().includes('virtual')).some(t => settings.types[t.key]);
+                } else if (normalizeTypeLabel(type).includes('virtual')) {
+                    const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                     if (hideAnyVirtual) shouldHide = true;
                 }
             }
