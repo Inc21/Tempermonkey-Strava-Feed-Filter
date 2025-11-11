@@ -29,7 +29,7 @@ with Strava's design.
 - **Keyword Filtering**: Hide activities containing specific keywords in titles
 - **Activity Type Filtering**: Granular control over 40+ activity types
   (Run, Ride, Virtual activities, etc.)
-- **Quick tip – isolate one type fast**: Click “Select All”, then deselect the activity you’d like to keep hidden. For example, to see only hikes: open **Activity Types**, press **Select All**, then untick **Hike**. The feed will show only hikes while hiding every other category.
+- **Quick tip – isolate one type fast**: Click “Select All”, then deselect the activity you’d like to show. For example, to see only hikes: open **Activity Types**, press **Select All**, then untick **Hike**. The feed will show only hikes while hiding every other category.
 
   > 💡 Want the opposite? Hit **Clear All** and tick just the one type you want to hide.
 

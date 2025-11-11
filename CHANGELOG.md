@@ -10,10 +10,10 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ### Improvements
 
-- Improved activity type detection to prioritise the most specific Strava label, preventing broad filters (e.g. "Run") from hiding specialised activities like "Trail Run".@userscript/strava-feed-filter-clean.js#121-208
-- Added synonym and multi-source matching so group posts such as "rode with…" are classified correctly before applying filters.@userscript/strava-feed-filter-clean.js#175-208
-- Synced the enhanced detection logic across the Tampermonkey userscript, Safari iOS variant, Chrome extension, and Firefox extension for consistent behaviour.@chrome-extension/content/injected.js#179-266 @firefox-extension/content/injected.js#208-295 @userscript/sff-safari.user.js#121-208
-- Added quick Select All / Clear All toggles to the Activity Types panel in every build for rapid bulk filtering adjustments.@chrome-extension/content/injected.js#1362-1851 @userscript/strava-feed-filter-clean.js#1291-1823 @userscript/sff-safari.user.js#1513-2051 @firefox-extension/content/injected.js#1364-1895
+- Improved activity type detection to prioritise the most specific Strava label, preventing broad filters (e.g. "Run") from hiding specialised activities like "Trail Run".
+- Added synonym and multi-source matching so group posts such as "rode with…" are classified correctly before applying filters.
+- Synced the enhanced detection logic across the Tampermonkey userscript, Safari iOS variant, Chrome extension, and Firefox extension for consistent behaviour.
+- Added quick Select All / Clear All toggles to the Activity Types panel in every build for rapid bulk filtering adjustments.
 
 ---
 

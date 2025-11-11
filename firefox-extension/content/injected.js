@@ -47,58 +47,6 @@
                 return defaults;
             }
         },
-
-        updateCommuteTagVisibility() {
-            try {
-                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                activities.forEach(activity => {
-                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
-                    const isCommute = tags.some(t => t === 'commute');
-                    if (isCommute) {
-                        if (settings.enabled && settings.hideCommuteTag) {
-                            if (activity.dataset.sffHiddenCommute !== 'sff') {
-                                activity.dataset.sffHiddenCommute = 'sff';
-                                activity.style.display = 'none';
-                            }
-                        } else if (activity.dataset.sffHiddenCommute === 'sff') {
-                            activity.style.display = '';
-                            delete activity.dataset.sffHiddenCommute;
-                        }
-                    }
-                });
-            } catch (e) {
-                console.warn('updateCommuteTagVisibility error:', e);
-            }
-        },
-        
-        updateWandrerVisibility() {
-            try {
-                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for Wandrer content`);
-
-                activities.forEach(activity => {
-                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
-
-                    textElements.forEach(element => {
-                        const text = element.textContent?.trim() || '';
-                        const hasWandrer = /\bfrom\s+wandrer\b/i.test(text) || /\bwandrer\b/i.test(text);
-                        if (hasWandrer && text.length < 800) {
-                            if (settings.enabled && settings.hideWandrer) {
-                                if (element.dataset.sffHiddenBy !== 'sff') {
-                                    element.dataset.sffHiddenBy = 'sff';
-                                    element.style.display = 'none';
-                                }
-                            } else if (element.dataset.sffHiddenBy === 'sff') {
-                                element.style.display = '';
-                                delete element.dataset.sffHiddenBy;
-                            }
-                        }
-                    });
-                });
-            } catch (e) {
-                console.warn('updateWandrerVisibility error:', e);
-            }
-        },
         async set(key, value) {
             try {
                 if (ext && ext.storage && ext.storage.local) {
@@ -2275,6 +2223,29 @@
             }
         },
 
+        updateCommuteTagVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                activities.forEach(activity => {
+                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
+                    const isCommute = tags.some(t => t === 'commute');
+                    if (isCommute) {
+                        if (settings.enabled && settings.hideCommuteTag) {
+                            if (activity.dataset.sffHiddenCommute !== 'sff') {
+                                activity.dataset.sffHiddenCommute = 'sff';
+                                activity.style.display = 'none';
+                            }
+                        } else if (activity.dataset.sffHiddenCommute === 'sff') {
+                            activity.style.display = '';
+                            delete activity.dataset.sffHiddenCommute;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('updateCommuteTagVisibility error:', e);
+            }
+        },
+
         updateFooterVisibility() {
             try {
                 // Find ONLY the footer section that includes footer-specific markers
@@ -2336,6 +2307,35 @@
                 });
             } catch (e) {
                 console.warn('updateMyWindsockVisibility error:', e);
+            }
+        },
+
+        updateWandrerVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                console.log(`🔍 Checking ${activities.length} activities for Wandrer content`);
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        const hasWandrer = /\bfrom\s+wandrer\b/i.test(text) || /\bwandrer\b/i.test(text);
+                        if (hasWandrer && text.length < 800) {
+                            if (settings.enabled && settings.hideWandrer) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateWandrerVisibility error:', e);
             }
         },
 
