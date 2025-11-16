@@ -35,6 +35,7 @@
     const DEFAULTS = {
         keywords: [],
         allowedAthletes: [],
+        ignoredAthletes: [],
         types: {},
         hideNoMap: false,
         hideGiveGift: false,
@@ -1299,6 +1300,11 @@
                 .map(x => x.trim())
                 .filter(Boolean);
     
+            settings.ignoredAthletes = panel.querySelector('.sff-ignored-athletes').value
+                .split(',')
+                .map(x => x.trim())
+                .filter(Boolean);
+    
             settings.minKm = +panel.querySelector('.sff-minKm').value || 0;
             settings.maxKm = +panel.querySelector('.sff-maxKm').value || 0;
             settings.minMins = +panel.querySelector('.sff-minMins').value || 0;
@@ -1513,6 +1519,17 @@
                 </div>
                 <div class="sff-row sff-dropdown">
                     <div class="sff-dropdown-header">
+                        <span class="sff-label">Ignore Athletes</span>
+                        <div class="sff-dropdown-right">
+                            <span class="sff-dropdown-indicator">▼</span>
+                        </div>
+                    </div>
+                    <div class="sff-dropdown-content">
+                        <textarea class="sff-input sff-ignored-athletes" placeholder="e.g. John Doe, Jane Smith">${settings.ignoredAthletes.join(', ')}</textarea>
+                    </div>
+                </div>
+                <div class="sff-row sff-dropdown">
+                    <div class="sff-dropdown-header">
                         <span class="sff-label">Activity Types</span>
                         <div class="sff-dropdown-right">
                             <span class="sff-activity-count"></span>
@@ -1692,6 +1709,7 @@
                 </div>
                 <div class="sff-copyright">
                     <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
+                    <p id="sff-version" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">Version</p>
                 </div>
             `;
         },
@@ -1699,6 +1717,17 @@
         setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
             console.log('🎯 Clean Filter: Setting up events...');
     
+            // Set dynamic version from userscript metadata
+            try {
+                const versionEl = panel.querySelector('#sff-version');
+                if (versionEl) {
+                    const version = GM_info?.script?.version || '2.3.2-safari-ios';
+                    versionEl.textContent = `Version ${version}`;
+                }
+            } catch (error) {
+                console.log('Could not get script version:', error);
+            }
+
             // Initialize draggable
             const cleanupDraggable = this.makeDraggable(panel);
     
@@ -1868,13 +1897,6 @@
             panel.querySelector('.sff-close').addEventListener('click', (e) => {
                 e.stopPropagation();
                 togglePanel();
-            });
-    
-            // Main toggle switch
-            panel.querySelector('.sff-enabled-toggle').addEventListener('change', (e) => {
-                settings.enabled = e.target.checked;
-                UtilsModule.saveSettings(settings);
-                LogicModule.applyAllFilters();
             });
     
             // Toggle all dropdowns
@@ -2746,17 +2768,53 @@
                     activity.style.display = '';
                 });
     
-                // Still count hidden sections even when activity filtering is disabled
-                const hiddenSectionsCount = this.countHiddenSections();
-    
+                // Update button to show "OFF" when filtering is disabled
                 const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-                if (btn) btn.textContent = `(${hiddenSectionsCount})`;
+                const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
+                if (btn) btn.textContent = 'OFF';
+                if (secondaryBtn) secondaryBtn.textContent = 'OFF';
                 return;
             }
             let hiddenCount = 0;
     
             activities.forEach(activity => {
+                // Get the primary owner of the activity
                 const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
+                let athleteName = ownerLink?.textContent || '';
+                
+                // For "joined a club" and similar entries, check group-header
+                if (!athleteName) {
+                    const groupHeader = activity.querySelector('[data-testid="group-header"]');
+                    if (groupHeader) {
+                        const headerLink = groupHeader.querySelector('a');
+                        athleteName = headerLink?.textContent || '';
+                    }
+                }
+
+                // Check if the PRIMARY athlete should be ignored (applies to ALL entry types)
+                // Skip group activities (detected by "rode with" or similar text in buttons)
+                if (settings.ignoredAthletes.length > 0 && athleteName) {
+                    // Check if this is a group activity
+                    const isGroupActivity = Array.from(activity.querySelectorAll('button')).some(btn => 
+                        /\b(rode|ran|walked|hiked|swam)\s+with\b/i.test(btn.textContent || '')
+                    );
+                    
+                    // Only apply ignore filter to non-group activities
+                    if (!isGroupActivity) {
+                        const nameParts = athleteName.toLowerCase().split(/\s+/);
+                        const isIgnored = settings.ignoredAthletes.some(ignoredName => {
+                            if (!ignoredName) return false;
+                            const ignoredNameParts = ignoredName.toLowerCase().split(/\s+/);
+                            return ignoredNameParts.every(part => nameParts.includes(part));
+                        });
+
+                        if (isIgnored) {
+                            activity.style.display = 'none';
+                            hiddenCount++;
+                            return;
+                        }
+                    }
+                }
     
                 // Handle club posts (robust detection)
                 const isClub = this.isClubPost(activity) || (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/'));
@@ -2794,7 +2852,6 @@
                 }
     
                 const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
-                const athleteName = ownerLink?.textContent || '';
                 const { match: resolvedType, raw: resolvedRawType } = resolveActivityType(activity);
                 const typeText = resolvedRawType || '';
                 const normalizedTypeText = normalizeTypeLabel(typeText);
