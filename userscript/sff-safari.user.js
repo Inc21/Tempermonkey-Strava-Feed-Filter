@@ -48,7 +48,6 @@
         hideSummitbag: false,
         hideRunHealth: false,
         hideWandrer: false,
-        hideCommuteTag: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -1324,7 +1323,6 @@
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
-            settings.hideCommuteTag = panel.querySelector('.sff-hideCommuteTag') ? panel.querySelector('.sff-hideCommuteTag').checked : settings.hideCommuteTag;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
@@ -1667,10 +1665,6 @@
                         <label class="sff-chip ${settings.hideNoMap ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideNoMap" ${settings.hideNoMap ? 'checked' : ''}>
                             Hide activities without map
-                        </label>
-                        <label class="sff-chip ${settings.hideCommuteTag ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideCommuteTag" ${settings.hideCommuteTag ? 'checked' : ''}>
-                            Hide commute (tag)
                         </label>
                         <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
@@ -2830,15 +2824,6 @@
                 }
     
                 // Hide commute-tagged activities early
-                try {
-                    const tags = Array.from(activity.querySelectorAll('[data-testid="tag"]')).map(el => (el.textContent || '').trim().toLowerCase());
-                    const hasCommute = tags.some(t => t === 'commute');
-                    if (hasCommute && settings.hideCommuteTag) {
-                        activity.style.display = 'none';
-                        hiddenCount++;
-                        return;
-                    }
-                } catch (_) {}
     
                 // Handle joined challenge cards separately
                 if (this.isChallengeEntry(activity)) {
@@ -2869,7 +2854,8 @@
                 if (!shouldHide && (resolvedType || typeText)) {
                     if (resolvedType && settings.types[resolvedType.key]) {
                         shouldHide = true;
-                    } else if (normalizedTypeText.includes('virtual')) {
+                    } else if (!resolvedType && normalizedTypeText.includes('virtual')) {
+                        // Only use fallback logic if we couldn't resolve the exact type
                         const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                         if (hideAnyVirtual) shouldHide = true;
                     }

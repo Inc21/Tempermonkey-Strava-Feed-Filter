@@ -48,7 +48,6 @@
         hideSummitbag: false,
         hideRunHealth: false,
         hideWandrer: false,
-        hideCommuteTag: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
