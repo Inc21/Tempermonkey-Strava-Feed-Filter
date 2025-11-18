@@ -215,31 +215,83 @@
             if (value) texts.add(value);
         };
 
+        push(activity.getAttribute('data-activity-type'));
+        activity.querySelectorAll('[data-testid="tag"]').forEach(tag => push(tag.textContent));
+
         push(activity.querySelector('svg[data-testid="activity-icon"] title, svg[data-testid="activity_icon"] title')?.textContent);
         const icon = activity.querySelector('svg[data-testid="activity-icon"], svg[data-testid="activity_icon"]');
         if (icon) {
             push(icon.getAttribute('aria-label'));
             push(icon.getAttribute('title'));
         }
-        push(activity.querySelector('[data-testid="tag"]')?.textContent);
         push(activity.querySelector('.entry-head, .activity-type')?.textContent);
         push(activity.querySelector('[data-testid="entry-header"] button')?.textContent);
         push(activity.querySelector('[data-testid="entry-header"]')?.textContent);
         push(activity.querySelector('[data-testid="activity_name"]')?.textContent);
-        push(activity.getAttribute('data-activity-type'));
 
         return Array.from(texts);
     }
 
+    const VIRTUAL_TYPE_OVERRIDES = {
+        Ride: 'VirtualRide',
+        Run: 'VirtualRun',
+        TrailRun: 'VirtualRun',
+        Row: 'VirtualRow',
+        Rowing: 'VirtualRow'
+    };
+
+    function getVirtualOverride(match) {
+        if (!match) return null;
+        if (/^virtual/i.test(match.key)) return null;
+        const overrideKey = VIRTUAL_TYPE_OVERRIDES[match.key];
+        if (!overrideKey) return null;
+        return TYPE_LABEL_METADATA.find(t => t.key === overrideKey) || null;
+    }
+
+    function inferVirtualFallback(candidates = []) {
+        const joined = candidates.join(' ').toLowerCase();
+        const runRegex = /\b(run|ran|running|jog|pace)\b/;
+        const rowRegex = /\b(row|rowing|erg)\b/;
+
+        let key = 'VirtualRide';
+        if (runRegex.test(joined)) {
+            key = 'VirtualRun';
+        } else if (rowRegex.test(joined)) {
+            key = 'VirtualRow';
+        }
+
+        return TYPE_LABEL_METADATA.find(t => t.key === key) || null;
+    }
+
     function resolveActivityType(activity) {
         const candidates = collectActivityTypeCandidates(activity);
+        const tagTexts = Array.from(activity.querySelectorAll('[data-testid="tag"]'))
+            .map(tag => (tag.textContent || '').trim())
+            .filter(Boolean);
+        const hasVirtualTag = tagTexts.some(text => /virtual/i.test(text));
+        const firstCandidate = candidates[0] || '';
+
         for (const candidate of candidates) {
             const match = matchActivityType(candidate);
             if (match) {
+                if (hasVirtualTag) {
+                    const virtualMatch = getVirtualOverride(match);
+                    if (virtualMatch) {
+                        return { match: virtualMatch, raw: candidate };
+                    }
+                }
                 return { match, raw: candidate };
             }
         }
-        return { match: null, raw: candidates[0] || '' };
+
+        if (hasVirtualTag) {
+            const fallback = inferVirtualFallback(candidates);
+            if (fallback) {
+                return { match: fallback, raw: firstCandidate };
+            }
+        }
+
+        return { match: null, raw: firstCandidate };
     }
 
 
