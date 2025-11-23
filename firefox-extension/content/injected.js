@@ -36,10 +36,15 @@
         async get(key, defaults) {
             try {
                 if (ext && ext.storage && ext.storage.local) {
-                    const obj = await ext.storage.local.get(key);
+                    // Race against a timeout to avoid hanging if the background service worker is asleep
+                    const p = ext.storage.local.get(key);
+                    const timeout = new Promise((_, reject) => setTimeout(() => reject('timeout'), 300));
+                    const obj = await Promise.race([p, timeout]);
                     return (obj && Object.prototype.hasOwnProperty.call(obj, key)) ? obj[key] : defaults;
                 }
-            } catch (_) {}
+            } catch (e) {
+                // Fallback to localStorage on timeout or error
+            }
             try {
                 const raw = localStorage.getItem(key);
                 return raw ? JSON.parse(raw) : defaults;
@@ -48,17 +53,18 @@
             }
         },
         async set(key, value) {
-            try {
-                if (ext && ext.storage && ext.storage.local) {
-                    await ext.storage.local.set({ [key]: value });
-                    return;
-                }
-            } catch (_) {}
+            // Always save to localStorage as a synchronous fallback cache
             try {
                 localStorage.setItem(key, JSON.stringify(value));
             } catch (e) {
                 console.warn('Fallback save to localStorage failed:', e);
             }
+            // Also save to extension storage
+            try {
+                if (ext && ext.storage && ext.storage.local) {
+                    await ext.storage.local.set({ [key]: value });
+                }
+            } catch (_) {}
         }
     };
 
@@ -162,17 +168,19 @@
     }));
 
     const TYPE_SYNONYMS = {
+        VirtualRide: /\b(virtual\s*ride)\b/i,
+        VirtualRun: /\b(virtual\s*run)\b/i,
+        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
+        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
+        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
+        EBikeRide: /\b(e-bike|ebike|electric\s*bike)\b/i,
+        EMountainBikeRide: /\b(e-mtb|e-mountain\s*bike)\b/i,
+        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
         Ride: /\b(ride|rode|riding|cycle|cycling|cycled|bike|biked|biking|spin)\b/i,
         Run: /\b(run|ran|running|jog|jogged|jogging)\b/i,
         Walk: /\b(walk|walked|walking|stroll|strolling)\b/i,
         Hike: /\b(hike|hiked|hiking|trek|trekking)\b/i,
-        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
-        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
-        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
         Swim: /\b(swim|swam|swimming)\b/i,
-        VirtualRide: /\b(virtual\s*ride)\b/i,
-        VirtualRun: /\b(virtual\s*run)\b/i,
-        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
         Workout: /\b(workout|strength\s*training|gym)\b/i,
         Yoga: /\b(yoga)\b/i
     };
@@ -377,14 +385,23 @@
         margin-right: 16px !important;
       }
 
-      .sff-toggle-switch {
+      .sff-toggle-section {
+        display: flex !important;
+        align-items: center !important;
+        padding: 12px 16px !important;
+        border-bottom: 1px solid #eee !important;
+        background: #f8f9fa !important;
+      }
+
+      .sff-switch {
         position: relative !important;
         display: inline-block !important;
         width: 34px !important;
         height: 20px !important;
+        margin-right: 10px !important;
       }
 
-      .sff-toggle-switch input {
+      .sff-switch input {
         opacity: 0 !important;
         width: 0 !important;
         height: 0 !important;
@@ -923,6 +940,98 @@
       .sff-secondary-kudos-btn:hover {
         background: #e04a00 !important;
       }
+
+      /* Settings View Styles */
+      .sff-settings-toggle {
+        background: none !important;
+        border: none !important;
+        cursor: pointer !important;
+        font-size: 18px !important;
+        padding: 4px !important;
+        margin-left: auto !important; /* Pushes it to the right of flex container */
+        opacity: 0.8 !important;
+        transition: opacity 0.2s !important;
+        color: #666 !important; /* Updated to match gray theme of toggle section */
+        line-height: 1 !important;
+      }
+      .sff-settings-toggle:hover {
+        opacity: 1 !important;
+      }
+      
+      .sff-view-settings {
+        display: none;
+        padding: 16px;
+      }
+      .sff-view-settings.active {
+        display: block !important;
+      }
+      .sff-view-filters.hidden {
+        display: none !important;
+      }
+      
+      .sff-settings-btn {
+        width: 100% !important;
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+        background: #f8f9fa !important;
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        text-align: center !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        transition: background-color 0.2s !important;
+      }
+      .sff-settings-btn:hover {
+        background: #e9ecef !important;
+      }
+      .sff-settings-btn.danger {
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
+        background: #fff !important;
+      }
+      .sff-settings-btn.danger:hover {
+        background: #dc3545 !important;
+        color: white !important;
+      }
+      
+      .sff-file-input {
+        display: none !important;
+      }
+      
+      .sff-settings-desc {
+        font-size: 13px !important;
+        color: #666 !important;
+        margin-bottom: 20px !important;
+        line-height: 1.4 !important;
+      }
+
+      .sff-toast {
+        position: absolute !important;
+        bottom: 20px !important;
+        left: 50% !important;
+        transform: translateX(-50%) translateY(20px) !important;
+        background: #333 !important;
+        color: white !important;
+        padding: 8px 16px !important;
+        border-radius: 4px !important;
+        font-size: 13px !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transition: all 0.3s ease !important;
+        z-index: 100 !important;
+        white-space: nowrap !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+      }
+      .sff-toast.show {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateX(-50%) translateY(0) !important;
+      }
+      .sff-toast.error {
+        background: #dc3545 !important;
+      }
         `);
     }
 
@@ -1077,6 +1186,18 @@
             panel.querySelector('[data-label-type="distance"]').textContent = `Distance (${isMetric ? 'km' : 'mi'}):`;
             panel.querySelector('[data-label-type="elevation"]').textContent = `Elevation Gain (${isMetric ? 'm' : 'ft'}):`;
             panel.querySelector('[data-label-type="pace"]').textContent = `Pace for Runs (${isMetric ? 'min/km' : 'min/mi'}):`;
+        },
+
+        showToast(panel, message, type = 'success') {
+            const toast = panel.querySelector('.sff-toast');
+            if (!toast) return;
+            
+            toast.textContent = message;
+            toast.className = `sff-toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         },
 
         applySettings(panel) {
@@ -1281,232 +1402,370 @@
 
         _getPanelHTML() {
             return `
-                <div class="sff-toggle-section">
-                    <label class="sff-switch">
-                        <input type="checkbox" class="sff-enabled-toggle" ${settings.enabled ? 'checked' : ''}>
-                        <span class="sff-slider"></span>
-                    </label>
-                    <span class="sff-label">
-                        <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
-                    </span>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Keywords to Hide</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
-                        </div>
+                <div class="sff-toast"></div>
+                <div class="sff-view-filters">
+                    <div class="sff-toggle-section">
+                        <label class="sff-switch">
+                            <input type="checkbox" class="sff-enabled-toggle" ${settings.enabled ? 'checked' : ''}>
+                            <span class="sff-slider"></span>
+                        </label>
+                        <span class="sff-label">
+                            <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
+                        </span>
+                        <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; color: #666; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">⚙️</button>
                     </div>
-                    <div class="sff-dropdown-content">
-                        <textarea class="sff-input sff-keywords" placeholder="e.g. warm up, cool down">${settings.keywords.join(', ')}</textarea>
-                    </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Allowed Athletes</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
-                        </div>
-                    </div>
-                    <div class="sff-dropdown-content">
-                        <textarea class="sff-input sff-allowed-athletes" placeholder="e.g. John Doe, Jane Smith">${settings.allowedAthletes.join(', ')}</textarea>
-                    </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Ignore Athletes</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
-                        </div>
-                    </div>
-                    <div class="sff-dropdown-content">
-                        <textarea class="sff-input sff-ignored-athletes" placeholder="e.g. John Doe, Jane Smith">${settings.ignoredAthletes.join(', ')}</textarea>
-                    </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Activity Types</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-activity-count"></span>
-                            <span class="sff-dropdown-indicator">▼</span>
-                        </div>
-                    </div>
-                    <div class="sff-dropdown-content">
-                        <div class="sff-types-actions">
-                            <button type="button" class="sff-types-select" data-action="select-all">Select All</button>
-                            <button type="button" class="sff-types-select" data-action="clear-all">Clear All</button>
-                        </div>
-                        <div class="sff-types">
-                            ${TYPES.map(t => `
-                                <label class="sff-chip ${settings.types[t.key] ? 'checked' : ''}">
-                                    <input type="checkbox" data-typ="${t.key}" ${settings.types[t.key] ? 'checked' : ''}>
-                                    ${t.label}
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Min/Max Filters</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
-                        </div>
-                    </div>
-                    <div class="sff-dropdown-content">
-                        <div class="sff-row">
-                            <label class="sff-label">Unit System</label>
-                            <div class="sff-unit-toggle">
-                                <button class="sff-unit-btn metric ${settings.unitSystem === 'metric' ? 'active' : ''}" data-unit="metric">Metric</button>
-                                <button class="sff-unit-btn imperial ${settings.unitSystem === 'imperial' ? 'active' : ''}" data-unit="imperial">Imperial</button>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Keywords to Hide</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
                             </div>
                         </div>
-                        <div class="sff-row">
-                            <label class="sff-label" data-label-type="distance">Distance (km):</label>
-                            <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minKm" min="0" step="0.1" value="${settings.minKm}" placeholder="Min">
-                                <input type="number" class="sff-input sff-maxKm" min="0" step="0.1" value="${settings.maxKm}" placeholder="Max">
+                        <div class="sff-dropdown-content">
+                            <textarea class="sff-input sff-keywords" placeholder="e.g. warm up, cool down">${settings.keywords.join(', ')}</textarea>
+                        </div>
+                    </div>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Allowed Athletes</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
                             </div>
                         </div>
-                        <div class="sff-row">
-                            <label class="sff-label" data-label-type="duration">Duration (minutes):</label>
-                            <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minMins" min="0" value="${settings.minMins}" placeholder="Min">
-                                <input type="number" class="sff-input sff-maxMins" min="0" value="${settings.maxMins}" placeholder="Max">
+                        <div class="sff-dropdown-content">
+                            <textarea class="sff-input sff-allowed-athletes" placeholder="e.g. John Doe, Jane Smith">${settings.allowedAthletes.join(', ')}</textarea>
+                        </div>
+                    </div>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Ignore Athletes</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
                             </div>
                         </div>
-                        <div class="sff-row">
-                            <label class="sff-label" data-label-type="elevation">Elevation Gain (m):</label>
-                            <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minElevM" min="0" value="${settings.minElevM}" placeholder="Min">
-                                <input type="number" class="sff-input sff-maxElevM" min="0" step="0.1" value="${settings.maxElevM}" placeholder="Max">
+                        <div class="sff-dropdown-content">
+                            <textarea class="sff-input sff-ignored-athletes" placeholder="e.g. John Doe, Jane Smith">${settings.ignoredAthletes.join(', ')}</textarea>
+                        </div>
+                    </div>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Activity Types</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-activity-count"></span>
+                                <span class="sff-dropdown-indicator">▼</span>
                             </div>
                         </div>
-                        <div class="sff-row">
-                            <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
-                            <div class="sff-input-group">
-                                <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace}" placeholder="Min (Slowest)">
-                                <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace}" placeholder="Max (Fastest)">
+                        <div class="sff-dropdown-content">
+                            <div class="sff-types-actions">
+                                <button type="button" class="sff-types-select" data-action="select-all">Select All</button>
+                                <button type="button" class="sff-types-select" data-action="clear-all">Clear All</button>
+                            </div>
+                            <div class="sff-types">
+                                ${TYPES.map(t => `
+                                    <label class="sff-chip ${settings.types[t.key] ? 'checked' : ''}">
+                                        <input type="checkbox" data-typ="${t.key}" ${settings.types[t.key] ? 'checked' : ''}>
+                                        ${t.label}
+                                    </label>
+                                `).join('')}
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">External Service Embeds</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Min/Max Filters</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
+                            </div>
+                        </div>
+                        <div class="sff-dropdown-content">
+                            <div class="sff-row">
+                                <label class="sff-label">Unit System</label>
+                                <div class="sff-unit-toggle">
+                                    <button class="sff-unit-btn metric ${settings.unitSystem === 'metric' ? 'active' : ''}" data-unit="metric">Metric</button>
+                                    <button class="sff-unit-btn imperial ${settings.unitSystem === 'imperial' ? 'active' : ''}" data-unit="imperial">Imperial</button>
+                                </div>
+                            </div>
+                            <div class="sff-row">
+                                <label class="sff-label" data-label-type="distance">Distance (km):</label>
+                                <div class="sff-input-group">
+                                    <input type="number" class="sff-input sff-minKm" min="0" step="0.1" value="${settings.minKm}" placeholder="Min">
+                                    <input type="number" class="sff-input sff-maxKm" min="0" step="0.1" value="${settings.maxKm}" placeholder="Max">
+                                </div>
+                            </div>
+                            <div class="sff-row">
+                                <label class="sff-label" data-label-type="duration">Duration (minutes):</label>
+                                <div class="sff-input-group">
+                                    <input type="number" class="sff-input sff-minMins" min="0" value="${settings.minMins}" placeholder="Min">
+                                    <input type="number" class="sff-input sff-maxMins" min="0" value="${settings.maxMins}" placeholder="Max">
+                                </div>
+                            </div>
+                            <div class="sff-row">
+                                <label class="sff-label" data-label-type="elevation">Elevation Gain (m):</label>
+                                <div class="sff-input-group">
+                                    <input type="number" class="sff-input sff-minElevM" min="0" value="${settings.minElevM}" placeholder="Min">
+                                    <input type="number" class="sff-input sff-maxElevM" min="0" step="0.1" value="${settings.maxElevM}" placeholder="Max">
+                                </div>
+                            </div>
+                            <div class="sff-row">
+                                <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
+                                <div class="sff-input-group">
+                                    <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace}" placeholder="Min (Slowest)">
+                                    <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace}" placeholder="Max (Fastest)">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="sff-dropdown-content">
-                        <label class="sff-chip ${settings.hideMyWindsock ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideMyWindsock" ${settings.hideMyWindsock ? 'checked' : ''}>
-                            Hide "myWindsock Report"
-                        </label>
-                        <label class="sff-chip ${settings.hideSummitbag ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideSummitbag" ${settings.hideSummitbag ? 'checked' : ''}>
-                            Hide "summitbag.com"
-                        </label>
-                        <label class="sff-chip ${settings.hideRunHealth ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
-                            Hide "Run Health"
-                        </label>
-                        <label class="sff-chip ${settings.hideWandrer ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideWandrer" ${settings.hideWandrer ? 'checked' : ''}>
-                            Hide "Wandrer" embeds
-                        </label>
-                        <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
-                            Hide "JOIN workout"
-                        </label>
-                        <label class="sff-chip ${settings.hideCoachCat ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideCoachCat" ${settings.hideCoachCat ? 'checked' : ''}>
-                            Hide "CoachCat Training Summary"
-                        </label>
-                    </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Sidebar</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">External Service Embeds</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
+                            </div>
+                        </div>
+                        <div class="sff-dropdown-content">
+                            <label class="sff-chip ${settings.hideMyWindsock ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideMyWindsock" ${settings.hideMyWindsock ? 'checked' : ''}>
+                                Hide "myWindsock Report"
+                            </label>
+                            <label class="sff-chip ${settings.hideSummitbag ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideSummitbag" ${settings.hideSummitbag ? 'checked' : ''}>
+                                Hide "summitbag.com"
+                            </label>
+                            <label class="sff-chip ${settings.hideRunHealth ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideRunHealth" ${settings.hideRunHealth ? 'checked' : ''}>
+                                Hide "Run Health"
+                            </label>
+                            <label class="sff-chip ${settings.hideWandrer ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideWandrer" ${settings.hideWandrer ? 'checked' : ''}>
+                                Hide "Wandrer" embeds
+                            </label>
+                            <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
+                                Hide "JOIN workout"
+                            </label>
+                            <label class="sff-chip ${settings.hideCoachCat ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideCoachCat" ${settings.hideCoachCat ? 'checked' : ''}>
+                                Hide "CoachCat Training Summary"
+                            </label>
                         </div>
                     </div>
-                    <div class="sff-dropdown-content">
-                        <label class="sff-chip ${settings.hideChallenges ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideChallenges" ${settings.hideChallenges ? 'checked' : ''}>
-                            Hide your challenges section
-                        </label>
-                        <label class="sff-chip ${settings.hideSuggestedFriends ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideSuggestedFriends" ${settings.hideSuggestedFriends ? 'checked' : ''}>
-                            Hide "Suggested Friends" section
-                        </label>
-                        <label class="sff-chip ${settings.hideYourClubs ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideYourClubs" ${settings.hideYourClubs ? 'checked' : ''}>
-                            Hide "Your Clubs" section
-                        </label>
-                        <label class="sff-chip ${settings.hideFooter ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideFooter" ${settings.hideFooter ? 'checked' : ''}>
-                            Hide Strava footer
-                        </label>
-                    </div>
-                </div>
-                <div class="sff-row sff-dropdown">
-                    <div class="sff-dropdown-header">
-                        <span class="sff-label">Other</span>
-                        <div class="sff-dropdown-right">
-                            <span class="sff-dropdown-indicator">▼</span>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Sidebar</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
+                            </div>
+                        </div>
+                        <div class="sff-dropdown-content">
+                            <label class="sff-chip ${settings.hideChallenges ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideChallenges" ${settings.hideChallenges ? 'checked' : ''}>
+                                Hide your challenges section
+                            </label>
+                            <label class="sff-chip ${settings.hideSuggestedFriends ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideSuggestedFriends" ${settings.hideSuggestedFriends ? 'checked' : ''}>
+                                Hide "Suggested Friends" section
+                            </label>
+                            <label class="sff-chip ${settings.hideYourClubs ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideYourClubs" ${settings.hideYourClubs ? 'checked' : ''}>
+                                Hide "Your Clubs" section
+                            </label>
+                            <label class="sff-chip ${settings.hideFooter ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideFooter" ${settings.hideFooter ? 'checked' : ''}>
+                                Hide Strava footer
+                            </label>
                         </div>
                     </div>
-                    <div class="sff-dropdown-content">
-                        <label class="sff-chip ${settings.hideNoMap ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideNoMap" ${settings.hideNoMap ? 'checked' : ''}>
-                            Hide activities without map
-                        </label>
-                        <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
-                            Hide "Athlete joined a challenge"
-                        </label>
-                        <label class="sff-chip ${settings.hideAthleteJoinedClub ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideAthleteJoinedClub" ${settings.hideAthleteJoinedClub ? 'checked' : ''}>
-                            Hide "Athlete joined a club"
-                        </label>
-                        <label class="sff-chip ${settings.hideClubPosts ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideClubPosts" ${settings.hideClubPosts ? 'checked' : ''}>
-                            Hide club posts
-                        </label>
-                        <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
-                            Hide "Give a Gift" button
-                        </label>
-                        <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
-                            Show "Give 👍 to Everyone"
-                        </label>
-                        <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
+                            <span class="sff-label">Other</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
+                            </div>
+                        </div>
+                        <div class="sff-dropdown-content">
+                            <label class="sff-chip ${settings.hideNoMap ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideNoMap" ${settings.hideNoMap ? 'checked' : ''}>
+                                Hide activities without map
+                            </label>
+                            <label class="sff-chip ${settings.hideJoinedChallenges ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideJoinedChallenges" ${settings.hideJoinedChallenges ? 'checked' : ''}>
+                                Hide "Athlete joined a challenge"
+                            </label>
+                            <label class="sff-chip ${settings.hideAthleteJoinedClub ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideAthleteJoinedClub" ${settings.hideAthleteJoinedClub ? 'checked' : ''}>
+                                Hide "Athlete joined a club"
+                            </label>
+                            <label class="sff-chip ${settings.hideClubPosts ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideClubPosts" ${settings.hideClubPosts ? 'checked' : ''}>
+                                Hide club posts
+                            </label>
+                            <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
+                                Hide "Give a Gift" button
+                            </label>
+                            <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
+                                Show "Give 👍 to Everyone"
+                            </label>
+                            <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
+                        </div>
+                    </div>
+                    <div class="sff-buttons">
+                        <button class="sff-btn-action sff-save">Apply & Refresh</button>
+                    </div>
+                    <div class="sff-footer">
+                        <div class="sff-credits">
+                            <p>Developed By: <a href="https://github.com/Inc21" target="_blank">Inc21</a></p>
+                        </div>
+                        <div class="sff-bmc">
+                            <a href="https://www.buymeacoffee.com/inc21" target="_blank">☕ Buy me a coffee</a>
+                        </div>
+                    </div>
+                    <div class="sff-copyright">
+                        <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
+                        <p id="sff-version" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">Version</p>
                     </div>
                 </div>
-                <div class="sff-buttons">
-                    <button class="sff-btn-action sff-save">Apply & Refresh</button>
-                    <button class="sff-btn-action sff-reset">Reset</button>
-                </div>
-                <div class="sff-footer">
-                    <div class="sff-credits">
-                        <p>Developed By: <a href="https://github.com/Inc21" target="_blank">Inc21</a></p>
-                    </div>
-                    <div class="sff-bmc">
-                        <a href="https://www.buymeacoffee.com/inc21" target="_blank">☕ Buy me a coffee</a>
-                    </div>
-                </div>
-                <div class="sff-copyright">
-                    <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
-                    <p id="sff-version" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">Version</p>
+
+                <div class="sff-view-settings">
+                    <button class="sff-back-btn" style="background: none; border: none; cursor: pointer; color: #fc5200; font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 4px;">
+                        ← Back to Filters
+                    </button>
+                    <p class="sff-settings-desc">
+                        Manage your Strava Feed Filter settings. You can back up your configuration or restore from a previous backup.
+                    </p>
+                    
+                    <button class="sff-settings-btn sff-action-export">Export Settings</button>
+                    <button class="sff-settings-btn sff-action-import">Import Settings</button>
+                    <input type="file" class="sff-file-input sff-file-import" accept=".json">
+                    
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <button class="sff-settings-btn danger sff-action-reset">Reset to Defaults</button>
                 </div>
             `;
         },
 
         setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
             console.log('🎯 Clean Filter: Setting up events...');
+
+            // --- New Settings UI Events ---
+            const settingsToggle = panel.querySelector('.sff-settings-toggle');
+            const filtersView = panel.querySelector('.sff-view-filters');
+            const settingsView = panel.querySelector('.sff-view-settings');
+            
+            if (settingsToggle) {
+                settingsToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    filtersView.classList.add('hidden');
+                    settingsView.classList.add('active');
+                    settingsToggle.style.opacity = '0';
+                    settingsToggle.style.pointerEvents = 'none';
+                });
+            }
+
+            const backBtn = panel.querySelector('.sff-back-btn');
+            if (backBtn) {
+                backBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    settingsView.classList.remove('active');
+                    filtersView.classList.remove('hidden');
+                    if (settingsToggle) {
+                        settingsToggle.style.opacity = '0.8';
+                        settingsToggle.style.pointerEvents = 'auto';
+                    }
+                });
+            }
+
+            // Export Settings
+            panel.querySelector('.sff-action-export').addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent panel closing
+                try {
+                    const exportData = {
+                        version: '2.3.2', 
+                        exportDate: new Date().toISOString(),
+                        settings: settings
+                    };
+                    
+                    try {
+                         // Try to get version from manifest if possible
+                         if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.getManifest) {
+                             const manifest = browser.runtime.getManifest();
+                             if (manifest && manifest.version) exportData.version = manifest.version;
+                         }
+                    } catch(e) {}
+
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const date = new Date().toISOString().split('T')[0];
+                    a.href = url;
+                    a.download = `strava-feed-filter-settings-${date}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    UIModule.showToast(panel, 'Settings exported successfully!', 'success');
+                } catch(e) {
+                    console.error('Export failed:', e);
+                    UIModule.showToast(panel, 'Export failed. See console.', 'error');
+                }
+            });
+
+            // Import Settings
+            const fileInput = panel.querySelector('.sff-file-import');
+            panel.querySelector('.sff-action-import').addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent panel closing
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        let newSettings = imported.settings || imported;
+                        
+                        if (typeof newSettings !== 'object' || newSettings === null) {
+                            throw new Error('Invalid settings format');
+                        }
+
+                        const merged = { ...DEFAULTS, ...newSettings };
+                        
+                        await UtilsModule.saveSettings(merged);
+                        
+                        UIModule.showToast(panel, 'Settings imported! Reloading...', 'success');
+                        
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } catch(err) {
+                        console.error('Import error:', err);
+                        UIModule.showToast(panel, 'Import failed: Invalid file.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; 
+            });
+
+            // Reset Logic (New Location)
+            panel.querySelector('.sff-action-reset').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Are you sure you want to reset all filters to their default values? This cannot be undone.')) {
+                    const resetSettings = {...DEFAULTS};
+                    UtilsModule.saveSettings(resetSettings).then(() => {
+                        UIModule.showToast(panel, 'Settings reset! Reloading...', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    });
+                }
+            });
+            // -----------------------------
 
             // Set dynamic version from manifest
             try {
@@ -1853,14 +2112,6 @@
                 location.reload();
             });
 
-            // Reset button
-            panel.querySelector('.sff-reset').addEventListener('click', () => {
-                if (confirm('Are you sure you want to reset all filters to their default values?')) {
-                    settings = {...DEFAULTS};
-                    UtilsModule.saveSettings(settings);
-                    location.reload();
-                }
-            });
 
             // Unit system toggle
             panel.querySelector('.sff-unit-toggle').addEventListener('click', (e) => {
@@ -2617,12 +2868,32 @@
                 }
 
                 if (!shouldHide && (resolvedType || typeText)) {
-                    if (resolvedType && settings.types[resolvedType.key]) {
-                        shouldHide = true;
-                    } else if (!resolvedType && normalizedTypeText.includes('virtual')) {
-                        // Only use fallback logic if we couldn't resolve the exact type
-                        const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
-                        if (hideAnyVirtual) shouldHide = true;
+                    if (resolvedType) {
+                        if (settings.types[resolvedType.key]) {
+                            shouldHide = true;
+                        }
+                        // If resolvedType exists and is NOT hidden, we do NOT fall through to generic checks.
+                        // This protects "VirtualRide" from being hidden by the generic "Ride" logic below.
+                    } else {
+                        // Fallback for group activities or unresolved types
+                        const isVirtual = normalizedTypeText.includes('virtual');
+                        
+                        if (isVirtual) {
+                            const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
+                            if (hideAnyVirtual) shouldHide = true;
+                        } else {
+                            // Only check for generic ride if it's NOT virtual
+                            // Check for group ride indicators:
+                            const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
+                            const isRide = normalizedTypeText.includes('ride') || 
+                                         /\b(rode|cycling|cycle)\b/i.test(title) || 
+                                         (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
+                                         (hasGroupAvatars && !normalizedTypeText.includes('run')); // Assume group activity is a ride if not explicitly a run
+                            
+                            if (isRide) {
+                                 if (settings.types['Ride']) shouldHide = true;
+                            }
+                        }
                     }
                 }
 

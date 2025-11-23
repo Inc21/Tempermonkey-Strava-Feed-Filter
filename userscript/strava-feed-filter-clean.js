@@ -127,17 +127,19 @@
     }));
 
     const TYPE_SYNONYMS = {
+        VirtualRide: /\b(virtual\s*ride)\b/i,
+        VirtualRun: /\b(virtual\s*run)\b/i,
+        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
+        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
+        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
+        EBikeRide: /\b(e-bike|ebike|electric\s*bike)\b/i,
+        EMountainBikeRide: /\b(e-mtb|e-mountain\s*bike)\b/i,
+        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
         Ride: /\b(ride|rode|riding|cycle|cycling|cycled|bike|biked|biking|spin)\b/i,
         Run: /\b(run|ran|running|jog|jogged|jogging)\b/i,
         Walk: /\b(walk|walked|walking|stroll|strolling)\b/i,
         Hike: /\b(hike|hiked|hiking|trek|trekking)\b/i,
-        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
-        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
-        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
         Swim: /\b(swim|swam|swimming)\b/i,
-        VirtualRide: /\b(virtual\s*ride)\b/i,
-        VirtualRun: /\b(virtual\s*run)\b/i,
-        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
         Workout: /\b(workout|strength\s*training|gym)\b/i,
         Yoga: /\b(yoga)\b/i
     };
@@ -287,6 +289,58 @@
       }
 
 
+
+      .sff-view-filters, .sff-view-settings {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .sff-view-filters.hidden {
+        display: none !important;
+      }
+      .sff-view-settings {
+        display: none !important;
+      }
+      .sff-view-settings.active {
+        display: block !important;
+        animation: sff-fade-in 0.2s ease-out;
+      }
+      
+      @keyframes sff-fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .sff-settings-btn {
+        display: block !important;
+        width: 100% !important;
+        padding: 10px !important;
+        margin-bottom: 10px !important;
+        background: white !important;
+        border: 1px solid #ddd !important;
+        border-radius: 6px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        cursor: pointer !important;
+        text-align: center !important;
+        font-weight: 500 !important;
+        transition: all 0.2s !important;
+      }
+      .sff-settings-btn:hover {
+        background: #f7f7f7 !important;
+        border-color: #ccc !important;
+        color: #fc5200 !important;
+      }
+      .sff-settings-btn.danger {
+        color: #dc3545 !important;
+        border-color: #fadbd8 !important;
+      }
+      .sff-settings-btn.danger:hover {
+        background: #fff5f5 !important;
+        border-color: #dc3545 !important;
+      }
+      
+      .sff-file-input {
+        display: none !important;
+      }
 
       .sff-clean-panel {
         position: fixed !important;
@@ -1262,6 +1316,8 @@
 
         _getPanelHTML() {
             return `
+                <div class="sff-toast"></div>
+                <div class="sff-view-filters">
                 <div class="sff-toggle-section">
                     <label class="sff-switch">
                         <input type="checkbox" class="sff-enabled-toggle" ${settings.enabled ? 'checked' : ''}>
@@ -1270,6 +1326,7 @@
                     <span class="sff-label">
                         <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
                     </span>
+                    <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; color: #666; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">⚙️</button>
                 </div>
                 <div class="sff-row sff-dropdown">
                     <div class="sff-dropdown-header">
@@ -1487,27 +1544,32 @@
                     <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
                     <p id="sff-version" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">Version</p>
                 </div>
-            `;
-        },
+            </div>
 
-        setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
-            console.log('🎯 Clean Filter: Setting up events...');
+            <div class="sff-view-settings">
+                <button class="sff-back-btn" style="background: none; border: none; cursor: pointer; color: #fc5200; font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 4px;">
+                    ← Back to Filters
+                </button>
+                <p class="sff-settings-desc">
+                    Manage your Strava Feed Filter settings. You can back up your configuration or restore from a previous backup.
+                </p>
+                
+                <button class="sff-settings-btn sff-action-export">Export Settings</button>
+                <button class="sff-settings-btn sff-action-import">Import Settings</button>
+                <input type="file" class="sff-file-input sff-file-import" accept=".json">
+                
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                
+                <button class="sff-settings-btn danger sff-action-reset">Reset to Defaults</button>
+            </div>
+        `
+    },
 
-            // Set dynamic version from userscript metadata
-            try {
-                const versionEl = panel.querySelector('#sff-version');
-                if (versionEl) {
-                    const version = GM_info?.script?.version || '2.3.2';
-                    versionEl.textContent = `Version ${version}`;
-                }
-            } catch (error) {
-                console.log('Could not get script version:', error);
-            }
+    setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
+        // Initialize draggable
+        const cleanupDraggable = this.makeDraggable(panel);
 
-            // Initialize draggable
-            const cleanupDraggable = this.makeDraggable(panel);
-
-            // Load saved position
+        // Load saved position
             const savedPos = JSON.parse(localStorage.getItem('sffPanelPos') || '{}');
             if (savedPos.left || savedPos.top) {
                 panel.style.left = savedPos.left || '';
@@ -3305,13 +3367,31 @@
             }
 
             // Activity types
-            if (!shouldHide && type) {
-                const matched = matchActivityType(type);
-                if (matched && settings.types[matched.key]) {
-                    shouldHide = true;
-                } else if (normalizeTypeLabel(type).includes('virtual')) {
-                    const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
-                    if (hideAnyVirtual) shouldHide = true;
+            if (!shouldHide && (resolvedType || typeText)) {
+                if (resolvedType) {
+                    if (settings.types[resolvedType.key]) {
+                        shouldHide = true;
+                    }
+                    // Explicit resolved types stop here. We do NOT fall through to generic checks.
+                } else {
+                    // Fallback for group activities or unresolved types
+                    const isVirtual = normalizeTypeLabel(typeText).includes('virtual');
+                    
+                    if (isVirtual) {
+                        const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
+                        if (hideAnyVirtual) shouldHide = true;
+                    } else {
+                        // Only check for generic ride if it's NOT virtual
+                        const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
+                        const isRide = normalizeTypeLabel(typeText).includes('ride') || 
+                                     /\b(rode|cycling|cycle)\b/i.test(title) || 
+                                     (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
+                                     (hasGroupAvatars && !normalizeTypeLabel(typeText).includes('run')); // Assume group activity is a ride if not explicitly a run
+                        
+                        if (isRide) {
+                             if (settings.types['Ride']) shouldHide = true;
+                        }
+                    }
                 }
             }
 

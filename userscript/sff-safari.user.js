@@ -127,17 +127,19 @@
     }));
 
     const TYPE_SYNONYMS = {
+        VirtualRide: /\b(virtual\s*ride)\b/i,
+        VirtualRun: /\b(virtual\s*run)\b/i,
+        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
+        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
+        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
+        EBikeRide: /\b(e-bike|ebike|electric\s*bike)\b/i,
+        EMountainBikeRide: /\b(e-mtb|e-mountain\s*bike)\b/i,
+        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
         Ride: /\b(ride|rode|riding|cycle|cycling|cycled|bike|biked|biking|spin)\b/i,
         Run: /\b(run|ran|running|jog|jogged|jogging)\b/i,
         Walk: /\b(walk|walked|walking|stroll|strolling)\b/i,
         Hike: /\b(hike|hiked|hiking|trek|trekking)\b/i,
-        TrailRun: /\b(trail\s*run|trail-run|trailrun)\b/i,
-        MountainBikeRide: /\b(mountain\s*bike|mtb|mountain\s*ride|mountain\s*biking)\b/i,
-        GravelRide: /\b(gravel\s*(ride|spin|ride))\b/i,
         Swim: /\b(swim|swam|swimming)\b/i,
-        VirtualRide: /\b(virtual\s*ride)\b/i,
-        VirtualRun: /\b(virtual\s*run)\b/i,
-        VirtualRow: /\b(virtual\s*row|virtual\s*rowing)\b/i,
         Workout: /\b(workout|strength\s*training|gym)\b/i,
         Yoga: /\b(yoga)\b/i
     };
@@ -2851,13 +2853,32 @@
                     if (hasKeyword) shouldHide = true;
                 }
     
+                // Activity types
                 if (!shouldHide && (resolvedType || typeText)) {
-                    if (resolvedType && settings.types[resolvedType.key]) {
-                        shouldHide = true;
-                    } else if (!resolvedType && normalizedTypeText.includes('virtual')) {
-                        // Only use fallback logic if we couldn't resolve the exact type
-                        const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
-                        if (hideAnyVirtual) shouldHide = true;
+                    if (resolvedType) {
+                        if (settings.types[resolvedType.key]) {
+                            shouldHide = true;
+                        }
+                        // Explicit resolved types stop here. We do NOT fall through to generic checks.
+                    } else {
+                        // Fallback for group activities or unresolved types
+                        const isVirtual = normalizeTypeLabel(typeText).includes('virtual');
+                        
+                        if (isVirtual) {
+                            const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
+                            if (hideAnyVirtual) shouldHide = true;
+                        } else {
+                            // Only check for generic ride if it's NOT virtual
+                            const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
+                            const isRide = normalizeTypeLabel(typeText).includes('ride') || 
+                                         /\b(rode|cycling|cycle)\b/i.test(title) || 
+                                         (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
+                                         (hasGroupAvatars && !normalizeTypeLabel(typeText).includes('run')); // Assume group activity is a ride if not explicitly a run
+                            
+                            if (isRide) {
+                                 if (settings.types['Ride']) shouldHide = true;
+                            }
+                        }
                     }
                 }
     

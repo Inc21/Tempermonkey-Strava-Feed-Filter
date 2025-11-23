@@ -1,40 +1,32 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Strava Feed Filter</title>
-    <link rel="stylesheet" href="popup.css" />
-  </head>
-  <body>
-    <div id="app">
-      <header class="p-header">
-        <h1>Strava Feed Filter</h1>
-        <label class="p-switch" title="Enable/Disable filtering">
-          <input type="checkbox" id="toggle-enabled" />
-          <span class="p-slider"></span>
-        </label>
-      </header>
-      <main class="p-body">
-        <div class="p-section">
-          <h2 class="p-section-title">Settings Management</h2>
-          <button id="export-btn" class="p-btn p-btn-primary">Export Settings</button>
-          <button id="import-btn" class="p-btn p-btn-primary">Import Settings</button>
-          <button id="reset-btn" class="p-btn p-btn-danger">Reset to Defaults</button>
-          <input type="file" id="import-file" accept=".json" style="display:none" />
-          <div id="message" class="p-message"></div>
-        </div>
-        <div class="p-row">
-          <a class="p-link" href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank" rel="noopener noreferrer">Report an issue on GitHub</a>
-        </div>
-        <div class="p-note">
-          Strava updates the site periodically. If filters stop working, please report it before leaving a negative review so we can fix it. Thanks!
-        </div>
-      </main>
-      <footer class="p-footer">
-        <small id="version"></small>
-      </footer>
-    </div>
-    <script src="popup.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Strava Feed Filter</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="p-header">
+      <h1>Strava Feed Filter</h1>
+      <label class="p-switch" title="Enable/Disable filtering">
+        <input type="checkbox" id="toggle-enabled" />
+        <span class="p-slider"></span>
+      </label>
+    </header>
+    <main class="p-body">
+      <div class="p-row">
+        <a class="p-link" href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank" rel="noopener noreferrer">Report an issue on GitHub</a>
+      </div>
+      <div class="p-note">
+        Strava updates the site periodically. If filters stop working, please report it before leaving a negative review so we can fix it. Thanks!
+      </div>
+    </main>
+    <footer class="p-footer">
+      <small id="version"></small>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
 </html>
