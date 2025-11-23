@@ -94,6 +94,7 @@
         hideAthleteJoinedClub: false,
         hideFooter: false,
         showKudosButton: false,
+        showSeeMoreButton: true,
         minKm: "",
         maxKm: "",
         minMins: "",
@@ -726,6 +727,116 @@
         background: #e04a00 !important;
       }
 
+      .sff-see-more-btn {
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 3px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        transition: background-color 0.15s ease !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        line-height: 1.2 !important;
+      }
+
+      .sff-see-more-btn:hover {
+        background: #e04a00 !important;
+      }
+
+      .sff-see-more-btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+      }
+
+      .sff-expanded-stats {
+        background: #f8f9fa !important;
+        border: 1px solid #e1e4e8 !important;
+        border-radius: 6px !important;
+        padding: 16px !important;
+        margin: 12px 0 !important;
+        animation: sff-slide-down 0.3s ease-out !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      @keyframes sff-slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .sff-stats-section-header {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #242428 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin: 20px 0 12px 0 !important;
+        padding-bottom: 8px !important;
+        border-bottom: 2px solid #fc5200 !important;
+      }
+
+      .sff-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+        gap: 16px 12px !important;
+      }
+
+      .sff-stat-item {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+
+      .sff-stat-label {
+        font-size: 15px !important;
+        color: #242428 !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin-bottom: 4px !important;
+      }
+
+      .sff-stat-value {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        line-height: 1.3 !important;
+      }
+
+      .sff-stat-subvalue {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        margin-top: 2px !important;
+        line-height: 1.3 !important;
+      }
+      
+      .sff-expanded-stats .sff-stat-value span.sff-stat-prefix,
+      .sff-expanded-stats .sff-stat-subvalue span.sff-stat-prefix {
+        font-weight: 700 !important;
+      }
+
+      .sff-no-stats {
+        color: #666 !important;
+        font-size: 13px !important;
+        font-style: italic !important;
+        margin: 0 !important;
+      }
+
+      @media (max-width: 768px) {
+        .sff-stats-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        }
+      }
+
       .sff-desc {
         font-size: 11px !important;
         color: #666 !important;
@@ -1247,6 +1358,7 @@
             settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
             LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
             UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
+            settings.showSeeMoreButton = panel.querySelector('.sff-showSeeMoreButton') ? panel.querySelector('.sff-showSeeMoreButton').checked : settings.showSeeMoreButton;
             const giftChk = panel.querySelector('.sff-hideGift');
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
 
@@ -1635,6 +1747,16 @@
                         Manage your Strava Feed Filter settings. You can back up your configuration or restore from a previous backup.
                     </p>
                     
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.showSeeMoreButton ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-showSeeMoreButton" ${settings.showSeeMoreButton ? 'checked' : ''}>
+                            Show "Show more stats" button
+                        </label>
+                        <p class="sff-desc">Adds a button to each activity to view detailed stats without leaving the feed.</p>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    
                     <button class="sff-settings-btn sff-action-export">Export Settings</button>
                     <button class="sff-settings-btn sff-action-import">Import Settings</button>
                     <input type="file" class="sff-file-input sff-file-import" accept=".json">
@@ -1974,6 +2096,13 @@
                         UtilsModule.saveSettings(settings);
                         LogicModule.manageHeaderKudosButton();
                         UIModule.syncSecondaryKudosVisibility();
+                    }
+
+                    // See more button toggle
+                    if (e.target.classList.contains('sff-showSeeMoreButton')) {
+                        settings.showSeeMoreButton = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.manageSeeMoreButtons();
                     }
 
                     // Gift button
@@ -2509,7 +2638,6 @@
         updateMyWindsockVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for myWindsock content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain myWindsock content
@@ -2519,7 +2647,6 @@
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains the myWindsock report and not other content
                         if (text.includes('-- myWindsock Report --') && text.length < 500) { // Limit to avoid hiding large containers
-                            console.log('🔮 Found myWindsock content in text element:', element);
                             if (settings.enabled && settings.hideMyWindsock) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
@@ -2541,7 +2668,6 @@
         updateWandrerVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for Wandrer content`);
 
                 activities.forEach(activity => {
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
@@ -2570,7 +2696,6 @@
         updateSummitbagVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for summitbag content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain summitbag content
@@ -2580,7 +2705,6 @@
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains summitbag and not other content
                         if (text.includes('summitbag.com') && text.length < 500) { // Limit to avoid hiding large containers
-                            console.log('🏔️ Found summitbag content in text element:', element);
                             if (settings.enabled && settings.hideSummitbag) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
@@ -2602,7 +2726,6 @@
         updateRunHealthVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for Run Health content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain Run Health content
@@ -2612,7 +2735,6 @@
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains Run Health and not other content
                         if (text.includes('www.myTF.run') && text.length < 500) { // Limit to avoid hiding large containers
-                            console.log('🏃 Found Run Health content in text element:', element);
                             if (settings.enabled && settings.hideRunHealth) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
@@ -2634,7 +2756,6 @@
         updateJoinWorkoutVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for JOIN workout content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain JOIN workout content
@@ -2645,7 +2766,6 @@
                         // Detect JOIN workout embeds
                         const hasJoin = /\bJOIN workout\b/i.test(text) || text.includes('strava.com/clubs/join-cycling');
                         if (hasJoin && text.length < 800) { // Limit to avoid hiding large containers
-                            console.log('🧩 Found JOIN workout content in text element:', element);
                             if (settings.enabled && settings.hideJoinWorkout) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
@@ -2667,7 +2787,6 @@
         updateCoachCatVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for CoachCat content`);
 
                 activities.forEach(activity => {
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
@@ -2676,7 +2795,6 @@
                         const text = element.textContent?.trim() || '';
                         const hasCoachCat = /\bCoachCat Training Summary\b/i.test(text) || text.includes('fascatcoaching.com/app');
                         if (hasCoachCat && text.length < 800) {
-                            console.log('🐱 Found CoachCat content in text element:', element);
                             if (settings.enabled && settings.hideCoachCat) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
@@ -3076,6 +3194,382 @@
 
             placeButton();
         },
+
+        manageSeeMoreButtons() {
+            if (!settings.enabled || !settings.showSeeMoreButton) {
+                // Remove all existing buttons if feature is disabled
+                document.querySelectorAll('.sff-see-more-btn').forEach(btn => btn.remove());
+                document.querySelectorAll('.sff-expanded-stats').forEach(stats => stats.remove());
+                return;
+            }
+            
+            const activities = document.querySelectorAll('[data-testid="web-feed-entry"]');
+            
+            activities.forEach(activity => {
+                // Skip if button already exists
+                if (activity.querySelector('.sff-see-more-btn')) return;
+                
+                const activityNameLink = activity.querySelector('a[href*="/activities/"]');
+                if (!activityNameLink) return;
+                
+                const href = activityNameLink.getAttribute('href');
+                const activityId = href?.match(/\/activities\/(\d+)/)?.[1];
+                if (!activityId) return;
+
+                // Create "See more" button
+                const seeMoreBtn = document.createElement('button');
+                seeMoreBtn.className = 'sff-see-more-btn';
+                seeMoreBtn.textContent = 'Show more stats';
+                seeMoreBtn.dataset.activityId = activityId;
+                seeMoreBtn.dataset.expanded = 'false';
+
+                // Insert button after activity title
+                const titleContainer = activityNameLink.closest('.oJVfx, .UDqjM');
+                if (titleContainer) {
+                    titleContainer.style.display = 'flex';
+                    titleContainer.style.alignItems = 'center';
+                    titleContainer.style.gap = '8px';
+                    titleContainer.appendChild(seeMoreBtn);
+                }
+
+                // Add click handler
+                seeMoreBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    const isExpanded = seeMoreBtn.dataset.expanded === 'true';
+                    
+                    if (isExpanded) {
+                        // Collapse
+                        const statsContainer = activity.querySelector('.sff-expanded-stats');
+                        if (statsContainer) statsContainer.remove();
+                        seeMoreBtn.textContent = 'Show more stats';
+                        seeMoreBtn.dataset.expanded = 'false';
+                    } else {
+                        // Expand
+                        seeMoreBtn.textContent = 'Loading...';
+                        seeMoreBtn.disabled = true;
+                        
+                        try {
+                            const stats = await this.fetchActivityStats(activityId);
+                            const statsContainer = this.displayExpandedStats(activity, stats);
+                            
+                            if (statsContainer) {
+                                // Stats were displayed
+                                seeMoreBtn.textContent = 'Hide stats';
+                                seeMoreBtn.dataset.expanded = 'true';
+                            } else {
+                                // No stats available (only device/bike)
+                                seeMoreBtn.textContent = 'No extra stats';
+                                setTimeout(() => {
+                                    seeMoreBtn.textContent = 'Show more stats';
+                                }, 2000);
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch activity stats:', error);
+                            seeMoreBtn.textContent = 'Error - Try again';
+                        } finally {
+                            seeMoreBtn.disabled = false;
+                        }
+                    }
+                });
+            });
+        },
+
+        async fetchActivityStats(activityId) {
+            const response = await fetch(`/activities/${activityId}`);
+            if (!response.ok) throw new Error('Failed to fetch activity');
+            
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const stats = {};
+            
+            // Method 1: Extract from inline-stats (ul li structure)
+            // Structure: <li><strong>VALUE</strong><div class="label">LABEL</div></li>
+            doc.querySelectorAll('.inline-stats li').forEach(li => {
+                const strong = li.querySelector('strong');
+                const labelDiv = li.querySelector('.label');
+                
+                if (strong && labelDiv) {
+                    const value = strong.textContent?.trim().replace(/\s+/g, ' ');
+                    const label = labelDiv.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (label && value) {
+                        stats[label] = value;
+                    }
+                }
+            });
+            
+            // Method 2: Extract from table (avg/max stats) - used in Rides
+            // Structure: <tr><th>LABEL</th><td>AVG</td><td>MAX</td></tr>
+            doc.querySelectorAll('.more-stats table tbody tr').forEach(row => {
+                const th = row.querySelector('th');
+                const tds = row.querySelectorAll('td');
+                
+                if (th && tds.length > 0) {
+                    const label = th.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (tds.length === 2 && tds[0].getAttribute('colspan') !== '2') {
+                        // Avg and Max columns
+                        const avg = tds[0].textContent?.trim().replace(/\s+/g, ' ');
+                        const max = tds[1].textContent?.trim().replace(/\s+/g, ' ');
+                        
+                        if (label && avg && max) {
+                            stats[label + ' Avg'] = avg;
+                            stats[label + ' Max'] = max;
+                        }
+                    } else if (tds.length >= 1) {
+                        // Single value (colspan=2)
+                        const value = tds[0].textContent?.trim().replace(/\s+/g, ' ');
+                        if (label && value) {
+                            stats[label] = value;
+                        }
+                    }
+                }
+            });
+            
+            // Method 2b: Extract from row/spans structure - used in Runs
+            // Structure: <div class="row"><div class="spans5">LABEL</div><div class="spans3"><strong>VALUE</strong></div></div>
+            doc.querySelectorAll('.more-stats .row').forEach(row => {
+                const spans5 = row.querySelector('.spans5');
+                const spans3 = row.querySelector('.spans3');
+                
+                if (spans5 && spans3) {
+                    const label = spans5.textContent?.trim().replace(/\s+/g, ' ');
+                    const value = spans3.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (label && value) {
+                        stats[label] = value;
+                    }
+                }
+            });
+            
+            // Method 3: Extract weather stats
+            // Structure: <div class="weather-stat"><div class="weather-label">LABEL</div><div class="weather-value">VALUE</div></div>
+            doc.querySelectorAll('.weather-stat').forEach(stat => {
+                const labelDiv = stat.querySelector('.weather-label');
+                const valueDiv = stat.querySelector('.weather-value');
+                
+                if (labelDiv) {
+                    const label = labelDiv.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (valueDiv) {
+                        const value = valueDiv.textContent?.trim().replace(/\s+/g, ' ');
+                        if (label && value) {
+                            stats[label] = value;
+                        }
+                    } else {
+                        // Weather condition without value (e.g., "Windy")
+                        if (label) {
+                            stats[label] = '✓';
+                        }
+                    }
+                }
+            });
+
+            // Extract device info
+            const deviceEl = doc.querySelector('.device');
+            if (deviceEl) {
+                const deviceText = deviceEl.textContent?.trim();
+                if (deviceText) {
+                    stats['Device'] = deviceText;
+                }
+            }
+
+            // Extract bike/gear info
+            const gearLinks = doc.querySelectorAll('a[href*="/bikes/"], a[href*="/shoes/"]');
+            if (gearLinks.length > 0) {
+                const gearText = gearLinks[0].textContent?.trim();
+                if (gearText) {
+                    const href = gearLinks[0].getAttribute('href') || '';
+                    if (href.includes('/bikes/')) {
+                        stats['Bike'] = gearText;
+                    } else if (href.includes('/shoes/')) {
+                        stats['Shoes'] = gearText;
+                    }
+                }
+            }
+
+            return stats;
+        },
+
+        displayExpandedStats(activity, stats) {
+            // Remove existing stats container if any
+            const existing = activity.querySelector('.sff-expanded-stats');
+            if (existing) existing.remove();
+
+            // Organize stats into structured format
+            const organizedStats = this.organizeStats(stats);
+
+            // If no stats available (only device/bike), don't show anything
+            if (organizedStats.length === 0) {
+                return null;
+            }
+
+            // Create stats container
+            const statsContainer = document.createElement('div');
+            statsContainer.className = 'sff-expanded-stats';
+
+            // Build stats HTML
+            let statsHTML = '<div class="sff-stats-grid">';
+            
+            organizedStats.forEach(stat => {
+                if (stat.isHeader) {
+                    // Close current grid and add section header
+                    statsHTML += '</div>';
+                    statsHTML += `<div class="sff-stats-section-header">${stat.label}</div>`;
+                    statsHTML += '<div class="sff-stats-grid">';
+                } else {
+                    statsHTML += '<div class="sff-stat-item">';
+                    statsHTML += `<span class="sff-stat-label">${stat.label}</span>`;
+                    
+                    if (stat.avg && stat.max) {
+                        // Has both avg and max
+                        statsHTML += `<span class="sff-stat-value"><b>Avg:</b> ${stat.avg}</span>`;
+                        statsHTML += `<span class="sff-stat-subvalue"><b>Max:</b> ${stat.max}</span>`;
+                    } else {
+                        // Single value
+                        statsHTML += `<span class="sff-stat-value">${stat.value}</span>`;
+                    }
+                    
+                    statsHTML += '</div>';
+                }
+            });
+            
+            statsHTML += '</div>';
+            statsContainer.innerHTML = statsHTML;
+
+            // Insert before the map/images section to be full width
+            const imagesSection = activity.querySelector('[data-testid="entry-images"]');
+            const activityContainer = activity.querySelector('[data-testid="activity_entry_container"]');
+            
+            if (imagesSection) {
+                // Insert right before the map/images section
+                imagesSection.before(statsContainer);
+            } else if (activityContainer) {
+                // Fallback: append to activity container
+                activityContainer.appendChild(statsContainer);
+            } else {
+                // Last resort: insert after the see more button
+                const seeMoreBtn = activity.querySelector('.sff-see-more-btn');
+                if (seeMoreBtn && seeMoreBtn.parentElement) {
+                    const titleContainer = seeMoreBtn.closest('.oJVfx, .UDqjM, h3');
+                    if (titleContainer) {
+                        titleContainer.after(statsContainer);
+                    }
+                }
+            }
+
+            return statsContainer;
+        },
+
+        organizeStats(rawStats) {
+            // Filter out Device, Bike, Shoes, Gear
+            const filtered = {};
+            Object.keys(rawStats).forEach(key => {
+                if (key !== 'Device' && key !== 'Bike' && key !== 'Shoes' && key !== 'Gear') {
+                    filtered[key] = rawStats[key];
+                }
+            });
+
+            const organized = [];
+            const weatherStats = [];
+            const processed = new Set();
+
+            // Define weather-related keywords
+            const weatherKeywords = ['temperature', 'humidity', 'wind', 'feels like', 'weather', 'windy', 'cloudy', 'sunny', 'rainy'];
+
+            // Define stat groups that should be combined (avg/max pairs)
+            const statGroups = [
+                { base: 'Speed', label: 'Speed' },
+                { base: 'Heart Rate', label: 'Heart Rate' },
+                { base: 'Heartrate', label: 'Heart Rate' },
+                { base: 'Cadence', label: 'Cadence' },
+                { base: 'Power', label: 'Power' },
+                { base: 'Pace', label: 'Pace' },
+                { base: 'Grade', label: 'Grade' },
+                { base: 'VAM', label: 'VAM' }
+            ];
+
+            // Process grouped stats (avg/max pairs)
+            // Now stats come in as "Speed Avg" and "Speed Max" format
+            statGroups.forEach(group => {
+                const avgKey = group.label + ' Avg';
+                const maxKey = group.label + ' Max';
+                
+                const avgValue = filtered[avgKey];
+                const maxValue = filtered[maxKey];
+
+                if (avgValue || maxValue) {
+                    if (avgValue && maxValue) {
+                        organized.push({
+                            label: group.label,
+                            avg: avgValue,
+                            max: maxValue
+                        });
+                        processed.add(avgKey);
+                        processed.add(maxKey);
+                    } else if (avgValue) {
+                        organized.push({
+                            label: group.label,
+                            value: avgValue
+                        });
+                        processed.add(avgKey);
+                    } else if (maxValue) {
+                        organized.push({
+                            label: group.label,
+                            value: maxValue
+                        });
+                        processed.add(maxKey);
+                    }
+                }
+            });
+
+            // Group time-related stats together
+            const timeStats = [];
+            const timeKeywords = ['moving time', 'elapsed time'];
+            
+            // Separate weather stats and time stats from regular stats
+            Object.keys(filtered).forEach(key => {
+                if (!processed.has(key)) {
+                    const lowerKey = key.toLowerCase();
+                    const isWeather = weatherKeywords.some(keyword => lowerKey.includes(keyword));
+                    const isTime = timeKeywords.some(keyword => lowerKey.includes(keyword));
+                    
+                    const stat = {
+                        label: key,
+                        value: filtered[key]
+                    };
+                    
+                    if (isWeather) {
+                        weatherStats.push(stat);
+                    } else if (isTime) {
+                        timeStats.push(stat);
+                    } else {
+                        organized.push(stat);
+                    }
+                    processed.add(key);
+                }
+            });
+            
+            // Add time stats after the grouped stats but before other stats
+            // Insert them at the beginning of the organized array
+            organized.unshift(...timeStats);
+
+            // Add weather section header and stats at the end if we have weather data
+            if (weatherStats.length > 0) {
+                organized.push({
+                    isHeader: true,
+                    label: 'Weather Conditions'
+                });
+                organized.push(...weatherStats);
+            }
+
+            return organized;
+        },
+
         setupAutoFilter() {
             const debouncedFilter = UtilsModule.debounce(() => {
                 try {
@@ -3091,6 +3585,7 @@
                     this.updateJoinWorkoutVisibility();
                     this.updateCoachCatVisibility();
                     this.updateAthleteJoinedClubVisibility();
+                    this.manageSeeMoreButtons();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
@@ -3136,6 +3631,7 @@
                 this.updateCoachCatVisibility();
                 this.updateAthleteJoinedClubVisibility();
                 this.manageHeaderKudosButton();
+                this.manageSeeMoreButtons();
                 UIModule.syncSecondaryKudosVisibility();
             } else {
                 // When filter is disabled, show all activities and reset sections
@@ -3289,6 +3785,8 @@
             UIModule.syncSecondaryKudosVisibility();
             // Ensure header kudos button is created/removed according to settings immediately
             LogicModule.manageHeaderKudosButton();
+            // Inject "See more" buttons on activities
+            LogicModule.manageSeeMoreButtons();
             LogicModule.filterActivities();
             LogicModule.setupAutoFilter();
         }
