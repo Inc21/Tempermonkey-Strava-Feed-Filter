@@ -27,7 +27,7 @@
     // DISCLAIMER: Currently tested with Firefox (Desktop), Firefox for Android, and Safari iOS.
     // Other browsers may work but are not yet fully verified for this release.
     
-    console.log('🚀 Clean Filter: Script starting (Safari iOS compatible)...');
+    console.log(' Clean Filter: Script starting (Safari iOS compatible)...');
     
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
@@ -64,7 +64,11 @@
         unitSystem: 'metric', // 'metric' or 'imperial'
         enabled: true
     };
-    
+
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)
+        ? GM_info.script.version
+        : 'sff-safari';
+
     const TYPES = [
         { key: "Ride", label: "Ride" },
         { key: "Walk", label: "Walk" },
@@ -891,6 +895,84 @@
         .sff-secondary-kudos-btn:hover {
         background: #e04a00 !important;
         }
+
+        .sff-view-filters, .sff-view-settings {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .sff-view-filters.hidden {
+            display: none !important;
+        }
+        .sff-view-settings {
+            display: none !important;
+        }
+        .sff-view-settings.active {
+            display: block !important;
+            animation: sff-fade-in 0.2s ease-out;
+        }
+        @keyframes sff-fade-in {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sff-toast {
+            position: absolute !important;
+            bottom: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) translateY(20px) !important;
+            background: #333 !important;
+            color: white !important;
+            padding: 8px 16px !important;
+            border-radius: 4px !important;
+            font-size: 13px !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: all 0.3s ease !important;
+            z-index: 100 !important;
+            white-space: nowrap !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        .sff-toast.show {
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: translateX(-50%) translateY(0) !important;
+        }
+        .sff-toast.error {
+            background: #dc3545 !important;
+        }
+
+        .sff-settings-btn {
+            width: 100% !important;
+            padding: 10px 16px !important;
+            margin-bottom: 12px !important;
+            background: #fc5200 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            transition: background-color 0.2s ease !important;
+        }
+        .sff-settings-btn:hover {
+            background: #e04a00 !important;
+        }
+        .sff-settings-btn.danger {
+            background: #dc3545 !important;
+        }
+        .sff-settings-btn.danger:hover {
+            background: #c82333 !important;
+        }
+
+        .sff-file-input {
+            display: none !important;
+        }
+
+        .sff-settings-desc {
+            font-size: 13px !important;
+            color: #666 !important;
+            margin-bottom: 20px !important;
+            line-height: 1.5 !important;
+        }
         `;
         document.head.appendChild(style);
     }
@@ -1289,6 +1371,18 @@
             panel.querySelector('[data-label-type="elevation"]').textContent = `Elevation Gain (${isMetric ? 'm' : 'ft'}):`;
             panel.querySelector('[data-label-type="pace"]').textContent = `Pace for Runs (${isMetric ? 'min/km' : 'min/mi'}):`;
         },
+
+        showToast(panel, message, type = 'success') {
+            const toast = panel.querySelector('.sff-toast');
+            if (!toast) return;
+
+            toast.textContent = message;
+            toast.className = `sff-toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        },
     
         applySettings(panel) {
             settings.keywords = panel.querySelector('.sff-keywords').value
@@ -1483,9 +1577,11 @@
             content.innerHTML = this._getPanelHTML();
             return content;
         },
-    
+
         _getPanelHTML() {
             return `
+                <div class="sff-toast"></div>
+                <div class="sff-view-filters">
                 <div class="sff-toggle-section">
                     <label class="sff-switch">
                         <input type="checkbox" class="sff-enabled-toggle" ${settings.enabled ? 'checked' : ''}>
@@ -1494,6 +1590,7 @@
                     <span class="sff-label">
                         <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
                     </span>
+                    <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; color: #666; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">⚙️</button>
                 </div>
                 <div class="sff-row sff-dropdown">
                     <div class="sff-dropdown-header">
@@ -1567,7 +1664,7 @@
                             </div>
                         </div>
                         <div class="sff-row">
-                            <label class="sff-label" data-label-type="distance">Distance (${settings.unitSystem === 'metric' ? 'km' : 'mi'}):</label>
+                            <label class="sff-label" data-label-type="distance">Distance (km):</label>
                             <div class="sff-input-group">
                                 <input type="number" class="sff-input sff-minKm" min="0" step="0.1" value="${settings.minKm || ''}" placeholder="Min">
                                 <input type="number" class="sff-input sff-maxKm" min="0" step="0.1" value="${settings.maxKm || ''}" placeholder="Max">
@@ -1581,14 +1678,14 @@
                             </div>
                         </div>
                         <div class="sff-row">
-                            <label class="sff-label" data-label-type="elevation">Elevation Gain (${settings.unitSystem === 'metric' ? 'm' : 'ft'}):</label>
+                            <label class="sff-label" data-label-type="elevation">Elevation Gain (m):</label>
                             <div class="sff-input-group">
                                 <input type="number" class="sff-input sff-minElevM" min="0" value="${settings.minElevM || ''}" placeholder="Min">
                                 <input type="number" class="sff-input sff-maxElevM" min="0" step="0.1" value="${settings.maxElevM || ''}" placeholder="Max">
                             </div>
                         </div>
                         <div class="sff-row">
-                            <label class="sff-label" data-label-type="pace">Pace for Runs (${settings.unitSystem === 'metric' ? 'min/km' : 'min/mi'}):</label>
+                            <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
                             <div class="sff-input-group">
                                 <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace || ''}" placeholder="Min (Slowest)">
                                 <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace || ''}" placeholder="Max (Fastest)">
@@ -1707,21 +1804,140 @@
                     <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
                     <p id="sff-version" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">Version</p>
                 </div>
-            `;
-        },
+            </div>
+
+            <div class="sff-view-settings">
+                <button class="sff-back-btn" style="background: none; border: none; cursor: pointer; color: #fc5200; font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 4px;">
+                    ← Back to Filters
+                </button>
+                <p class="sff-settings-desc">
+                    Manage your Strava Feed Filter settings. You can back up your configuration or restore from a previous backup.
+                </p>
+                
+                <button class="sff-settings-btn sff-action-export">Export Settings</button>
+                <button class="sff-settings-btn sff-action-import">Import Settings</button>
+                <input type="file" class="sff-file-input sff-file-import" accept=".json">
+                
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                
+                <button class="sff-settings-btn danger sff-action-reset">Reset to Defaults</button>
+            </div>
+        `
+    },
     
         setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
             console.log('🎯 Clean Filter: Setting up events...');
     
-            // Set dynamic version from userscript metadata
-            try {
-                const versionEl = panel.querySelector('#sff-version');
-                if (versionEl) {
-                    const version = GM_info?.script?.version || '2.3.2-safari-ios';
-                    versionEl.textContent = `Version ${version}`;
-                }
-            } catch (error) {
-                console.log('Could not get script version:', error);
+            // Settings view toggle (gear icon)
+            const settingsToggle = panel.querySelector('.sff-settings-toggle');
+            const filtersView = panel.querySelector('.sff-view-filters');
+            const settingsView = panel.querySelector('.sff-view-settings');
+            const backBtn = panel.querySelector('.sff-back-btn');
+
+            if (settingsToggle && filtersView && settingsView) {
+                settingsToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    filtersView.classList.add('hidden');
+                    settingsView.classList.add('active');
+                    settingsToggle.style.opacity = '0';
+                    settingsToggle.style.pointerEvents = 'none';
+                });
+            }
+
+            if (backBtn && filtersView && settingsView && settingsToggle) {
+                backBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    settingsView.classList.remove('active');
+                    filtersView.classList.remove('hidden');
+                    settingsToggle.style.opacity = '0.8';
+                    settingsToggle.style.pointerEvents = 'auto';
+                });
+            }
+
+            // Settings actions (export / import / reset)
+            const exportBtn = panel.querySelector('.sff-action-export');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    try {
+                        const exportData = {
+                            version: SCRIPT_VERSION,
+                            exportDate: new Date().toISOString(),
+                            settings
+                        };
+
+                        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `strava-feed-filter-settings-${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        this.showToast(panel, 'Settings exported successfully!', 'success');
+                    } catch (err) {
+                        console.error('Export failed:', err);
+                        this.showToast(panel, 'Export failed. See console.', 'error');
+                    }
+                });
+            }
+
+            const importBtn = panel.querySelector('.sff-action-import');
+            const fileInput = panel.querySelector('.sff-file-import');
+            if (importBtn && fileInput) {
+                importBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const imported = JSON.parse(ev.target?.result);
+                            const newSettings = imported.settings || imported;
+                            if (!newSettings || typeof newSettings !== 'object') {
+                                throw new Error('Invalid settings format');
+                            }
+
+                            settings = { ...DEFAULTS, ...newSettings };
+                            UtilsModule.saveSettings(settings);
+                            this.showToast(panel, 'Settings imported! Reloading...', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } catch (err) {
+                            console.error('Import failed:', err);
+                            this.showToast(panel, 'Import failed: Invalid file.', 'error');
+                        }
+                    };
+                    reader.onerror = () => {
+                        this.showToast(panel, 'Failed to read file.', 'error');
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                });
+            }
+
+            const resetBtn = panel.querySelector('.sff-action-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('Are you sure you want to reset all filters to their default values? This cannot be undone.')) {
+                        settings = { ...DEFAULTS };
+                        UtilsModule.saveSettings(settings);
+                        this.showToast(panel, 'Settings reset! Reloading...', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                });
+            }
+
+            const versionEl = panel.querySelector('#sff-version');
+            if (versionEl) {
+                versionEl.textContent = `Version ${SCRIPT_VERSION}`;
             }
 
             // Initialize draggable

@@ -27,7 +27,7 @@
     // DISCLAIMER: Currently tested with Firefox (Desktop) and Firefox for Android.
     // Other browsers may work but are not yet fully verified for this release.
 
-    console.log('🚀 Clean Filter: Script starting...');
+    console.log(' Clean Filter: Script starting...');
 
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
@@ -64,6 +64,10 @@
         unitSystem: 'metric', // 'metric' or 'imperial'
         enabled: true
     };
+
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)
+        ? GM_info.script.version
+        : 'userscript';
 
     const TYPES = [
         { key: "Ride", label: "Ride" },
@@ -1119,6 +1123,18 @@
             panel.querySelector('[data-label-type="pace"]').textContent = `Pace for Runs (${isMetric ? 'min/km' : 'min/mi'}):`;
         },
 
+        showToast(panel, message, type = 'success') {
+            const toast = panel.querySelector('.sff-toast');
+            if (!toast) return;
+
+            toast.textContent = message;
+            toast.className = `sff-toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        },
+
         applySettings(panel) {
             settings.keywords = panel.querySelector('.sff-keywords').value
                 .split(',')
@@ -1612,6 +1628,118 @@
             };
 
             window.addEventListener('resize', handleResize);
+
+            // Settings view toggle (gear icon)
+            const settingsToggle = panel.querySelector('.sff-settings-toggle');
+            const filtersView = panel.querySelector('.sff-view-filters');
+            const settingsView = panel.querySelector('.sff-view-settings');
+            const backBtn = panel.querySelector('.sff-back-btn');
+
+            if (settingsToggle && filtersView && settingsView) {
+                settingsToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    filtersView.classList.add('hidden');
+                    settingsView.classList.add('active');
+                    settingsToggle.style.opacity = '0';
+                    settingsToggle.style.pointerEvents = 'none';
+                });
+            }
+
+            if (backBtn && filtersView && settingsView && settingsToggle) {
+                backBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    settingsView.classList.remove('active');
+                    filtersView.classList.remove('hidden');
+                    settingsToggle.style.opacity = '0.8';
+                    settingsToggle.style.pointerEvents = 'auto';
+                });
+            }
+
+            // Settings actions (export / import / reset)
+            const exportBtn = panel.querySelector('.sff-action-export');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    try {
+                        const exportData = {
+                            version: SCRIPT_VERSION,
+                            exportDate: new Date().toISOString(),
+                            settings
+                        };
+
+                        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `strava-feed-filter-settings-${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        this.showToast(panel, 'Settings exported successfully!', 'success');
+                    } catch (err) {
+                        console.error('Export failed:', err);
+                        this.showToast(panel, 'Export failed. See console.', 'error');
+                    }
+                });
+            }
+
+            const importBtn = panel.querySelector('.sff-action-import');
+            const fileInput = panel.querySelector('.sff-file-import');
+            if (importBtn && fileInput) {
+                importBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const imported = JSON.parse(ev.target?.result);
+                            const newSettings = imported.settings || imported;
+                            if (!newSettings || typeof newSettings !== 'object') {
+                                throw new Error('Invalid settings format');
+                            }
+
+                            settings = { ...DEFAULTS, ...newSettings };
+                            UtilsModule.saveSettings(settings);
+                            this.showToast(panel, 'Settings imported! Reloading...', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } catch (err) {
+                            console.error('Import failed:', err);
+                            this.showToast(panel, 'Import failed: Invalid file.', 'error');
+                        }
+                    };
+                    reader.onerror = () => {
+                        this.showToast(panel, 'Failed to read file.', 'error');
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                });
+            }
+
+            const resetBtn = panel.querySelector('.sff-action-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('Are you sure you want to reset all filters to their default values? This cannot be undone.')) {
+                        settings = { ...DEFAULTS };
+                        UtilsModule.saveSettings(settings);
+                        this.showToast(panel, 'Settings reset! Reloading...', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                });
+            }
+
+            const versionEl = panel.querySelector('#sff-version');
+            if (versionEl) {
+                versionEl.textContent = `Version ${SCRIPT_VERSION}`;
+            }
 
             // Handle click outside (define first)
             const handleClickOutside = (e) => {
