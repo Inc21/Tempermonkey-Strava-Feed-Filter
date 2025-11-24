@@ -6,6 +6,73 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v2.4.2] - 24.11.2025 (Firefox Extension ALPHA)
+
+### Features Added - Firefox Extension Only
+
+- **Group Activity Stats**: "Show More Stats" button now appears on individual activities within group rides
+  - Each participant's activity in a group ride gets their own stats button
+  - Stats are fetched and displayed for each individual activity
+  - Proper positioning ensures stats appear below each activity's content
+
+### Bug Fixes - Firefox Extension Only
+
+- Fixed duplicate Heart Rate entries in stats display
+- Fixed Walk activity filtering - walks are now properly hidden when filtered
+- Eliminated flickering during scroll by optimizing filter execution
+- Fixed stats container width to match map/images width
+- Improved stats container positioning for consistent display
+
+---
+
+## [v2.4.1] - 24.11.2025 (Firefox Extension ALPHA)
+
+### Features Added - Firefox Extension Only
+
+- **Show More Stats**: New button on each activity to display detailed statistics including:
+  - Time stats (Moving Time, Elapsed Time, Time Stopped)
+  - Performance metrics (Speed, Heart Rate, Cadence, Power, Pace, etc.)
+  - Weather conditions with icon display (Temperature, Humidity, Wind Speed/Direction, Feels Like)
+  - Equipment tracking (Device, Bike, Shoes, Gear)
+- **Weather Icon Integration**: Weather section header displays Strava's native weather icon alongside condition (e.g., "Weather: ☀️ Clear")
+- **Resizable Panel**: Filter panel can now be resized horizontally by dragging the resize handle
+- **Text Wrapping**: Long activity type names now wrap properly instead of being cut off
+- **Auto-collapse Dropdowns**: Opening one dropdown section automatically closes others for cleaner UI
+
+### Improvements - Firefox Extension Only
+
+- Enhanced stat extraction to handle multiple HTML formats from Strava
+- Improved time parsing to support both "HH:MM:SS" and "1h 23m 45s" formats
+- Weather conditions properly categorized and displayed with icons
+- Panel width optimized for desktop (380px) vs mobile (320px) screens
+
+### Notes
+
+- This is an ALPHA release for testing on AMO before bringing "Show More Stats" to Chrome
+
+---
+
+## [v2.3.3] - 24.11.2025 (Chrome Extension & Userscripts)
+
+### Features Added
+
+- **New External Service Filters**:
+  - Hide "Bandok.com" auto-generated activity names
+  - Hide "COROS" device descriptions (e.g., "-- from COROS")
+- **Athlete Ignore List**: Hide all activities from specific athletes
+- **Settings Management**:
+  - Import/Export settings as JSON
+  - Reset settings to defaults
+  - Improved settings panel organization
+
+### Improvements
+
+- Enhanced external service embed filtering system
+- Better athlete management with separate allowed/ignored lists
+- Improved settings persistence and backup capabilities
+
+---
+
 ## [v2.3.2] - 10.11.2025 (All Platforms)
 
 ### Improvements

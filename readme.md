@@ -19,7 +19,8 @@ with Strava's design.
 
 ## 🆕 What's New
 
-- Latest: v2.3.2 — smarter activity-type matching (specific sub-types and group posts), shipped simultaneously to the userscripts and both browser extensions.
+- **Latest: v2.3.3** — Added filtering for Bandok.com and COROS external service embeds. Enhanced settings menu with import/export functionality and reset options. Improved athlete ignore list management.
+- **Firefox Extension v2.4.2 ALPHA** — "Show More Stats" now works on individual activities in group rides! Each participant gets their own stats button. Plus bug fixes for duplicate Heart Rate display, Walk filtering, and scroll flickering.
 - Read the full history in the Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
 ## ✨ Key Features
@@ -42,7 +43,8 @@ with Strava's design.
 - **Club Posts**: Option to hide club-related posts
 - **Challenge Filtering**: Hide your challenges section
 - **Hide Joined Challenges**: Hide athletes' joined challenge cards from the feed
-- **External Service Embeds Filtering**: Option to hide text embeds from third-party services in activity descriptions (e.g., myWindsock report, summitbag.com, Run Health, Wandrer)
+- **External Service Embeds Filtering**: Option to hide text embeds from third-party services in activity descriptions (e.g., myWindsock report, summitbag.com, Run Health, Wandrer, Bandok.com, COROS)
+- **Athlete Management**: Ignore specific athletes to hide all their activities from your feed
 - **UI Sections Hiding**: Hide "Suggested Friends" and "Your Clubs" sections site-wide
 
 ### 🎨 User Interface
@@ -94,9 +96,11 @@ The main settings panel features organized sections:
 1. **Master Toggle**: Enable/disable all filtering
 2. **Keywords**: Text-based filtering
 3. **Allowed Athletes**: Whitelist specific users
-4. **Activity Types**: Checkboxes for each activity type with live count
-5. **Min/Max Filters**: Distance, duration, elevation, pace controls
-6. **Other Options**: Map filtering, club posts, challenges, global settings
+4. **Ignored Athletes**: Hide activities from specific users
+5. **Activity Types**: Checkboxes for each activity type with live count
+6. **Min/Max Filters**: Distance, duration, elevation, pace controls
+7. **Other Options**: Map filtering, club posts, challenges, global settings
+8. **Settings Management**: Import/export settings, reset to defaults
 
 ![Settings panel sections](./src/readme-images/filter-sections.png)
 *Well-organized filtering options*

@@ -4,7 +4,7 @@
 // @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
-// @version      2.3.2-safari-ios
+// @version      2.3.3-safari-ios
 // @license      MIT
 // @author       Inc21
 // @match        https://www.strava.com/*
@@ -48,6 +48,8 @@
         hideSummitbag: false,
         hideRunHealth: false,
         hideWandrer: false,
+        hideBandok: false,
+        hideCoros: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -298,7 +300,9 @@
         top: 60px !important;
         right: 10px !important;
         z-index: 2147483646 !important;
-        width: 360px !important;
+        width: 380px !important;
+        min-width: 280px !important;
+        max-width: 600px !important;
         min-height: 180px !important;
         max-height: 70vh !important;
         background: white !important;
@@ -311,6 +315,28 @@
         visibility: visible !important;
         opacity: 1 !important;
         transition: none !important;
+        }
+        
+        .sff-resize-handle {
+        position: absolute !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+        cursor: ew-resize !important;
+        z-index: 10 !important;
+        background: linear-gradient(135deg, transparent 50%, #fc5200 50%) !important;
+        border-radius: 0 0 6px 0 !important;
+        }
+        
+        .sff-resize-handle:hover {
+        background: linear-gradient(135deg, transparent 50%, #e04800 50%) !important;
+        }
+        
+        @media (max-width: 768px) {
+            .sff-clean-panel {
+            width: 320px !important;
+            }
         }
     
         .sff-clean-panel.show {
@@ -547,9 +573,16 @@
     
         .sff-types {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; /* Flexible on desktop */
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
         gap: 4px 8px !important; /* Increased gap */
         margin-top: 3px !important;
+        }
+        
+        /* Limit to maximum 4 columns */
+        @supports (grid-template-columns: repeat(auto-fill, minmax(80px, 1fr))) {
+            .sff-types {
+            grid-template-columns: repeat(auto-fill, minmax(max(80px, calc(25% - 6px)), 1fr)) !important;
+            }
         }
     
         .sff-clean-panel .sff-chip {
@@ -1419,6 +1452,8 @@
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
+            settings.hideBandok = panel.querySelector('.sff-hideBandok') ? panel.querySelector('.sff-hideBandok').checked : settings.hideBandok;
+            settings.hideCoros = panel.querySelector('.sff-hideCoros') ? panel.querySelector('.sff-hideCoros').checked : settings.hideCoros;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
@@ -1460,6 +1495,8 @@
                 LogicModule.updateMyWindsockVisibility();
                 LogicModule.updateSummitbagVisibility();
                 LogicModule.updateRunHealthVisibility();
+                LogicModule.updateBandokVisibility();
+                LogicModule.updateCorosVisibility();
                 LogicModule.updateJoinWorkoutVisibility();
                 LogicModule.updateCoachCatVisibility();
                 LogicModule.updateAthleteJoinedClubVisibility();
@@ -1552,11 +1589,20 @@
             // Build panel content sections
             const header = this._createPanelHeader();
             const content = this._createPanelContent();
+            const resizeHandle = this._createResizeHandle();
     
             panel.appendChild(header);
             panel.appendChild(content);
+            panel.appendChild(resizeHandle);
     
             return panel;
+        },
+
+        _createResizeHandle() {
+            const handle = document.createElement('div');
+            handle.className = 'sff-resize-handle';
+            handle.title = 'Drag to resize';
+            return handle;
         },
     
         _createPanelHeader() {
@@ -1716,6 +1762,14 @@
                         <label class="sff-chip ${settings.hideWandrer ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideWandrer" ${settings.hideWandrer ? 'checked' : ''}>
                             Hide "Wandrer" embeds
+                        </label>
+                        <label class="sff-chip ${settings.hideBandok ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideBandok" ${settings.hideBandok ? 'checked' : ''}>
+                            Hide "Bandok.com"
+                        </label>
+                        <label class="sff-chip ${settings.hideCoros ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideCoros" ${settings.hideCoros ? 'checked' : ''}>
+                            Hide "COROS"
                         </label>
                         <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
@@ -1940,8 +1994,16 @@
                 versionEl.textContent = `Version ${SCRIPT_VERSION}`;
             }
 
-            // Initialize draggable
+            // Track if we're currently resizing to prevent click-outside from firing
+            let isCurrentlyResizing = false;
+
+            // Initialize draggable and resizable
             const cleanupDraggable = this.makeDraggable(panel);
+            const cleanupResizable = this.makeResizable(panel, () => {
+                isCurrentlyResizing = true;
+            }, () => {
+                isCurrentlyResizing = false;
+            });
     
             // Load saved position
             const savedPos = JSON.parse(localStorage.getItem(POS_KEY) || '{}');
@@ -1959,23 +2021,11 @@
             const handleResize = () => {
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(() => {
-                    const wasVisible = panel.style.display === 'block';
-                    if (wasVisible) {
-                        panel.style.display = 'none';
-                    }
-    
                     // Sync secondary kudos button visibility on resize
                     this.syncSecondaryKudosVisibility();
     
-                    // Force reflow to ensure proper measurements
-                    void panel.offsetHeight;
-    
-                    // Update position to stay in viewport
+                    // Update position to stay in viewport (without hiding panel)
                     this.keepInViewport(panel);
-    
-                    if (wasVisible) {
-                        panel.style.display = 'block';
-                    }
     
                     // Save new position
                     localStorage.setItem(POS_KEY, JSON.stringify({
@@ -1989,6 +2039,11 @@
     
             // Handle click outside (define first)
             const handleClickOutside = (e) => {
+                // Don't close if we're currently resizing or just finished resizing
+                if (isCurrentlyResizing) {
+                    return;
+                }
+                
                 const clickedSecondaryBtn = secondaryFilterBtn && secondaryFilterBtn.contains(e.target);
                 if (!panel.contains(e.target) && !btn.contains(e.target) && !clickedSecondaryBtn) {
                     const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
@@ -2119,6 +2174,17 @@
     
                     const content = dropdown.querySelector('.sff-dropdown-content');
                     const isVisible = content.style.display === 'block';
+
+                    // Close all other dropdowns first
+                    if (!isVisible) {
+                        panel.querySelectorAll('.sff-dropdown.open').forEach(otherDropdown => {
+                            if (otherDropdown !== dropdown) {
+                                otherDropdown.classList.remove('open');
+                                const otherContent = otherDropdown.querySelector('.sff-dropdown-content');
+                                if (otherContent) otherContent.style.display = 'none';
+                            }
+                        });
+                    }
     
                     content.style.display = isVisible ? 'none' : 'block';
                     dropdown.classList.toggle('open', !isVisible);
@@ -2203,6 +2269,16 @@
                         settings.hideWandrer = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateWandrerVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideBandok')) {
+                        settings.hideBandok = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateBandokVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCoros')) {
+                        settings.hideCoros = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCorosVisibility();
                     }
                     if (e.target.classList.contains('sff-hideRunHealth')) {
                         settings.hideRunHealth = e.target.checked;
@@ -2326,6 +2402,7 @@
             return () => {
                 window.removeEventListener('resize', handleResize);
                 cleanupDraggable && cleanupDraggable();
+                cleanupResizable && cleanupResizable();
                 document.removeEventListener('click', handleClickOutside);
             };
         },
@@ -2414,6 +2491,66 @@
                     left: panel.style.left,
                     top: panel.style.top
                 }));
+            };
+        },
+
+        makeResizable(panel, onResizeStart, onResizeEnd) {
+            const handle = panel.querySelector('.sff-resize-handle');
+            if (!handle) return () => {};
+
+            let isResizing = false;
+            let startX, startWidth;
+
+            const onMouseDown = (e) => {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(getComputedStyle(panel).width, 10);
+                document.body.style.userSelect = 'none';
+                
+                // Notify that resize started
+                if (onResizeStart) onResizeStart();
+                
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            const onMouseMove = (e) => {
+                if (!isResizing) return;
+
+                const dx = e.clientX - startX;
+                let newWidth = startWidth + dx;
+
+                // Constrain width
+                const minWidth = 280;
+                const maxWidth = 600;
+                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+
+                panel.style.setProperty('width', newWidth + 'px', 'important');
+            };
+
+            const onMouseUp = (e) => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.userSelect = '';
+                    
+                    // Prevent click outside handler from firing immediately after resize
+                    e.stopPropagation();
+                    
+                    // Notify that resize ended after a short delay to ensure click-outside doesn't fire
+                    setTimeout(() => {
+                        if (onResizeEnd) onResizeEnd();
+                    }, 100);
+                }
+            };
+
+            handle.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp, true); // Use capture phase
+
+            return () => {
+                handle.removeEventListener('mousedown', onMouseDown);
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp, true);
             };
         },
     
@@ -2806,6 +2943,66 @@
                 });
             } catch (e) {
                 console.warn('updateSummitbagVisibility error:', e);
+            }
+        },
+
+        updateBandokVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "Activity name auto generated by Bandok.com"
+                        const hasBandok = /activity\s+name\s+auto\s+generated\s+by\s+bandok\.com/i.test(text);
+                        if (hasBandok && text.length < 200) {
+                            if (settings.enabled && settings.hideBandok) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🎯 Bandok.com description hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateBandokVisibility error:', e);
+            }
+        },
+
+        updateCorosVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "-- from COROS" or similar patterns
+                        const hasCoros = /--\s*from\s+coros/i.test(text) || /--\s*coros/i.test(text);
+                        if (hasCoros && text.length < 500) {
+                            if (settings.enabled && settings.hideCoros) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('⌚ COROS description hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateCorosVisibility error:', e);
             }
         },
     
@@ -3290,6 +3487,8 @@
                     this.updateSummitbagVisibility();
                     this.updateCommuteTagVisibility();
                     this.updateRunHealthVisibility();
+                    this.updateBandokVisibility();
+                    this.updateCorosVisibility();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
@@ -3332,6 +3531,8 @@
                 this.updateMyWindsockVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateBandokVisibility();
+                this.updateCorosVisibility();
                 this.updateCommuteTagVisibility();
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
@@ -3383,6 +3584,8 @@
                 this.updateMyWindsockVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateBandokVisibility();
+                this.updateCorosVisibility();
     
                 // Hide kudos buttons when master toggle is off
                 this.manageHeaderKudosButton();
@@ -3426,6 +3629,8 @@
         LogicModule.updateMyWindsockVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
+        LogicModule.updateBandokVisibility();
+        LogicModule.updateCorosVisibility();
         LogicModule.updateCommuteTagVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
@@ -3442,6 +3647,8 @@
             LogicModule.updateMyWindsockVisibility();
             LogicModule.updateSummitbagVisibility();
             LogicModule.updateRunHealthVisibility();
+            LogicModule.updateBandokVisibility();
+            LogicModule.updateCorosVisibility();
             LogicModule.updateJoinWorkoutVisibility();
             LogicModule.updateCoachCatVisibility();
             LogicModule.updateAthleteJoinedClubVisibility();

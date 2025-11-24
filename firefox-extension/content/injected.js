@@ -89,6 +89,8 @@
         hideSummitbag: false,
         hideRunHealth: false,
         hideWandrer: false,
+        hideBandok: false,
+        hideCoros: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -336,7 +338,9 @@
         top: 60px !important;
         right: 10px !important;
         z-index: 2147483646 !important;
-        width: 360px !important;
+        width: 380px !important;
+        min-width: 280px !important;
+        max-width: 600px !important;
         min-height: 180px !important;
         max-height: 70vh !important;
         background: white !important;
@@ -349,6 +353,28 @@
         visibility: visible !important;
         opacity: 1 !important;
         transition: none !important;
+      }
+      
+      .sff-resize-handle {
+        position: absolute !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+        cursor: ew-resize !important;
+        z-index: 10 !important;
+        background: linear-gradient(135deg, transparent 50%, #fc5200 50%) !important;
+        border-radius: 0 0 6px 0 !important;
+      }
+      
+      .sff-resize-handle:hover {
+        background: linear-gradient(135deg, transparent 50%, #e04800 50%) !important;
+      }
+      
+      @media (max-width: 768px) {
+        .sff-clean-panel {
+          width: 320px !important;
+        }
       }
 
       .sff-clean-panel.show {
@@ -466,7 +492,7 @@
       .sff-panel-content {
         padding: 16px !important;
         max-height: calc(70vh - 100px) !important;
-        overflow-y: scroll !important;
+        overflow-y: auto !important;
       }
 
       .sff-clean-panel .sff-row {
@@ -609,18 +635,18 @@
         font-weight: 400 !important;
         font-size: 14px !important; /* Increased for readability */
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         padding: 4px 0 !important;
         border: none !important;
         border-radius: 0 !important;
-        line-height: 1 !important;
+        line-height: 1.3 !important;
         background: transparent !important;
         cursor: pointer !important;
         transition: none !important;
         user-select: none !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
       }
 
       .sff-clean-panel .sff-chip:hover {
@@ -634,9 +660,11 @@
       }
 
       .sff-clean-panel .sff-chip input {
-        margin-right: 4px !important;
+        margin-right: 6px !important;
         margin-left: 0 !important;
+        margin-top: 2px !important;
         transform: scale(0.85) !important;
+        flex-shrink: 0 !important;
       }
 
       .sff-switch {
@@ -1351,6 +1379,8 @@
             settings.hideSummitbag = panel.querySelector('.sff-hideSummitbag').checked;
             settings.hideRunHealth = panel.querySelector('.sff-hideRunHealth').checked;
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
+            settings.hideBandok = panel.querySelector('.sff-hideBandok') ? panel.querySelector('.sff-hideBandok').checked : settings.hideBandok;
+            settings.hideCoros = panel.querySelector('.sff-hideCoros') ? panel.querySelector('.sff-hideCoros').checked : settings.hideCoros;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
@@ -1393,6 +1423,8 @@
                 LogicModule.updateMyWindsockVisibility();
                 LogicModule.updateSummitbagVisibility();
                 LogicModule.updateRunHealthVisibility();
+                LogicModule.updateBandokVisibility();
+                LogicModule.updateCorosVisibility();
                 LogicModule.updateJoinWorkoutVisibility();
                 LogicModule.updateCoachCatVisibility();
                 LogicModule.updateAthleteJoinedClubVisibility();
@@ -1469,7 +1501,6 @@
             panel.style.visibility = 'hidden';
             panel.style.opacity = '0';
             panel.style.zIndex = '2147483646';
-            panel.style.width = '320px';
             panel.style.right = '10px';
             panel.style.top = '60px';
             panel.style.transition = 'opacity 0.2s ease, visibility 0.2s';
@@ -1486,9 +1517,11 @@
             // Build panel content sections
             const header = this._createPanelHeader();
             const content = this._createPanelContent();
+            const resizeHandle = this._createResizeHandle();
 
             panel.appendChild(header);
             panel.appendChild(content);
+            panel.appendChild(resizeHandle);
 
             return panel;
         },
@@ -1510,6 +1543,13 @@
             content.className = 'sff-panel-content';
             content.innerHTML = this._getPanelHTML();
             return content;
+        },
+
+        _createResizeHandle() {
+            const handle = document.createElement('div');
+            handle.className = 'sff-resize-handle';
+            handle.title = 'Drag to resize';
+            return handle;
         },
 
         _getPanelHTML() {
@@ -1650,6 +1690,14 @@
                             <label class="sff-chip ${settings.hideWandrer ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideWandrer" ${settings.hideWandrer ? 'checked' : ''}>
                                 Hide "Wandrer" embeds
+                            </label>
+                            <label class="sff-chip ${settings.hideBandok ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideBandok" ${settings.hideBandok ? 'checked' : ''}>
+                                Hide "Bandok.com"
+                            </label>
+                            <label class="sff-chip ${settings.hideCoros ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideCoros" ${settings.hideCoros ? 'checked' : ''}>
+                                Hide "COROS"
                             </label>
                             <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
@@ -1900,8 +1948,9 @@
                 console.log('Could not get manifest version:', error);
             }
 
-            // Initialize draggable
+            // Initialize draggable and resizable
             const cleanupDraggable = this.makeDraggable(panel);
+            const cleanupResizable = this.makeResizable(panel);
 
             // Load saved position
             Storage.get('sffPanelPos', {}).then((savedPos) => {
@@ -2069,6 +2118,17 @@
                     const content = dropdown.querySelector('.sff-dropdown-content');
                     const isVisible = content.style.display === 'block';
 
+                    // Close all other dropdowns first
+                    if (!isVisible) {
+                        panel.querySelectorAll('.sff-dropdown.open').forEach(otherDropdown => {
+                            if (otherDropdown !== dropdown) {
+                                otherDropdown.classList.remove('open');
+                                const otherContent = otherDropdown.querySelector('.sff-dropdown-content');
+                                if (otherContent) otherContent.style.display = 'none';
+                            }
+                        });
+                    }
+
                     content.style.display = isVisible ? 'none' : 'block';
                     dropdown.classList.toggle('open', !isVisible);
                 });
@@ -2154,6 +2214,16 @@
                         settings.hideSummitbag = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateSummitbagVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideBandok')) {
+                        settings.hideBandok = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateBandokVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCoros')) {
+                        settings.hideCoros = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCorosVisibility();
                     }
                     if (e.target.classList.contains('sff-hideJoinWorkout')) {
                         settings.hideJoinWorkout = e.target.checked;
@@ -2267,6 +2337,7 @@
             return () => {
                 window.removeEventListener('resize', handleResize);
                 cleanupDraggable && cleanupDraggable();
+                cleanupResizable && cleanupResizable();
                 document.removeEventListener('click', handleClickOutside);
             };
         },
@@ -2355,6 +2426,54 @@
                     left: panel.style.left,
                     top: panel.style.top
                 });
+            };
+        },
+
+        makeResizable(panel) {
+            const handle = panel.querySelector('.sff-resize-handle');
+            if (!handle) return () => {};
+
+            let isResizing = false;
+            let startX, startWidth;
+
+            const onMouseDown = (e) => {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(getComputedStyle(panel).width, 10);
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            const onMouseMove = (e) => {
+                if (!isResizing) return;
+
+                const dx = e.clientX - startX;
+                let newWidth = startWidth + dx;
+
+                // Constrain width
+                const minWidth = 280;
+                const maxWidth = 600;
+                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+
+                panel.style.setProperty('width', newWidth + 'px', 'important');
+            };
+
+            const onMouseUp = () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.userSelect = '';
+                }
+            };
+
+            handle.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+
+            return () => {
+                handle.removeEventListener('mousedown', onMouseDown);
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
             };
         },
 
@@ -2693,6 +2812,66 @@
             }
         },
 
+        updateBandokVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "Activity name auto generated by Bandok.com"
+                        const hasBandok = /activity\s+name\s+auto\s+generated\s+by\s+bandok\.com/i.test(text);
+                        if (hasBandok && text.length < 200) {
+                            if (settings.enabled && settings.hideBandok) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🎯 Bandok.com description hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateBandokVisibility error:', e);
+            }
+        },
+
+        updateCorosVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "-- from COROS" or similar patterns
+                        const hasCoros = /--\s*from\s+coros/i.test(text) || /--\s*coros/i.test(text);
+                        if (hasCoros && text.length < 500) {
+                            if (settings.enabled && settings.hideCoros) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('⌚ COROS description hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateCorosVisibility error:', e);
+            }
+        },
+
         updateSummitbagVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
@@ -2880,6 +3059,57 @@
             return hiddenSectionsCount;
         },
 
+        filterSingleActivity(activity) {
+            // Immediate filter for a single activity to prevent flickering
+            if (!settings.enabled) return;
+
+            const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
+            const { match: resolvedType, raw: resolvedRawType } = resolveActivityType(activity);
+            const typeText = resolvedRawType || '';
+            const normalizedTypeText = normalizeTypeLabel(typeText);
+
+            // Debug logging
+            if (!resolvedType && typeText) {
+                console.log('🔍 Unresolved activity:', { title, typeText, normalizedTypeText });
+            }
+
+            let shouldHide = false;
+
+            // Quick type check for immediate hiding
+            if (resolvedType && settings.types[resolvedType.key]) {
+                shouldHide = true;
+                console.log('✅ Hiding resolved type:', resolvedType.key, title);
+            } else if (!resolvedType && typeText) {
+                // Fallback detection for common types
+                const isWalk = normalizedTypeText.includes('walk') || /\b(walked|walking)\b/i.test(title);
+                const isRun = normalizedTypeText.includes('run') || /\b(ran|running)\b/i.test(title);
+                const isHike = normalizedTypeText.includes('hike') || /\b(hiked|hiking)\b/i.test(title);
+                const isSwim = normalizedTypeText.includes('swim') || /\b(swam|swimming)\b/i.test(title);
+                const isRide = normalizedTypeText.includes('ride') || /\b(rode|cycling|cycle)\b/i.test(title);
+
+                if (isWalk && settings.types['Walk']) {
+                    shouldHide = true;
+                    console.log('✅ Hiding walk (fallback):', title);
+                } else if (isRun && settings.types['Run']) {
+                    shouldHide = true;
+                    console.log('✅ Hiding run (fallback):', title);
+                } else if (isHike && settings.types['Hike']) {
+                    shouldHide = true;
+                    console.log('✅ Hiding hike (fallback):', title);
+                } else if (isSwim && settings.types['Swim']) {
+                    shouldHide = true;
+                    console.log('✅ Hiding swim (fallback):', title);
+                } else if (isRide && settings.types['Ride']) {
+                    shouldHide = true;
+                    console.log('✅ Hiding ride (fallback):', title);
+                }
+            }
+
+            if (shouldHide) {
+                activity.style.display = 'none';
+            }
+        },
+
         filterActivities() {
             const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
 
@@ -3000,16 +3230,32 @@
                             const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                             if (hideAnyVirtual) shouldHide = true;
                         } else {
-                            // Only check for generic ride if it's NOT virtual
-                            // Check for group ride indicators:
-                            const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
-                            const isRide = normalizedTypeText.includes('ride') || 
-                                         /\b(rode|cycling|cycle)\b/i.test(title) || 
-                                         (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
-                                         (hasGroupAvatars && !normalizedTypeText.includes('run')); // Assume group activity is a ride if not explicitly a run
+                            // Check for specific activity types in fallback
+                            const isWalk = normalizedTypeText.includes('walk') || /\b(walked|walking)\b/i.test(title);
+                            const isRun = normalizedTypeText.includes('run') || /\b(ran|running)\b/i.test(title);
+                            const isHike = normalizedTypeText.includes('hike') || /\b(hiked|hiking)\b/i.test(title);
+                            const isSwim = normalizedTypeText.includes('swim') || /\b(swam|swimming)\b/i.test(title);
                             
-                            if (isRide) {
-                                 if (settings.types['Ride']) shouldHide = true;
+                            if (isWalk && settings.types['Walk']) {
+                                shouldHide = true;
+                            } else if (isRun && settings.types['Run']) {
+                                shouldHide = true;
+                            } else if (isHike && settings.types['Hike']) {
+                                shouldHide = true;
+                            } else if (isSwim && settings.types['Swim']) {
+                                shouldHide = true;
+                            } else {
+                                // Only check for generic ride if it's NOT virtual and not another specific type
+                                // Check for group ride indicators:
+                                const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
+                                const isRide = normalizedTypeText.includes('ride') || 
+                                             /\b(rode|cycling|cycle)\b/i.test(title) || 
+                                             (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
+                                             (hasGroupAvatars && !normalizedTypeText.includes('run')); // Assume group activity is a ride if not explicitly a run
+                                
+                                if (isRide && settings.types['Ride']) {
+                                    shouldHide = true;
+                                }
                             }
                         }
                     }
@@ -3109,7 +3355,10 @@
                     activity.style.display = 'none';
                     hiddenCount++;
                 } else {
-                    activity.style.display = '';
+                    // Only show if it's currently hidden - prevents unnecessary reflows
+                    if (activity.style.display === 'none') {
+                        activity.style.display = '';
+                    }
                 }
             });
 
@@ -3203,13 +3452,29 @@
                 return;
             }
             
-            const activities = document.querySelectorAll('[data-testid="web-feed-entry"]');
+            // Get all main feed entries
+            const mainActivities = document.querySelectorAll('[data-testid="web-feed-entry"]');
             
-            activities.forEach(activity => {
+            // Also get individual activities within group activities
+            // Group activities have nested list items with activity containers
+            const groupActivityContainers = [];
+            mainActivities.forEach(mainActivity => {
+                const groupList = mainActivity.querySelector('ul > li > div[data-testid="entry-header"]');
+                if (groupList) {
+                    // This is a group activity, find all individual activity containers
+                    const individualActivities = mainActivity.querySelectorAll('ul > li');
+                    individualActivities.forEach(li => groupActivityContainers.push(li));
+                }
+            });
+            
+            // Combine both main activities and individual activities from groups
+            const allActivityContainers = [...mainActivities, ...groupActivityContainers];
+            
+            allActivityContainers.forEach(activity => {
                 // Skip if button already exists
                 if (activity.querySelector('.sff-see-more-btn')) return;
                 
-                const activityNameLink = activity.querySelector('a[href*="/activities/"]');
+                const activityNameLink = activity.querySelector('a[href*="/activities/"][data-testid="activity_name"]');
                 if (!activityNameLink) return;
                 
                 const href = activityNameLink.getAttribute('href');
@@ -3346,8 +3611,14 @@
                 }
             });
             
-            // Method 3: Extract weather stats
+            // Method 3: Extract weather stats and icon
             // Structure: <div class="weather-stat"><div class="weather-label">LABEL</div><div class="weather-value">VALUE</div></div>
+            const weatherIcon = doc.querySelector('.weather-icon');
+            if (weatherIcon) {
+                const iconClass = weatherIcon.className;
+                stats['__weatherIcon'] = iconClass; // Store icon class with special prefix
+            }
+            
             doc.querySelectorAll('.weather-stat').forEach(stat => {
                 const labelDiv = stat.querySelector('.weather-label');
                 const valueDiv = stat.querySelector('.weather-value');
@@ -3378,7 +3649,7 @@
                 }
             }
 
-            // Extract bike/gear info
+            // Extract bike/gear info - Method 1: from links
             const gearLinks = doc.querySelectorAll('a[href*="/bikes/"], a[href*="/shoes/"]');
             if (gearLinks.length > 0) {
                 const gearText = gearLinks[0].textContent?.trim();
@@ -3388,6 +3659,22 @@
                         stats['Bike'] = gearText;
                     } else if (href.includes('/shoes/')) {
                         stats['Shoes'] = gearText;
+                    }
+                }
+            }
+
+            // Extract bike/gear info - Method 2: from .gear div (newer format)
+            const gearDiv = doc.querySelector('.gear');
+            if (gearDiv && !stats['Bike'] && !stats['Shoes']) {
+                const gearText = gearDiv.textContent?.trim();
+                if (gearText) {
+                    // Format: "Bike: Orange Pinarello" or "Shoes: Nike Pegasus"
+                    if (gearText.toLowerCase().includes('bike:')) {
+                        const bikeName = gearText.replace(/^bike:\s*/i, '').trim();
+                        if (bikeName) stats['Bike'] = bikeName;
+                    } else if (gearText.toLowerCase().includes('shoes:')) {
+                        const shoesName = gearText.replace(/^shoes:\s*/i, '').trim();
+                        if (shoesName) stats['Shoes'] = shoesName;
                     }
                 }
             }
@@ -3419,7 +3706,15 @@
                 if (stat.isHeader) {
                     // Close current grid and add section header
                     statsHTML += '</div>';
-                    statsHTML += `<div class="sff-stats-section-header">${stat.label}</div>`;
+                    if (stat.weatherIcon && stat.weatherCondition) {
+                        // Weather header with icon and condition: "Weather: [icon] Clear"
+                        statsHTML += `<div class="sff-stats-section-header">${stat.label}: <div class="${stat.weatherIcon}" style="display: inline-block; width: 24px; height: 24px; margin: 0 4px; vertical-align: middle;"></div>${stat.weatherCondition}</div>`;
+                    } else if (stat.weatherIcon) {
+                        // Weather header with icon only
+                        statsHTML += `<div class="sff-stats-section-header">${stat.label}: <div class="${stat.weatherIcon}" style="display: inline-block; width: 24px; height: 24px; margin-left: 4px; vertical-align: middle;"></div></div>`;
+                    } else {
+                        statsHTML += `<div class="sff-stats-section-header">${stat.label}</div>`;
+                    }
                     statsHTML += '<div class="sff-stats-grid">';
                 } else {
                     statsHTML += '<div class="sff-stat-item">';
@@ -3441,24 +3736,41 @@
             statsHTML += '</div>';
             statsContainer.innerHTML = statsHTML;
 
-            // Insert before the map/images section to be full width
+            // Find the best insertion point - should be as wide as the map/images
+            // Look for the wider container that holds both content and images
+            const achievementSummary = activity.querySelector('[data-testid="achievement_summary"]');
+            const contentSection = activity.querySelector('.hWGNo, .ZbtW4');
             const imagesSection = activity.querySelector('[data-testid="entry-images"]');
-            const activityContainer = activity.querySelector('[data-testid="activity_entry_container"]');
+            const kudosSection = activity.querySelector('[data-testid="kudos_comments_container"]');
             
-            if (imagesSection) {
-                // Insert right before the map/images section
-                imagesSection.before(statsContainer);
-            } else if (activityContainer) {
-                // Fallback: append to activity container
-                activityContainer.appendChild(statsContainer);
+            // Find the parent that contains both content and images (for full width)
+            let insertionPoint = null;
+            
+            if (kudosSection) {
+                // Insert before kudos section (after images/map) - best position for full width
+                insertionPoint = kudosSection.parentElement;
+                if (insertionPoint) {
+                    kudosSection.before(statsContainer);
+                }
+            } else if (imagesSection) {
+                // Insert after images section
+                imagesSection.after(statsContainer);
+            } else if (achievementSummary) {
+                // Insert after achievement summary
+                const parentSection = achievementSummary.closest('.hWGNo, .ZbtW4');
+                if (parentSection) {
+                    parentSection.after(statsContainer);
+                } else {
+                    achievementSummary.after(statsContainer);
+                }
+            } else if (contentSection) {
+                // Insert after content section
+                contentSection.after(statsContainer);
             } else {
-                // Last resort: insert after the see more button
-                const seeMoreBtn = activity.querySelector('.sff-see-more-btn');
-                if (seeMoreBtn && seeMoreBtn.parentElement) {
-                    const titleContainer = seeMoreBtn.closest('.oJVfx, .UDqjM, h3');
-                    if (titleContainer) {
-                        titleContainer.after(statsContainer);
-                    }
+                // Last resort: find the activity container
+                const activityContainer = activity.querySelector('[data-testid="activity_entry_container"]');
+                if (activityContainer) {
+                    activityContainer.appendChild(statsContainer);
                 }
             }
 
@@ -3466,26 +3778,51 @@
         },
 
         organizeStats(rawStats) {
-            // Filter out Device, Bike, Shoes, Gear
-            const filtered = {};
-            Object.keys(rawStats).forEach(key => {
-                if (key !== 'Device' && key !== 'Bike' && key !== 'Shoes' && key !== 'Gear') {
-                    filtered[key] = rawStats[key];
-                }
-            });
+            // Use all stats (including Device, Bike, Shoes, Gear)
+            const filtered = { ...rawStats };
 
             const organized = [];
             const weatherStats = [];
+            const gearStats = [];
             const processed = new Set();
+            
+            // Extract and store weather icon separately
+            const weatherIcon = filtered['__weatherIcon'];
+            delete filtered['__weatherIcon']; // Remove from stats to avoid displaying it
+            
+            // Extract weather condition (Clear, Cloudy, etc.) for header
+            let weatherCondition = null;
+            const conditionKeywords = ['Partly Cloudy', 'Mostly Cloudy', 'Overcast', 'Clear', 'Cloudy', 'Sunny', 'Rainy', 'Windy'];
+            for (const keyword of conditionKeywords) {
+                // Check both exact match and lowercase match
+                if (filtered[keyword]) {
+                    weatherCondition = keyword;
+                    delete filtered[keyword]; // Remove from stats to avoid duplication
+                    break;
+                } else if (filtered[keyword.toLowerCase()]) {
+                    weatherCondition = filtered[keyword.toLowerCase()];
+                    delete filtered[keyword.toLowerCase()];
+                    break;
+                }
+            }
 
-            // Define weather-related keywords
-            const weatherKeywords = ['temperature', 'humidity', 'wind', 'feels like', 'weather', 'windy', 'cloudy', 'sunny', 'rainy'];
+            // Define weather-related keywords (excluding condition keywords since they're in header)
+            const weatherKeywords = ['temperature', 'humidity', 'wind', 'feels like', 'weather'];
+
+            // Normalize "Heartrate" to "Heart Rate" to avoid duplicates
+            if (filtered['Heartrate Avg'] && !filtered['Heart Rate Avg']) {
+                filtered['Heart Rate Avg'] = filtered['Heartrate Avg'];
+                delete filtered['Heartrate Avg'];
+            }
+            if (filtered['Heartrate Max'] && !filtered['Heart Rate Max']) {
+                filtered['Heart Rate Max'] = filtered['Heartrate Max'];
+                delete filtered['Heartrate Max'];
+            }
 
             // Define stat groups that should be combined (avg/max pairs)
             const statGroups = [
                 { base: 'Speed', label: 'Speed' },
                 { base: 'Heart Rate', label: 'Heart Rate' },
-                { base: 'Heartrate', label: 'Heart Rate' },
                 { base: 'Cadence', label: 'Cadence' },
                 { base: 'Power', label: 'Power' },
                 { base: 'Pace', label: 'Pace' },
@@ -3531,12 +3868,16 @@
             const timeStats = [];
             const timeKeywords = ['moving time', 'elapsed time'];
             
-            // Separate weather stats and time stats from regular stats
+            // Define gear-related keywords
+            const gearKeywords = ['device', 'bike', 'shoes', 'gear'];
+            
+            // Separate weather stats, time stats, and gear stats from regular stats
             Object.keys(filtered).forEach(key => {
                 if (!processed.has(key)) {
                     const lowerKey = key.toLowerCase();
                     const isWeather = weatherKeywords.some(keyword => lowerKey.includes(keyword));
                     const isTime = timeKeywords.some(keyword => lowerKey.includes(keyword));
+                    const isGear = gearKeywords.some(keyword => lowerKey === keyword);
                     
                     const stat = {
                         label: key,
@@ -3547,12 +3888,35 @@
                         weatherStats.push(stat);
                     } else if (isTime) {
                         timeStats.push(stat);
+                    } else if (isGear) {
+                        gearStats.push(stat);
                     } else {
                         organized.push(stat);
                     }
                     processed.add(key);
                 }
             });
+            
+            // Calculate Time stopped (Elapsed - Moving)
+            const movingTimeStat = timeStats.find(s => s.label.toLowerCase().includes('moving time'));
+            const elapsedTimeStat = timeStats.find(s => s.label.toLowerCase().includes('elapsed time'));
+            
+            if (movingTimeStat && elapsedTimeStat) {
+                const movingSeconds = this.parseTimeToSeconds(movingTimeStat.value);
+                const elapsedSeconds = this.parseTimeToSeconds(elapsedTimeStat.value);
+                
+                if (movingSeconds !== null && elapsedSeconds !== null && elapsedSeconds > movingSeconds) {
+                    const stoppedSeconds = elapsedSeconds - movingSeconds;
+                    const stoppedTime = this.formatSecondsToTime(stoppedSeconds);
+                    
+                    // Insert Time stopped after Elapsed Time
+                    const elapsedIndex = timeStats.indexOf(elapsedTimeStat);
+                    timeStats.splice(elapsedIndex + 1, 0, {
+                        label: 'Time stopped',
+                        value: stoppedTime
+                    });
+                }
+            }
             
             // Add time stats after the grouped stats but before other stats
             // Insert them at the beginning of the organized array
@@ -3562,16 +3926,75 @@
             if (weatherStats.length > 0) {
                 organized.push({
                     isHeader: true,
-                    label: 'Weather Conditions'
+                    label: 'Weather',
+                    weatherIcon: weatherIcon, // Pass icon class to header
+                    weatherCondition: weatherCondition // Pass condition (Clear, Cloudy, etc.)
                 });
                 organized.push(...weatherStats);
+            }
+
+            // Add gear section header and stats at the end if we have gear data
+            if (gearStats.length > 0) {
+                organized.push({
+                    isHeader: true,
+                    label: 'Equipment'
+                });
+                organized.push(...gearStats);
             }
 
             return organized;
         },
 
+        parseTimeToSeconds(timeString) {
+            // Parse time strings like "1h 23m 45s", "45m 30s", "2h 15m", "30s", "1:37:39", "43:48", etc.
+            if (!timeString) return null;
+            
+            let totalSeconds = 0;
+            
+            // Check for colon-separated format first (HH:MM:SS or MM:SS)
+            if (timeString.includes(':')) {
+                const parts = timeString.split(':').map(p => parseInt(p.trim()));
+                if (parts.length === 3) {
+                    // HH:MM:SS format
+                    totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                } else if (parts.length === 2) {
+                    // MM:SS format
+                    totalSeconds = parts[0] * 60 + parts[1];
+                }
+                return totalSeconds;
+            }
+            
+            // Otherwise check for h/m/s suffix format
+            const hourMatch = timeString.match(/(\d+)h/);
+            const minMatch = timeString.match(/(\d+)m/);
+            const secMatch = timeString.match(/(\d+)s/);
+            
+            if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
+            if (minMatch) totalSeconds += parseInt(minMatch[1]) * 60;
+            if (secMatch) totalSeconds += parseInt(secMatch[1]);
+            
+            return totalSeconds;
+        },
+
+        formatSecondsToTime(seconds) {
+            // Format seconds back to "Xh Ym Zs" format
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            let result = '';
+            if (hours > 0) result += `${hours}h `;
+            if (minutes > 0) result += `${minutes}m `;
+            if (secs > 0 || result === '') result += `${secs}s`;
+            
+            return result.trim();
+        },
+
         setupAutoFilter() {
+            let isFiltering = false;
             const debouncedFilter = UtilsModule.debounce(() => {
+                if (isFiltering) return; // Prevent concurrent filter runs
+                isFiltering = true;
                 try {
                     this.filterActivities();
                     this.updateGiftVisibility();
@@ -3582,33 +4005,50 @@
                     this.updateWandrerVisibility();
                     this.updateSummitbagVisibility();
                     this.updateRunHealthVisibility();
+                    this.updateBandokVisibility();
+                    this.updateCorosVisibility();
                     this.updateJoinWorkoutVisibility();
                     this.updateCoachCatVisibility();
                     this.updateAthleteJoinedClubVisibility();
                     this.manageSeeMoreButtons();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
+                } finally {
+                    isFiltering = false;
                 }
-            }, 250);
+            }, 500); // Increased debounce to reduce filter frequency
 
             const observer = new MutationObserver((mutations) => {
+                let hasNewActivities = false;
+                
                 for (const m of mutations) {
                     if (!m.addedNodes || m.addedNodes.length === 0) continue;
                     for (const node of m.addedNodes) {
                         if (!(node instanceof HTMLElement)) continue;
-                        if (
-                            (node.matches && node.matches('.activity, .feed-entry, [data-testid="web-feed-entry"]')) ||
-                            node.querySelector?.('.activity, .feed-entry, [data-testid="web-feed-entry"]')
-                        ) {
-                            debouncedFilter();
-                            break;
+                        
+                        // Immediately hide new activity nodes if they match filter criteria
+                        // This prevents flickering before debounced filter runs
+                        if (settings.enabled && node.matches && node.matches('.activity, .feed-entry, [data-testid="web-feed-entry"]')) {
+                            this.filterSingleActivity(node);
+                            hasNewActivities = true;
+                        } else if (node.querySelector?.('.activity, .feed-entry, [data-testid="web-feed-entry"]')) {
+                            // If container has activities, filter them immediately
+                            const activities = node.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                            activities.forEach(act => this.filterSingleActivity(act));
+                            hasNewActivities = true;
                         }
                     }
+                }
+                
+                // Only trigger debounced filter if we actually found new activities
+                if (hasNewActivities) {
+                    debouncedFilter();
                 }
             });
             observer.observe(document.body, { childList: true, subtree: true });
 
-            window.addEventListener('scroll', debouncedFilter, { passive: true });
+            // Don't filter on scroll - only when new activities are added
+            // window.addEventListener('scroll', debouncedFilter, { passive: true });
             window.__sffObserver = observer;
         },
 
@@ -3627,6 +4067,8 @@
                 this.updateWandrerVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
+                this.updateBandokVisibility();
+                this.updateCorosVisibility();
                 this.updateJoinWorkoutVisibility();
                 this.updateCoachCatVisibility();
                 this.updateAthleteJoinedClubVisibility();
@@ -3728,6 +4170,8 @@
         LogicModule.updateWandrerVisibility();
         LogicModule.updateSummitbagVisibility();
         LogicModule.updateRunHealthVisibility();
+        LogicModule.updateBandokVisibility();
+        LogicModule.updateCorosVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
 
@@ -3743,6 +4187,8 @@
             LogicModule.updateWandrerVisibility();
             LogicModule.updateSummitbagVisibility();
             LogicModule.updateRunHealthVisibility();
+            LogicModule.updateBandokVisibility();
+            LogicModule.updateCorosVisibility();
             LogicModule.updateJoinWorkoutVisibility();
             LogicModule.updateCoachCatVisibility();
         });
