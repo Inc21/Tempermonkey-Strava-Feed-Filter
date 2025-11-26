@@ -97,6 +97,7 @@
         hideFooter: false,
         showKudosButton: false,
         showSeeMoreButton: true,
+        showNotifications: true,
         minKm: "",
         maxKm: "",
         minMins: "",
@@ -371,6 +372,22 @@
         background: linear-gradient(135deg, transparent 50%, #e04800 50%) !important;
       }
       
+      .sff-resize-handle-left {
+        position: absolute !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+        cursor: ew-resize !important;
+        z-index: 10 !important;
+        background: linear-gradient(225deg, transparent 50%, #fc5200 50%) !important;
+        border-radius: 0 0 0 6px !important;
+      }
+      
+      .sff-resize-handle-left:hover {
+        background: linear-gradient(225deg, transparent 50%, #e04800 50%) !important;
+      }
+      
       @media (max-width: 768px) {
         .sff-clean-panel {
           width: 320px !important;
@@ -625,9 +642,15 @@
 
       .sff-types {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; /* Increased min width */
+        grid-template-columns: repeat(auto-fill, minmax(max(80px, calc((100% - 24px) / 4)), 1fr)) !important;
         gap: 4px 8px !important; /* Increased gap */
         margin-top: 3px !important;
+      }
+      
+      @media (max-width: 400px) {
+        .sff-types {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
       }
 
       .sff-clean-panel .sff-chip {
@@ -1055,6 +1078,14 @@
         background: #e04a00 !important;
       }
 
+      .sff-secondary-filter-btn .sff-btn-sub {
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        color: white !important;
+        opacity: 1 !important;
+        line-height: 1 !important;
+      }
+
       /* Secondary nav kudos button */
       .sff-secondary-kudos-btn {
         padding: 6px 12px !important;
@@ -1170,6 +1201,204 @@
       }
       .sff-toast.error {
         background: #dc3545 !important;
+      }
+
+      /* Notification Bell Icon - Orange Outline Style */
+      .sff-notification-bell {
+        padding: 0 !important;
+        background: white !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+        cursor: pointer !important;
+        font-weight: 700 !important;
+        border-radius: 4px !important;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
+        text-align: center !important;
+        transition: all 0.15s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        font-size: 14px !important;
+        position: relative !important;
+        z-index: 1000 !important;
+        width: 32px !important;
+        height: 32px !important;
+        flex-shrink: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      .sff-notification-bell:hover {
+        background: rgba(252, 82, 0, 0.05) !important;
+        border-color: #e04a00 !important;
+      }
+
+      .sff-notification-bell svg {
+        width: 18px !important;
+        height: 18px !important;
+      }
+      
+      .sff-notification-bell svg path {
+        fill: #fc5200 !important;
+      }
+
+      .sff-notification-badge {
+        position: absolute !important;
+        top: -6px !important;
+        right: -6px !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        background: #dc3545 !important;
+        color: white !important;
+        border-radius: 9px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 5px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+        border: 2px solid white !important;
+      }
+      
+      .sff-notification-badge.show {
+        display: flex !important;
+      }
+
+      /* Notification Dropdown - Strava Style */
+      .sff-notification-overlay {
+        position: fixed !important;
+        top: 56px !important;
+        right: 10px !important;
+        width: 420px !important;
+        max-width: calc(100vw - 20px) !important;
+        max-height: 600px !important;
+        background: white !important;
+        z-index: 2147483644 !important;
+        overflow: hidden !important;
+        display: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      }
+
+      .sff-notification-overlay.show {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      .sff-notification-list-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow-y: auto !important;
+        max-height: 540px !important;
+      }
+
+      .sff-notification-item {
+        display: flex !important;
+        align-items: flex-start !important;
+        padding: 16px 20px !important;
+        border-bottom: 1px solid #e5e5e5 !important;
+        background: white !important;
+        text-decoration: none !important;
+        color: #333 !important;
+        transition: background-color 0.15s ease !important;
+        cursor: pointer !important;
+      }
+
+      .sff-notification-item:last-child {
+        border-bottom: none !important;
+      }
+
+      .sff-notification-item:hover {
+        background: #f7f7f7 !important;
+      }
+
+      .sff-notification-item.notification-unread {
+        background: #fef9f5 !important;
+      }
+
+      .sff-notification-item.notification-unread:hover {
+        background: #fef5ed !important;
+      }
+
+      .sff-notification-icon {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        margin-right: 12px !important;
+        object-fit: cover !important;
+        flex-shrink: 0 !important;
+      }
+
+      .sff-notification-content {
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      .sff-notification-content h4 {
+        margin: 0 0 2px 0 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        color: #242428 !important;
+      }
+
+      .sff-notification-content p {
+        margin: 0 0 4px 0 !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+        color: #606060 !important;
+      }
+
+      .sff-notification-content p strong {
+        font-weight: 600 !important;
+        color: #242428 !important;
+      }
+
+      .sff-notification-date {
+        font-size: 12px !important;
+        color: #999 !important;
+        margin-top: 2px !important;
+        display: block !important;
+      }
+
+      .sff-notification-loading {
+        padding: 40px 20px !important;
+        text-align: center !important;
+        color: #666 !important;
+        font-size: 14px !important;
+      }
+
+      .sff-notification-error {
+        padding: 20px !important;
+        text-align: center !important;
+        color: #dc3545 !important;
+        font-size: 14px !important;
+      }
+
+      .sff-notification-empty {
+        padding: 40px 20px !important;
+        text-align: center !important;
+        color: #999 !important;
+        font-size: 14px !important;
+      }
+
+      /* Responsive adjustments for notification dropdown */
+      @media (max-width: 1479px) {
+        .sff-notification-overlay {
+          top: 110px !important;
+          right: 10px !important;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .sff-notification-overlay {
+          width: calc(100vw - 20px) !important;
+          max-width: 420px !important;
+          left: 10px !important;
+          right: auto !important;
+        }
       }
         `);
     }
@@ -1385,10 +1614,6 @@
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
-            settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
-            LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
-            UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
-            settings.showSeeMoreButton = panel.querySelector('.sff-showSeeMoreButton') ? panel.querySelector('.sff-showSeeMoreButton').checked : settings.showSeeMoreButton;
             const giftChk = panel.querySelector('.sff-hideGift');
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
 
@@ -1402,7 +1627,7 @@
         },
 
         createElements() {
-            console.log('🔧 Clean Filter: Creating elements...');
+            // Creating UI elements
 
             // Remove existing
             document.querySelectorAll('.sff-clean-btn, .sff-clean-panel, .sff-secondary-nav').forEach(el => el.remove());
@@ -1448,12 +1673,16 @@
             // Use setProperty with !important to override CSS rules
             secondaryKudosElement.style.setProperty('display', settings.showKudosButton ? 'inline-flex' : 'none', 'important');
 
+            // Create notification bell with new JSON endpoint approach
+            const notificationBell = this._createNotificationBell();
+            
             secondaryNav.appendChild(secondaryKudosElement);
+            secondaryNav.appendChild(notificationBell);
             secondaryNav.appendChild(secondaryFilterElement);
             document.body.appendChild(secondaryNav);
 
-            // Ensure secondary kudos button visibility is properly synchronized
             this.syncSecondaryKudosVisibility();
+            this.toggleNotificationBell(); // Set initial visibility based on settings
 
             // Create button
             const btn = document.createElement('button');
@@ -1470,7 +1699,7 @@
             document.body.appendChild(btn);
             document.body.appendChild(panel);
 
-            console.log('✅ Clean Filter: Elements added');
+            // UI elements added
 
             // Get secondary elements (we're only on dashboard at this point)
             const secondaryFilterBtn = document.querySelector('.sff-secondary-filter-btn');
@@ -1487,7 +1716,21 @@
                 const shouldShow = settings.enabled && settings.showKudosButton;
                 // Use setProperty with !important to override CSS rules
                 secondaryKudosBtn.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
-                console.log('🔄 Secondary kudos button visibility updated:', shouldShow ? 'visible' : 'hidden');
+                // Kudos button visibility updated
+            }
+        },
+
+        // Toggle notification bell visibility
+        toggleNotificationBell() {
+            const notificationBell = document.querySelector('.sff-notification-bell');
+            if (notificationBell) {
+                const shouldShow = settings.enabled && settings.showNotifications;
+                notificationBell.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
+                // Also hide/show the overlay if it's open
+                const overlay = document.querySelector('.sff-notification-overlay');
+                if (overlay && !shouldShow) {
+                    overlay.classList.remove('show');
+                }
             }
         },
 
@@ -1517,11 +1760,13 @@
             // Build panel content sections
             const header = this._createPanelHeader();
             const content = this._createPanelContent();
-            const resizeHandle = this._createResizeHandle();
+            const resizeHandleRight = this._createResizeHandle('right');
+            const resizeHandleLeft = this._createResizeHandle('left');
 
             panel.appendChild(header);
             panel.appendChild(content);
-            panel.appendChild(resizeHandle);
+            panel.appendChild(resizeHandleRight);
+            panel.appendChild(resizeHandleLeft);
 
             return panel;
         },
@@ -1545,11 +1790,237 @@
             return content;
         },
 
-        _createResizeHandle() {
+        _createResizeHandle(side = 'right') {
             const handle = document.createElement('div');
-            handle.className = 'sff-resize-handle';
+            handle.className = side === 'left' ? 'sff-resize-handle-left' : 'sff-resize-handle';
             handle.title = 'Drag to resize';
+            handle.dataset.side = side;
             return handle;
+        },
+
+        _createNotificationBell() {
+            console.log('🔔 Creating notification bell with JSON endpoint');
+            
+            const button = document.createElement('button');
+            button.className = 'sff-notification-bell';
+            button.title = 'Notifications';
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+                <span class="sff-notification-badge">0</span>
+            `;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'sff-notification-overlay';
+            overlay.innerHTML = `
+                <div class="sff-notification-list-container">
+                    <div class="sff-notification-loading">Loading notifications...</div>
+                </div>
+            `;
+
+            document.body.appendChild(button);
+            document.body.appendChild(overlay);
+
+            // Setup click handlers
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openNotificationOverlay(button, overlay);
+            });
+
+
+            // Close overlay when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!button.contains(e.target) && !overlay.contains(e.target)) {
+                    this.closeNotificationOverlay(overlay);
+                }
+            });
+
+            // Initial fetch to update badge
+            this.updateNotificationBadge(button);
+
+            return button;
+        },
+
+        openNotificationOverlay(button, overlay) {
+            const isOpen = overlay.classList.contains('show');
+            if (isOpen) {
+                this.closeNotificationOverlay(overlay);
+            } else {
+                overlay.classList.add('show');
+                this.fetchAndRenderNotifications(button, overlay);
+            }
+        },
+
+        closeNotificationOverlay(overlay) {
+            overlay.classList.remove('show');
+        },
+        
+        formatNotificationTime(displayDate) {
+            // If it's a relative time like "2h ago", "Yesterday", etc., return as-is
+            if (!displayDate.includes('at') && !displayDate.includes('AM') && !displayDate.includes('PM')) {
+                return displayDate;
+            }
+            
+            // Try to parse times with AM/PM format
+            const timeMatch = displayDate.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if (timeMatch) {
+                let hours = parseInt(timeMatch[1]);
+                const minutes = timeMatch[2];
+                const period = timeMatch[3].toUpperCase();
+                
+                // Convert to 24-hour format
+                if (period === 'PM' && hours !== 12) {
+                    hours += 12;
+                } else if (period === 'AM' && hours === 12) {
+                    hours = 0;
+                }
+                
+                // Format according to user's locale
+                const date = new Date();
+                date.setHours(hours, parseInt(minutes), 0);
+                const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // Replace the time in the original string
+                return displayDate.replace(/\d{1,2}:\d{2}\s*(AM|PM)/i, timeString);
+            }
+            
+            return displayDate;
+        },
+
+        async updateNotificationBadge(button) {
+            try {
+                const response = await fetch('/frontend/athlete/notifications', {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('⚠️ Failed to fetch notifications for badge:', response.status);
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('✅ Badge data received:', data.length, 'notifications');
+                const unreadCount = data.filter(item => item.read === false).length;
+                
+                const badge = button.querySelector('.sff-notification-badge');
+                if (badge) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    if (unreadCount > 0) {
+                        badge.classList.add('show');
+                    } else {
+                        badge.classList.remove('show');
+                    }
+                }
+                
+                button.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications';
+            } catch (error) {
+                console.error('❌ Error updating notification badge:', error);
+            }
+        },
+
+        async fetchAndRenderNotifications(button, overlay) {
+            const listContainer = overlay.querySelector('.sff-notification-list-container');
+            const badge = button.querySelector('.sff-notification-badge');
+            
+            // Show loading state
+            listContainer.innerHTML = '<div class="sff-notification-loading">Loading notifications...</div>';
+            
+            try {
+                console.log('📡 Fetching notifications from: /frontend/athlete/notifications');
+                
+                const response = await fetch('/frontend/athlete/notifications', {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Response error:', errorText.substring(0, 500));
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                console.log('📡 Content-Type:', contentType);
+                
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('❌ Not JSON response:', text.substring(0, 200));
+                    throw new Error('Response is not JSON');
+                }
+                
+                const data = await response.json();
+                console.log(`✅ Fetched ${data.length} notifications`);
+                console.log('📋 Sample notification:', data[0]);
+                
+                if (data.length === 0) {
+                    listContainer.innerHTML = '<div class="sff-notification-empty">No notifications</div>';
+                    return;
+                }
+                
+                // Count unread
+                const unreadCount = data.filter(item => item.read === false).length;
+                console.log(`📊 Unread count: ${unreadCount}`);
+                
+                // Update badge
+                if (badge) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    if (unreadCount > 0) {
+                        badge.classList.add('show');
+                    } else {
+                        badge.classList.remove('show');
+                    }
+                }
+                
+                button.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications';
+                
+                // Render notifications
+                listContainer.innerHTML = '';
+                
+                data.forEach(item => {
+                    const fullLink = `https://www.strava.com${item.actionable_link}`;
+                    const isUnread = item.read === false;
+                    const formattedTime = this.formatNotificationTime(item.display_date);
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'sff-notification-item' + (isUnread ? ' notification-unread' : '');
+                    itemDiv.innerHTML = `
+                        <img src="${item.icon}" class="sff-notification-icon" alt="Notification icon">
+                        <div class="sff-notification-content">
+                            <h4>${item.title}</h4>
+                            <p>${item.text}</p>
+                            <span class="sff-notification-date">${formattedTime}</span>
+                        </div>
+                    `;
+                    
+                    // Make the entire item clickable
+                    itemDiv.addEventListener('click', () => {
+                        window.location.href = fullLink;
+                    });
+                    
+                    listContainer.appendChild(itemDiv);
+                });
+                
+            } catch (error) {
+                console.error('❌ Error fetching notifications:', error);
+                console.error('❌ Error stack:', error.stack);
+                listContainer.innerHTML = `
+                    <div class="sff-notification-error">
+                        Error loading notifications.<br>
+                        ${error.message}<br>
+                        <small>Check browser console for details</small>
+                    </div>
+                `;
+            }
         },
 
         _getPanelHTML() {
@@ -1763,11 +2234,6 @@
                                 <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
                                 Hide "Give a Gift" button
                             </label>
-                            <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
-                                <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
-                                Show "Give 👍 to Everyone"
-                            </label>
-                            <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
                         </div>
                     </div>
                     <div class="sff-buttons">
@@ -1792,8 +2258,16 @@
                         ← Back to Filters
                     </button>
                     <p class="sff-settings-desc">
-                        Manage your Strava Feed Filter settings. You can back up your configuration or restore from a previous backup.
+                        Manage your Strava Feed Filter settings.
                     </p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
+                            Show "Give 👍 to Everyone" button
+                        </label>
+                        <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
+                    </div>
                     
                     <div style="margin-bottom: 20px;">
                         <label class="sff-chip ${settings.showSeeMoreButton ? 'checked' : ''}">
@@ -1803,8 +2277,20 @@
                         <p class="sff-desc">Adds a button to each activity to view detailed stats without leaving the feed.</p>
                     </div>
                     
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
+                            Show notifications bell (mobile)
+                        </label>
+                        <p class="sff-desc">Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.</p>
+                    </div>
+                    
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
                     
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Backup & Restore</h4>
+                    <p class="sff-settings-desc" style="margin-bottom: 12px;">
+                        Export your configuration to back it up, or import a previously saved backup.
+                    </p>
                     <button class="sff-settings-btn sff-action-export">Export Settings</button>
                     <button class="sff-settings-btn sff-action-import">Import Settings</button>
                     <input type="file" class="sff-file-input sff-file-import" accept=".json">
@@ -1817,7 +2303,7 @@
         },
 
         setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
-            console.log('🎯 Clean Filter: Setting up events...');
+            // Setting up event handlers
 
             // --- New Settings UI Events ---
             const settingsToggle = panel.querySelector('.sff-settings-toggle');
@@ -1999,6 +2485,11 @@
 
             // Handle click outside (define first)
             const handleClickOutside = (e) => {
+                // Don't close panel if it's being resized or dragged
+                if (panel.dataset.resizing === 'true' || panel.dataset.dragging === 'true') {
+                    return;
+                }
+                
                 const clickedSecondaryBtn = secondaryFilterBtn && secondaryFilterBtn.contains(e.target);
                 if (!panel.contains(e.target) && !btn.contains(e.target) && !clickedSecondaryBtn) {
                     const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
@@ -2163,6 +2654,13 @@
                         settings.showSeeMoreButton = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.manageSeeMoreButtons();
+                    }
+
+                    // Notification bell toggle
+                    if (e.target.classList.contains('sff-showNotifications')) {
+                        settings.showNotifications = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        UIModule.toggleNotificationBell();
                     }
 
                     // Gift button
@@ -2331,7 +2829,7 @@
             this.updateActivityCount(panel);
             this.updateFilterLabels(panel, settings.unitSystem);
 
-            console.log('✅ Events attached');
+            // Events attached
 
             // Return cleanup function for when the script is unloaded
             return () => {
@@ -2361,6 +2859,9 @@
                 const rect = panel.getBoundingClientRect();
                 startLeft = rect.left;
                 startTop = rect.top;
+
+                // Mark panel as being dragged to prevent click-outside from closing it
+                panel.dataset.dragging = 'true';
 
                 header.style.cursor = 'grabbing';
                 document.body.style.userSelect = 'none'; // Prevent text selection
@@ -2408,6 +2909,11 @@
                     isDragging = false;
                     header.style.cursor = '';
                     document.body.style.userSelect = ''; // Restore text selection
+                    
+                    // Remove dragging flag after a short delay to prevent click-outside from triggering
+                    setTimeout(() => {
+                        delete panel.dataset.dragging;
+                    }, 50);
                 }
             };
 
@@ -2430,17 +2936,36 @@
         },
 
         makeResizable(panel) {
-            const handle = panel.querySelector('.sff-resize-handle');
-            if (!handle) return () => {};
+            const handleRight = panel.querySelector('.sff-resize-handle');
+            const handleLeft = panel.querySelector('.sff-resize-handle-left');
+            if (!handleRight && !handleLeft) return () => {};
 
             let isResizing = false;
-            let startX, startWidth;
+            let resizeSide = null;
+            let startX, startWidth, startLeft;
 
             const onMouseDown = (e) => {
+                const target = e.target;
+                if (!target.classList.contains('sff-resize-handle') && !target.classList.contains('sff-resize-handle-left')) {
+                    return;
+                }
+
                 isResizing = true;
+                resizeSide = target.dataset.side || 'right';
                 startX = e.clientX;
                 startWidth = parseInt(getComputedStyle(panel).width, 10);
+                
+                // For left resize, we also need to track the starting left position
+                if (resizeSide === 'left') {
+                    const rect = panel.getBoundingClientRect();
+                    startLeft = rect.left;
+                }
+                
                 document.body.style.userSelect = 'none';
+                
+                // Mark panel as being resized to prevent click-outside from closing it
+                panel.dataset.resizing = 'true';
+                
                 e.preventDefault();
                 e.stopPropagation();
             };
@@ -2448,30 +2973,63 @@
             const onMouseMove = (e) => {
                 if (!isResizing) return;
 
-                const dx = e.clientX - startX;
-                let newWidth = startWidth + dx;
-
-                // Constrain width
                 const minWidth = 280;
                 const maxWidth = 600;
-                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
 
-                panel.style.setProperty('width', newWidth + 'px', 'important');
+                if (resizeSide === 'right') {
+                    // Right resize: expand to the right
+                    const dx = e.clientX - startX;
+                    let newWidth = startWidth + dx;
+                    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                    panel.style.setProperty('width', newWidth + 'px', 'important');
+                } else {
+                    // Left resize: expand to the left
+                    const dx = startX - e.clientX; // Reversed direction
+                    let newWidth = startWidth + dx;
+                    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                    
+                    // Calculate new left position
+                    const widthDiff = newWidth - startWidth;
+                    const newLeft = startLeft - widthDiff;
+                    
+                    panel.style.setProperty('width', newWidth + 'px', 'important');
+                    panel.style.setProperty('left', newLeft + 'px', 'important');
+                    panel.style.setProperty('right', 'auto', 'important');
+                    
+                    // Save position during resize
+                    Storage.set('sffPanelPos', {
+                        left: panel.style.left,
+                        top: panel.style.top
+                    });
+                }
+                
+                e.preventDefault();
             };
 
-            const onMouseUp = () => {
+            const onMouseUp = (e) => {
                 if (isResizing) {
                     isResizing = false;
+                    resizeSide = null;
                     document.body.style.userSelect = '';
+                    
+                    // Remove resizing flag after a short delay to prevent click-outside from triggering
+                    setTimeout(() => {
+                        delete panel.dataset.resizing;
+                    }, 50);
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
             };
 
-            handle.addEventListener('mousedown', onMouseDown);
+            if (handleRight) handleRight.addEventListener('mousedown', onMouseDown);
+            if (handleLeft) handleLeft.addEventListener('mousedown', onMouseDown);
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
 
             return () => {
-                handle.removeEventListener('mousedown', onMouseDown);
+                if (handleRight) handleRight.removeEventListener('mousedown', onMouseDown);
+                if (handleLeft) handleLeft.removeEventListener('mousedown', onMouseDown);
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
             };
@@ -2978,7 +3536,6 @@
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🐱 CoachCat text content hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3025,7 +3582,6 @@
                         if (container.dataset.sffHiddenJoinedClub !== 'sff') {
                             container.dataset.sffHiddenJoinedClub = 'sff';
                             container.style.setProperty('display', 'none', 'important');
-                            console.log('🙅 Hiding "Athlete joined a club" entry:', container);
                         }
                     } else if (container.dataset.sffHiddenJoinedClub === 'sff') {
                         container.style.removeProperty('display');
@@ -3078,7 +3634,7 @@
             // Quick type check for immediate hiding
             if (resolvedType && settings.types[resolvedType.key]) {
                 shouldHide = true;
-                console.log('✅ Hiding resolved type:', resolvedType.key, title);
+                // Hiding activity by type
             } else if (!resolvedType && typeText) {
                 // Fallback detection for common types
                 const isWalk = normalizedTypeText.includes('walk') || /\b(walked|walking)\b/i.test(title);

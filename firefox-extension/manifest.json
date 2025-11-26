@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Strava Feed Filter",
-  "version": "2.4.2",
+  "version": "2.4.4",
   "description": "ALPHA: Advanced filtering for your Strava activity feed with detailed activity stats viewer. Keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.",
   "permissions": [
     "storage",
@@ -35,7 +35,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "{f7e9d2c1-4a8b-6e3f-9d1c-5b2a8e4f7c9d}",
+      "id": "strava-feed-filter-v2.4.3@inc21.dev",
       "strict_min_version": "109.0",
       "data_collection_permissions": {
         "required": ["none"]
