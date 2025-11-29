@@ -1206,6 +1206,7 @@
 
       /* Notification Bell Icon - Orange Outline Style */
       .sff-notification-bell {
+        display: none;
         padding: 0 !important;
         background: white !important;
         color: #fc5200 !important;
@@ -1216,7 +1217,6 @@
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
         text-align: center !important;
         transition: all 0.15s ease !important;
-        display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         line-height: 1 !important;
@@ -1227,6 +1227,12 @@
         height: 32px !important;
         flex-shrink: 0 !important;
         box-sizing: border-box !important;
+      }
+
+      @media (max-width: 990px) {
+        .sff-notification-bell {
+          display: inline-flex;
+        }
       }
 
       .sff-notification-bell:hover {
@@ -1749,7 +1755,12 @@
             const notificationBell = document.querySelector('.sff-notification-bell');
             if (notificationBell) {
                 const shouldShow = settings.enabled && settings.showNotifications;
-                notificationBell.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
+                // Remove inline style to let CSS media query control visibility based on viewport
+                if (shouldShow) {
+                    notificationBell.style.removeProperty('display');
+                } else {
+                    notificationBell.style.setProperty('display', 'none', 'important');
+                }
                 // Also hide/show the overlay if it's open
                 const overlay = document.querySelector('.sff-notification-overlay');
                 if (overlay && !shouldShow) {

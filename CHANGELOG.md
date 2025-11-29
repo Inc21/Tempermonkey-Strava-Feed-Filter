@@ -6,6 +6,43 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v2.4.5] - 30.11.2025 (Firefox & Chrome Extensions)
+
+### 📱 Mobile-First Improvements
+
+- **Mobile Notification System**: New notification bell button for mobile screens (≤990px)
+  - Real-time notification badge with unread count
+  - Tap to view dropdown with all notifications
+  - Proper positioning below secondary nav bar
+  - Auto-hides on desktop screens for cleaner UI
+- **Responsive Panel Resizing**: Filter panel can now be resized from both left and right edges
+  - Drag left handle to expand panel leftward
+  - Drag right handle to expand panel rightward
+  - Width constraints (280px - 600px) for optimal usability
+  - Panel position persists across sessions
+- **Viewport-Aware UI**: All mobile features respect screen width breakpoints
+  - Notification bell: Only visible ≤990px
+  - Secondary nav: Shows ≤1479px on dashboard
+  - Automatic button repositioning based on viewport
+
+### ✨ Feature Parity Achieved
+
+- **Chrome Extension**: Complete feature match with Firefox extension
+  - "Show More Stats" button with full statistics display
+  - Notification bell system
+  - Bidirectional panel resizing
+  - All responsive behaviors matched
+- **Consistent Behavior**: Both extensions now have identical functionality across all screen sizes
+
+### 🔧 Technical Improvements
+
+- CSS media queries properly control notification bell visibility
+- JavaScript no longer overrides responsive styles with inline `!important` rules
+- Improved resize handle detection and event handling
+- Better separation of concerns between CSS and JavaScript for responsive behavior
+
+---
+
 ## [v2.4.2] - 24.11.2025 (Firefox Extension ALPHA)
 
 ### Features Added - Firefox Extension Only

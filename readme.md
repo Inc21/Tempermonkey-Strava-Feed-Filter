@@ -4,7 +4,7 @@ A powerful Tampermonkey userscript that provides advanced filtering
 capabilities for your Strava activity feed. Built with a modular architecture
 for maximum performance and maintainability.
 
-> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. In v2.3.2 we refreshed activity-type detection across every platform so specialised activities and group posts filter correctly. The userscript remains available for all browsers.
+> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. In v2.3.2 we refreshed activity-type detection across every platform so specialised activities and group posts filter correctly. **As of v2.4.5, both Firefox and Chrome extensions feature enhanced mobile support with notification system and bidirectional panel resizing.** The userscript remains available for all browsers.
 
 ![Strava Feed Filter in action](./src/readme-images/filter-panel-overview.png)
 *Filter panel*
@@ -19,7 +19,8 @@ with Strava's design.
 
 ## 🆕 What's New
 
-- **Latest: v2.3.3** — Added filtering for Bandok.com and COROS external service embeds. Enhanced settings menu with import/export functionality and reset options. Improved athlete ignore list management.
+- **Latest: v2.4.5** — 📱 **Major mobile improvements!** Both Firefox and Chrome extensions now feature a notification bell for mobile screens (≤990px), bidirectional panel resizing (drag from left or right edge), and viewport-aware UI that automatically adapts to screen size. Complete feature parity achieved between both extensions.
+- **v2.3.3** — Added filtering for Bandok.com and COROS external service embeds. Enhanced settings menu with import/export functionality and reset options. Improved athlete ignore list management.
 - **Firefox Extension v2.4.2 ALPHA** — "Show More Stats" now works on individual activities in group rides! Each participant gets their own stats button. Plus bug fixes for duplicate Heart Rate display, Walk filtering, and scroll flickering.
 - Read the full history in the Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
@@ -49,7 +50,9 @@ with Strava's design.
 
 ### 🎨 User Interface
 
+- **Mobile Notification System**: Bell icon on mobile screens (≤990px) for quick access to Strava notifications
 - **Responsive Design**: Adapts to different screen sizes and Strava layouts
+- **Bidirectional Panel Resizing**: Drag left or right edge to resize the filter panel (280px - 600px)
 - **Draggable Panel**: Move the settings panel anywhere on screen
 - **Collapsible Sections**: Organized dropdown sections for easy navigation
 - **Real-time Updates**: See filtering results immediately as you adjust
@@ -80,11 +83,19 @@ with Strava's design.
 
 ## 📱 Responsive Design
 
-The filter adapts to different screen sizes:
+The filter adapts seamlessly to different screen sizes with enhanced mobile support:
 
-- **Desktop**: Full-featured panel with all options
-- **Mobile/Tablet**: Compact secondary navigation bar
-- **Responsive Button**: Automatically repositions to avoid UI conflicts
+- **Desktop (>1479px)**: Full-featured panel with all options, main filter button in header
+- **Tablet (991px - 1479px)**: Secondary navigation bar with filter and kudos buttons
+- **Mobile (≤990px)**: 
+  - Compact secondary navigation bar
+  - **Notification bell** for quick access to Strava notifications
+  - Real-time unread notification badge
+  - Tap bell to view notification dropdown
+- **Responsive Panel**: 
+  - Drag left or right edge to resize (280px - 600px)
+  - Automatically repositions to avoid UI conflicts
+  - Position and size persist across sessions
 
 ![Responsive design](./src/readme-images/responsive-layout.png)
 *Filter button adapts to different screen sizes*
@@ -190,8 +201,10 @@ Choose the option that fits your browser/platform.
 ### Panel Positioning
 
 - **Drag** the panel by its header to reposition
+- **Resize** the panel by dragging left or right edge (280px - 600px width)
 - **Automatic positioning** under the filter button when opened
 - **Viewport constraints**: Panel stays within browser window
+- **Position memory**: Panel location and size persist across sessions
 
 ### Visual Integration
 
@@ -271,7 +284,7 @@ See the difference filtering makes on your Strava feed:
 ## Changelog
 
 For the complete release notes, see [CHANGELOG.md](./CHANGELOG.md).
-Latest release: v2.3.2 (10.11.2025).
+Latest release: v2.4.5 (30.11.2025) - Enhanced mobile support with notification system and bidirectional panel resizing.
 
 ## 📄 License
 

@@ -96,6 +96,9 @@
         hideAthleteJoinedClub: false,
         hideFooter: false,
         showKudosButton: false,
+        showSeeMoreButton: true,
+        seeMoreButtonMode: 'always',
+        showNotifications: true,
         minKm: "",
         maxKm: "",
         minMins: "",
@@ -370,6 +373,22 @@
         background: linear-gradient(135deg, transparent 50%, #e04800 50%) !important;
       }
       
+      .sff-resize-handle-left {
+        position: absolute !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+        cursor: ew-resize !important;
+        z-index: 10 !important;
+        background: linear-gradient(225deg, transparent 50%, #fc5200 50%) !important;
+        border-radius: 0 0 0 6px !important;
+      }
+      
+      .sff-resize-handle-left:hover {
+        background: linear-gradient(225deg, transparent 50%, #e04800 50%) !important;
+      }
+      
       @media (max-width: 768px) {
         .sff-clean-panel {
           width: 320px !important;
@@ -491,7 +510,7 @@
       .sff-panel-content {
         padding: 16px !important;
         max-height: calc(70vh - 100px) !important;
-        overflow-y: scroll !important;
+        overflow-y: auto !important;
       }
 
       .sff-clean-panel .sff-row {
@@ -624,15 +643,14 @@
 
       .sff-types {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+        grid-template-columns: repeat(auto-fill, minmax(max(80px, calc((100% - 24px) / 4)), 1fr)) !important;
         gap: 4px 8px !important; /* Increased gap */
         margin-top: 3px !important;
       }
       
-      /* Limit to maximum 4 columns */
-      @supports (grid-template-columns: repeat(auto-fill, minmax(80px, 1fr))) {
+      @media (max-width: 400px) {
         .sff-types {
-          grid-template-columns: repeat(auto-fill, minmax(max(80px, calc(25% - 6px)), 1fr)) !important;
+          grid-template-columns: repeat(2, 1fr) !important;
         }
       }
 
@@ -666,9 +684,11 @@
       }
 
       .sff-clean-panel .sff-chip input {
-        margin-right: 4px !important;
+        margin-right: 6px !important;
         margin-left: 0 !important;
+        margin-top: 2px !important;
         transform: scale(0.85) !important;
+        flex-shrink: 0 !important;
       }
 
       .sff-switch {
@@ -1065,6 +1085,375 @@
       .sff-toast.error {
         background: #dc3545 !important;
       }
+
+      .sff-see-more-btn {
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 3px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        transition: background-color 0.15s ease !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        line-height: 1.2 !important;
+      }
+
+      .sff-see-more-btn:hover {
+        background: #e04a00 !important;
+      }
+
+      .sff-see-more-btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+      }
+
+      .sff-expanded-stats {
+        background: #f8f9fa !important;
+        border: 1px solid #e1e4e8 !important;
+        border-radius: 6px !important;
+        padding: 16px !important;
+        margin: 12px 0 !important;
+        animation: sff-slide-down 0.3s ease-out !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      @keyframes sff-slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .sff-stats-section-header {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #242428 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin: 20px 0 12px 0 !important;
+        padding-bottom: 8px !important;
+        border-bottom: 2px solid #fc5200 !important;
+      }
+
+      .sff-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+        gap: 16px 12px !important;
+      }
+
+      .sff-stat-item {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+
+      .sff-stat-label {
+        font-size: 15px !important;
+        color: #242428 !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin-bottom: 4px !important;
+      }
+
+      .sff-stat-value {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        line-height: 1.3 !important;
+      }
+
+      .sff-stat-subvalue {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        margin-top: 2px !important;
+        line-height: 1.3 !important;
+      }
+      
+      .sff-expanded-stats .sff-stat-value span.sff-stat-prefix,
+      .sff-expanded-stats .sff-stat-subvalue span.sff-stat-prefix {
+        font-weight: 700 !important;
+      }
+
+      .sff-no-stats {
+        color: #666 !important;
+        font-size: 13px !important;
+        font-style: italic !important;
+        margin: 0 !important;
+      }
+
+      @media (max-width: 768px) {
+        .sff-stats-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        }
+      }
+
+      .sff-notification-bell {
+        display: none;
+        padding: 0 !important;
+        background: white !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+        cursor: pointer !important;
+        font-weight: 700 !important;
+        border-radius: 4px !important;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
+        text-align: center !important;
+        transition: all 0.15s ease !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        font-size: 14px !important;
+        position: relative !important;
+        z-index: 1000 !important;
+        width: 32px !important;
+        height: 32px !important;
+        flex-shrink: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      @media (max-width: 990px) {
+        .sff-notification-bell {
+          display: inline-flex;
+        }
+      }
+
+      .sff-notification-bell svg {
+        width: 18px !important;
+        height: 18px !important;
+      }
+
+      .sff-notification-bell svg path {
+        fill: #fc5200 !important;
+      }
+
+      .sff-notification-bell:hover {
+        background: rgba(252, 82, 0, 0.05) !important;
+        border-color: #e04a00 !important;
+      }
+
+      .sff-notification-badge {
+        position: absolute !important;
+        top: 2px !important;
+        right: 2px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border-radius: 10px !important;
+        padding: 2px 6px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        min-width: 18px !important;
+        text-align: center !important;
+        display: none !important;
+      }
+
+      .sff-notification-badge.show {
+        display: block !important;
+      }
+
+      .sff-notification-overlay {
+        position: fixed !important;
+        top: 103px !important;
+        right: 10px !important;
+        width: 420px !important;
+        max-width: calc(100vw - 20px) !important;
+        max-height: 600px !important;
+        background: white !important;
+        z-index: 2147483644 !important;
+        overflow: hidden !important;
+        display: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      }
+
+      .sff-notification-overlay.show {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      .sff-notification-list-container {
+        max-height: calc(100vh - 100px) !important;
+        overflow-y: auto !important;
+      }
+
+      .sff-notification-item {
+        display: flex !important;
+        padding: 12px !important;
+        border-bottom: 1px solid #eee !important;
+        cursor: pointer !important;
+        transition: background-color 0.2s !important;
+      }
+
+      .sff-notification-item:hover {
+        background: #f8f9fa !important;
+      }
+
+      .sff-notification-item.notification-unread {
+        background: #fff3e0 !important;
+      }
+
+      .sff-notification-icon {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        margin-right: 12px !important;
+        flex-shrink: 0 !important;
+      }
+
+      .sff-notification-content {
+        flex: 1 !important;
+      }
+
+      .sff-notification-content h4 {
+        margin: 0 0 4px 0 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #333 !important;
+      }
+
+      .sff-notification-content p {
+        margin: 0 0 4px 0 !important;
+        font-size: 13px !important;
+        color: #666 !important;
+        line-height: 1.4 !important;
+      }
+
+      .sff-notification-date {
+        font-size: 11px !important;
+        color: #999 !important;
+      }
+
+      .sff-notification-loading,
+      .sff-notification-empty,
+      .sff-notification-error {
+        padding: 20px !important;
+        text-align: center !important;
+        color: #666 !important;
+        font-size: 14px !important;
+      }
+
+      .sff-notification-error {
+        color: #dc3545 !important;
+      }
+
+      .sff-see-more-btn {
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 3px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        transition: background-color 0.15s ease !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        line-height: 1.2 !important;
+      }
+
+      .sff-see-more-btn:hover {
+        background: #e04a00 !important;
+      }
+
+      .sff-see-more-btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+      }
+
+      .sff-expanded-stats {
+        background: #f8f9fa !important;
+        border: 1px solid #e1e4e8 !important;
+        border-radius: 6px !important;
+        padding: 16px !important;
+        margin: 12px 0 !important;
+        animation: sff-slide-down 0.3s ease-out !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      @keyframes sff-slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .sff-stats-section-header {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #242428 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin: 20px 0 12px 0 !important;
+        padding-bottom: 8px !important;
+        border-bottom: 2px solid #fc5200 !important;
+      }
+
+      .sff-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+        gap: 16px 12px !important;
+      }
+
+      .sff-stat-item {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+
+      .sff-stat-label {
+        font-size: 15px !important;
+        color: #242428 !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin-bottom: 4px !important;
+      }
+
+      .sff-stat-value {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        line-height: 1.3 !important;
+      }
+
+      .sff-stat-subvalue {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        margin-top: 2px !important;
+        line-height: 1.3 !important;
+      }
+      
+      .sff-expanded-stats .sff-stat-value span.sff-stat-prefix,
+      .sff-expanded-stats .sff-stat-subvalue span.sff-stat-prefix {
+        font-weight: 700 !important;
+      }
+
+      .sff-no-stats {
+        color: #666 !important;
+        font-size: 13px !important;
+        font-style: italic !important;
+        margin: 0 !important;
+      }
+
+      @media (max-width: 768px) {
+        .sff-stats-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        }
+      }
         `);
     }
 
@@ -1081,6 +1470,14 @@
             const numKeys = ['minKm','maxKm','minMins','maxMins','minElevM','maxElevM','minPace','maxPace'];
             for (const k of numKeys) {
                 if (merged[k] === 0 || merged[k] === '0') merged[k] = '';
+            }
+            // Migration: handle old showSeeMoreButton boolean (convert to seeMoreButtonMode)
+            if (merged.showSeeMoreButton === false) {
+                merged.seeMoreButtonMode = 'never';
+                merged.showSeeMoreButton = false;
+            } else if (!merged.seeMoreButtonMode) {
+                merged.seeMoreButtonMode = 'always';
+                merged.showSeeMoreButton = true;
             }
             return merged;
         },
@@ -1290,6 +1687,19 @@
                 settings.types[input.dataset.typ] = input.checked;
             });
 
+            // Persist current see-more mode from the select, if present
+            const modeSelect = panel.querySelector('.sff-seeMoreMode');
+            if (modeSelect) {
+                const value = modeSelect.value;
+                if (value === 'always' || value === 'smallOnly' || value === 'never') {
+                    settings.seeMoreButtonMode = value;
+                } else {
+                    settings.seeMoreButtonMode = 'always';
+                }
+                // Maintain legacy boolean for compatibility
+                settings.showSeeMoreButton = settings.seeMoreButtonMode !== 'never';
+            }
+
             UtilsModule.saveSettings(settings);
             console.log('💾 Settings saved:', settings);
         },
@@ -1341,12 +1751,16 @@
             // Use setProperty with !important to override CSS rules
             secondaryKudosElement.style.setProperty('display', settings.showKudosButton ? 'inline-flex' : 'none', 'important');
 
+            // Create notification bell with new JSON endpoint approach
+            const notificationBell = this._createNotificationBell();
+            
             secondaryNav.appendChild(secondaryKudosElement);
+            secondaryNav.appendChild(notificationBell);
             secondaryNav.appendChild(secondaryFilterElement);
             document.body.appendChild(secondaryNav);
 
-            // Ensure secondary kudos button visibility is properly synchronized
             this.syncSecondaryKudosVisibility();
+            this.toggleNotificationBell(); // Set initial visibility based on settings
 
             // Create button
             const btn = document.createElement('button');
@@ -1384,6 +1798,250 @@
             }
         },
 
+        // Toggle notification bell visibility
+        toggleNotificationBell() {
+            const notificationBell = document.querySelector('.sff-notification-bell');
+            if (notificationBell) {
+                const shouldShow = settings.enabled && settings.showNotifications;
+                // Remove inline style to let CSS media query control visibility based on viewport
+                if (shouldShow) {
+                    notificationBell.style.removeProperty('display');
+                } else {
+                    notificationBell.style.setProperty('display', 'none', 'important');
+                }
+                // Also hide/show the overlay if it's open
+                const overlay = document.querySelector('.sff-notification-overlay');
+                if (overlay && !shouldShow) {
+                    overlay.classList.remove('show');
+                }
+            }
+        },
+
+        _createNotificationBell() {
+            console.log('🔔 Creating notification bell with JSON endpoint');
+            
+            const button = document.createElement('button');
+            button.className = 'sff-notification-bell';
+            button.title = 'Notifications';
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+                <span class="sff-notification-badge">0</span>
+            `;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'sff-notification-overlay';
+            overlay.innerHTML = `
+                <div class="sff-notification-list-container">
+                    <div class="sff-notification-loading">Loading notifications...</div>
+                </div>
+            `;
+
+            // Append overlay to body (but NOT the button - let caller append it)
+            document.body.appendChild(overlay);
+
+            // Setup click handlers
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openNotificationOverlay(button, overlay);
+            });
+
+
+            // Close overlay when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!button.contains(e.target) && !overlay.contains(e.target)) {
+                    this.closeNotificationOverlay(overlay);
+                }
+            });
+
+            // Initial fetch to update badge
+            this.updateNotificationBadge(button);
+
+            return button;
+        },
+
+        openNotificationOverlay(button, overlay) {
+            const isOpen = overlay.classList.contains('show');
+            if (isOpen) {
+                this.closeNotificationOverlay(overlay);
+            } else {
+                overlay.classList.add('show');
+                this.fetchAndRenderNotifications(button, overlay);
+            }
+        },
+
+        closeNotificationOverlay(overlay) {
+            overlay.classList.remove('show');
+        },
+        
+        formatNotificationTime(displayDate) {
+            // If it's a relative time like "2h ago", "Yesterday", etc., return as-is
+            if (!displayDate.includes('at') && !displayDate.includes('AM') && !displayDate.includes('PM')) {
+                return displayDate;
+            }
+            
+            // Try to parse times with AM/PM format
+            const timeMatch = displayDate.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if (timeMatch) {
+                let hours = parseInt(timeMatch[1]);
+                const minutes = timeMatch[2];
+                const period = timeMatch[3].toUpperCase();
+                
+                // Convert to 24-hour format
+                if (period === 'PM' && hours !== 12) {
+                    hours += 12;
+                } else if (period === 'AM' && hours === 12) {
+                    hours = 0;
+                }
+                
+                // Format according to user's locale
+                const date = new Date();
+                date.setHours(hours, parseInt(minutes), 0);
+                const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // Replace the time in the original string
+                return displayDate.replace(/\d{1,2}:\d{2}\s*(AM|PM)/i, timeString);
+            }
+            
+            return displayDate;
+        },
+
+        async updateNotificationBadge(button) {
+            try {
+                const response = await fetch('/frontend/athlete/notifications', {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('⚠️ Failed to fetch notifications for badge:', response.status);
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('✅ Badge data received:', data.length, 'notifications');
+                const unreadCount = data.filter(item => item.read === false).length;
+                
+                const badge = button.querySelector('.sff-notification-badge');
+                if (badge) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    if (unreadCount > 0) {
+                        badge.classList.add('show');
+                    } else {
+                        badge.classList.remove('show');
+                    }  
+                }
+                
+                button.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications';
+            } catch (error) {
+                console.error('❌ Error updating notification badge:', error);
+            }
+        },
+
+        async fetchAndRenderNotifications(button, overlay) {
+            const listContainer = overlay.querySelector('.sff-notification-list-container');
+            const badge = button.querySelector('.sff-notification-badge');
+            
+            // Show loading state
+            listContainer.innerHTML = '<div class="sff-notification-loading">Loading notifications...</div>';
+            
+            try {
+                console.log('📡 Fetching notifications from: /frontend/athlete/notifications');
+                
+                const response = await fetch('/frontend/athlete/notifications', {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Response error:', errorText.substring(0, 500));
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                console.log('📡 Content-Type:', contentType);
+                
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('❌ Not JSON response:', text.substring(0, 200));
+                    throw new Error('Response is not JSON');
+                }
+                
+                const data = await response.json();
+                console.log(`✅ Fetched ${data.length} notifications`);
+                console.log('📋 Sample notification:', data[0]);
+                
+                if (data.length === 0) {
+                    listContainer.innerHTML = '<div class="sff-notification-empty">No notifications</div>';
+                    return;
+                }
+                
+                // Count unread
+                const unreadCount = data.filter(item => item.read === false).length;
+                console.log(`📊 Unread count: ${unreadCount}`);
+                
+                // Update badge
+                if (badge) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    if (unreadCount > 0) {
+                        badge.classList.add('show');
+                    } else {
+                        badge.classList.remove('show');
+                    }
+                }
+                
+                button.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications';
+                
+                // Render notifications
+                listContainer.innerHTML = '';
+                
+                data.forEach(item => {
+                    const fullLink = `https://www.strava.com${item.actionable_link}`;
+                    const isUnread = item.read === false;
+                    const formattedTime = this.formatNotificationTime(item.display_date);
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'sff-notification-item' + (isUnread ? ' notification-unread' : '');
+                    itemDiv.innerHTML = `
+                        <img src="${item.icon}" class="sff-notification-icon" alt="Notification icon">
+                        <div class="sff-notification-content">
+                            <h4>${item.title}</h4>
+                            <p>${item.text}</p>
+                            <span class="sff-notification-date">${formattedTime}</span>
+                        </div>
+                    `;
+                    
+                    // Make the entire item clickable
+                    itemDiv.addEventListener('click', () => {
+                        window.location.href = fullLink;
+                    });
+                    
+                    listContainer.appendChild(itemDiv);
+                });
+                
+            } catch (error) {
+                console.error('❌ Error fetching notifications:', error);
+                console.error('❌ Error stack:', error.stack);
+                listContainer.innerHTML = `
+                    <div class="sff-notification-error">
+                        Error loading notifications.<br>
+                        ${error.message}<br>
+                        <small>Check browser console for details</small>
+                    </div>
+                `;
+            }
+        },
+
         _createPanel() {
             const panel = document.createElement('div');
             panel.className = 'sff-clean-panel';
@@ -1411,19 +2069,22 @@
             // Build panel content sections
             const header = this._createPanelHeader();
             const content = this._createPanelContent();
-            const resizeHandle = this._createResizeHandle();
+            const resizeHandleRight = this._createResizeHandle('right');
+            const resizeHandleLeft = this._createResizeHandle('left');
 
             panel.appendChild(header);
             panel.appendChild(content);
-            panel.appendChild(resizeHandle);
+            panel.appendChild(resizeHandleRight);
+            panel.appendChild(resizeHandleLeft);
 
             return panel;
         },
 
-        _createResizeHandle() {
+        _createResizeHandle(side = 'right') {
             const handle = document.createElement('div');
-            handle.className = 'sff-resize-handle';
+            handle.className = side === 'left' ? 'sff-resize-handle-left' : 'sff-resize-handle';
             handle.title = 'Drag to resize';
+            handle.dataset.side = side;
             return handle;
         },
 
@@ -1653,15 +2314,10 @@
                                 <input type="checkbox" class="sff-hideClubPosts" ${settings.hideClubPosts ? 'checked' : ''}>
                                 Hide club posts
                             </label>
-                            <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
+                           <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
                                 Hide "Give a Gift" button
                             </label>
-                            <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
-                                <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
-                                Show "Give 👍 to Everyone"
-                            </label>
-                            <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
                         </div>
                     </div>
                     <div class="sff-buttons">
@@ -1686,9 +2342,43 @@
                         ← Back to Filters
                     </button>
                     <p class="sff-settings-desc">
-                        Manage your Strava Feed Filter settings. You can back up your configuration or restore from a previous backup.
+                        Manage your Strava Feed Filter settings.
                     </p>
                     
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
+                            Show "Give 👍 to Everyone" button
+                        </label>
+                        <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip">
+                            Show "Show more stats" button
+                        </label>
+                        <select class="sff-seeMoreMode" style="margin-left: 22px; padding: 4px 8px; font-size: 13px;">
+                            <option value="always" ${settings.seeMoreButtonMode === 'always' ? 'selected' : ''}>Always show</option>
+                            <option value="smallOnly" ${settings.seeMoreButtonMode === 'smallOnly' ? 'selected' : ''}>Only on small screens (≤ 990px)</option>
+                            <option value="never" ${settings.seeMoreButtonMode === 'never' ? 'selected' : ''}>Never show</option>
+                        </select>
+                        <p class="sff-desc">Controls when the extra stats button appears on each activity.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
+                            Show notifications bell (mobile)
+                        </label>
+                        <p class="sff-desc">Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.</p>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Backup & Restore</h4>
+                    <p class="sff-settings-desc" style="margin-bottom: 12px;">
+                        Export your configuration to back it up, or import a previously saved backup.
+                    </p>
                     <button class="sff-settings-btn sff-action-export">Export Settings</button>
                     <button class="sff-settings-btn sff-action-import">Import Settings</button>
                     <input type="file" class="sff-file-input sff-file-import" accept=".json">
@@ -2046,6 +2736,13 @@
                         UIModule.syncSecondaryKudosVisibility();
                     }
 
+                    // Notification bell toggle
+                    if (e.target.classList.contains('sff-showNotifications')) {
+                        settings.showNotifications = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        UIModule.toggleNotificationBell();
+                    }
+
                     // Gift button
                     if (e.target.classList.contains('sff-hideGift')) {
                         settings.hideGiveGift = e.target.checked;
@@ -2151,6 +2848,27 @@
 
                     // Update count display
                     UIModule.updateActivityCount(panel);
+                }
+
+                // See more button mode (select, not a checkbox)
+                if (e.target.classList.contains('sff-seeMoreMode')) {
+                    const value = e.target.value;
+                    if (value === 'always' || value === 'smallOnly' || value === 'never') {
+                        settings.seeMoreButtonMode = value;
+                    } else {
+                        settings.seeMoreButtonMode = 'always';
+                    }
+                    // Maintain legacy boolean for compatibility
+                    settings.showSeeMoreButton = settings.seeMoreButtonMode !== 'never';
+
+                    // Persist all current settings just like Apply, but without reloading
+                    try {
+                        UIModule.applySettings(panel);
+                    } catch (e2) {}
+                    UtilsModule.saveSettings(settings);
+
+                    // Re-apply see-more buttons immediately
+                    LogicModule.manageSeeMoreButtons();
                 }
             });
 
@@ -2311,17 +3029,35 @@
         },
 
         makeResizable(panel, onResizeStart, onResizeEnd) {
-            const handle = panel.querySelector('.sff-resize-handle');
-            if (!handle) return () => {};
+            const handleRight = panel.querySelector('.sff-resize-handle');
+            const handleLeft = panel.querySelector('.sff-resize-handle-left');
+            if (!handleRight && !handleLeft) return () => {};
 
             let isResizing = false;
-            let startX, startWidth;
+            let resizeSide = null;
+            let startX, startWidth, startLeft;
 
             const onMouseDown = (e) => {
+                const target = e.target;
+                if (!target.classList.contains('sff-resize-handle') && !target.classList.contains('sff-resize-handle-left')) {
+                    return;
+                }
+
                 isResizing = true;
+                resizeSide = target.dataset.side || 'right';
                 startX = e.clientX;
                 startWidth = parseInt(getComputedStyle(panel).width, 10);
+                
+                // For left resize, we also need to track the starting left position
+                if (resizeSide === 'left') {
+                    const rect = panel.getBoundingClientRect();
+                    startLeft = rect.left;
+                }
+                
                 document.body.style.userSelect = 'none';
+                
+                // Mark panel as being resized to prevent click-outside from closing it
+                panel.dataset.resizing = 'true';
                 
                 // Notify that resize started
                 if (onResizeStart) onResizeStart();
@@ -2333,38 +3069,70 @@
             const onMouseMove = (e) => {
                 if (!isResizing) return;
 
-                const dx = e.clientX - startX;
-                let newWidth = startWidth + dx;
-
-                // Constrain width
                 const minWidth = 280;
                 const maxWidth = 600;
-                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
 
-                panel.style.setProperty('width', newWidth + 'px', 'important');
+                if (resizeSide === 'right') {
+                    // Right resize: expand to the right
+                    const dx = e.clientX - startX;
+                    let newWidth = startWidth + dx;
+                    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                    panel.style.setProperty('width', newWidth + 'px', 'important');
+                } else {
+                    // Left resize: expand to the left
+                    const dx = startX - e.clientX; // Reversed direction
+                    let newWidth = startWidth + dx;
+                    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                    
+                    // Calculate new left position
+                    const widthDiff = newWidth - startWidth;
+                    const newLeft = startLeft - widthDiff;
+                    
+                    panel.style.setProperty('width', newWidth + 'px', 'important');
+                    panel.style.setProperty('left', newLeft + 'px', 'important');
+                    panel.style.setProperty('right', 'auto', 'important');
+                    
+                    // Save position during resize
+                    Storage.set('sffPanelPos', {
+                        left: panel.style.left,
+                        top: panel.style.top
+                    });
+                }
+                
+                e.preventDefault();
             };
 
             const onMouseUp = (e) => {
                 if (isResizing) {
                     isResizing = false;
+                    resizeSide = null;
                     document.body.style.userSelect = '';
+                    
+                    // Remove resizing flag after a short delay to prevent click-outside from triggering
+                    setTimeout(() => {
+                        delete panel.dataset.resizing;
+                    }, 50);
                     
                     // Prevent click outside handler from firing immediately after resize
                     e.stopPropagation();
                     
-                    // Notify that resize ended after a short delay to ensure click-outside doesn't fire
+                    // Notify that resize ended after a short delay
                     setTimeout(() => {
                         if (onResizeEnd) onResizeEnd();
                     }, 100);
+                    
+                    e.preventDefault();
                 }
             };
 
-            handle.addEventListener('mousedown', onMouseDown);
+            if (handleRight) handleRight.addEventListener('mousedown', onMouseDown);
+            if (handleLeft) handleLeft.addEventListener('mousedown', onMouseDown);
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp, true); // Use capture phase
 
             return () => {
-                handle.removeEventListener('mousedown', onMouseDown);
+                if (handleRight) handleRight.removeEventListener('mousedown', onMouseDown);
+                if (handleLeft) handleLeft.removeEventListener('mousedown', onMouseDown);
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp, true);
             };
@@ -2434,6 +3202,11 @@
                     top: panel.style.top,
                     right: panel.style.right
                 });
+
+                // Re-evaluate visibility of "Show more stats" buttons on viewport changes
+                try {
+                    LogicModule.manageSeeMoreButtons();
+                } catch (e) {}
             });
         },
 
@@ -3201,6 +3974,13 @@
             const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
             if (btn) btn.textContent = `(${hiddenCount})`;
             if (secondaryBtn) secondaryBtn.textContent = `(${hiddenCount})`;
+            
+            // Manage "See More" buttons visibility based on settings
+            try {
+                this.manageSeeMoreButtons();
+            } catch (e) {
+                console.error('manageSeeMoreButtons error:', e);
+            }
         },
 
         manageHeaderKudosButton() {
@@ -3294,6 +4074,7 @@
                     this.updateJoinWorkoutVisibility();
                     this.updateCoachCatVisibility();
                     this.updateAthleteJoinedClubVisibility();
+                    this.manageSeeMoreButtons();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
@@ -3342,6 +4123,7 @@
                 this.updateAthleteJoinedClubVisibility();
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
+                this.manageSeeMoreButtons();
             } else {
                 // When filter is disabled, show all activities and reset sections
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
@@ -3391,6 +4173,544 @@
                 if (btn) btn.textContent = '(0)';
                 if (secondaryBtn) secondaryBtn.textContent = '(0)';
             }
+        },
+
+        manageSeeMoreButtons() {
+            // Determine visibility based on 3-way mode + screen width, with legacy fallback
+            let mode = settings.seeMoreButtonMode;
+            if (!mode) {
+                mode = settings.showSeeMoreButton === false ? 'never' : 'always';
+            }
+
+            const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 0;
+            const isSmall = width <= 990;
+
+            let shouldShow = false;
+            if (mode === 'always') {
+                shouldShow = true;
+            } else if (mode === 'smallOnly') {
+                shouldShow = isSmall;
+            } else if (mode === 'never') {
+                shouldShow = false;
+            }
+
+            if (!settings.enabled || !shouldShow) {
+                // Remove all existing buttons if feature is disabled or should not show for this mode/viewport
+                document.querySelectorAll('.sff-see-more-btn').forEach(btn => btn.remove());
+                document.querySelectorAll('.sff-expanded-stats').forEach(stats => stats.remove());
+                return;
+            }
+            
+            // Get all main feed entries
+            const mainActivities = document.querySelectorAll('[data-testid="web-feed-entry"]');
+            
+            // Also get individual activities within group activities
+            const groupActivityContainers = [];
+            mainActivities.forEach(mainActivity => {
+                const groupList = mainActivity.querySelector('ul > li > div[data-testid="entry-header"]');
+                if (groupList) {
+                    // This is a group activity, find all individual activity containers
+                    const individualActivities = mainActivity.querySelectorAll('ul > li');
+                    individualActivities.forEach(li => groupActivityContainers.push(li));
+                }
+            });
+            
+            // Combine both main activities and individual activities from groups
+            const allActivityContainers = [...mainActivities, ...groupActivityContainers];
+            
+            allActivityContainers.forEach(activity => {
+                // Skip if button already exists
+                if (activity.querySelector('.sff-see-more-btn')) return;
+                
+                const activityNameLink = activity.querySelector('a[href*="/activities/"][data-testid="activity_name"]');
+                if (!activityNameLink) return;
+                
+                const href = activityNameLink.getAttribute('href');
+                const activityId = href?.match(/\/activities\/(\d+)/)?.[1];
+                if (!activityId) return;
+
+                // Create "See more" button
+                const seeMoreBtn = document.createElement('button');
+                seeMoreBtn.className = 'sff-see-more-btn';
+                seeMoreBtn.textContent = 'Show more stats';
+                seeMoreBtn.dataset.activityId = activityId;
+                seeMoreBtn.dataset.expanded = 'false';
+
+                // Insert button after activity title
+                const titleContainer = activityNameLink.closest('.oJVfx, .UDqjM');
+                if (titleContainer) {
+                    titleContainer.style.display = 'flex';
+                    titleContainer.style.alignItems = 'center';
+                    titleContainer.style.gap = '8px';
+                    titleContainer.appendChild(seeMoreBtn);
+                }
+
+                // Add click handler
+                seeMoreBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    const isExpanded = seeMoreBtn.dataset.expanded === 'true';
+                    
+                    if (isExpanded) {
+                        // Collapse
+                        const statsContainer = activity.querySelector('.sff-expanded-stats');
+                        if (statsContainer) statsContainer.remove();
+                        seeMoreBtn.textContent = 'Show more stats';
+                        seeMoreBtn.dataset.expanded = 'false';
+                    } else {
+                        // Expand
+                        seeMoreBtn.textContent = 'Loading...';
+                        seeMoreBtn.disabled = true;
+                        
+                        try {
+                            const stats = await this.fetchActivityStats(activityId);
+                            const statsContainer = this.displayExpandedStats(activity, stats);
+                            
+                            if (statsContainer) {
+                                // Stats were displayed
+                                seeMoreBtn.textContent = 'Hide stats';
+                                seeMoreBtn.dataset.expanded = 'true';
+                            } else {
+                                // No stats available (only device/bike)
+                                seeMoreBtn.textContent = 'No extra stats';
+                                setTimeout(() => {
+                                    seeMoreBtn.textContent = 'Show more stats';
+                                }, 2000);
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch activity stats:', error);
+                            seeMoreBtn.textContent = 'Error - Try again';
+                        } finally {
+                            seeMoreBtn.disabled = false;
+                        }
+                    }
+                });
+            });
+        },
+
+        async fetchActivityStats(activityId) {
+            const response = await fetch(`/activities/${activityId}`);
+            if (!response.ok) throw new Error('Failed to fetch activity');
+            
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const stats = {};
+            
+            // Method 1: Extract from inline-stats (ul li structure)
+            doc.querySelectorAll('.inline-stats li').forEach(li => {
+                const strong = li.querySelector('strong');
+                const labelDiv = li.querySelector('.label');
+                
+                if (strong && labelDiv) {
+                    const value = strong.textContent?.trim().replace(/\s+/g, ' ');
+                    const label = labelDiv.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (label && value) {
+                        stats[label] = value;
+                    }
+                }
+            });
+            
+            // Method 2: Extract from table (avg/max stats) - used in Rides
+            doc.querySelectorAll('.more-stats table tbody tr').forEach(row => {
+                const th = row.querySelector('th');
+                const tds = row.querySelectorAll('td');
+                
+                if (th && tds.length > 0) {
+                    const label = th.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (tds.length === 2 && tds[0].getAttribute('colspan') !== '2') {
+                        // Avg and Max columns
+                        const avg = tds[0].textContent?.trim().replace(/\s+/g, ' ');
+                        const max = tds[1].textContent?.trim().replace(/\s+/g, ' ');
+                        
+                        if (label && avg && max) {
+                            stats[label + ' Avg'] = avg;
+                            stats[label + ' Max'] = max;
+                        }
+                    } else if (tds.length >= 1) {
+                        // Single value (colspan=2)
+                        const value = tds[0].textContent?.trim().replace(/\s+/g, ' ');
+                        if (label && value) {
+                            stats[label] = value;
+                        }
+                    }
+                }
+            });
+            
+            // Method 2b: Extract from row/spans structure - used in Runs
+            doc.querySelectorAll('.more-stats .row').forEach(row => {
+                const spans5 = row.querySelector('.spans5');
+                const spans3 = row.querySelector('.spans3');
+                
+                if (spans5 && spans3) {
+                    const label = spans5.textContent?.trim().replace(/\s+/g, ' ');
+                    const value = spans3.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (label && value) {
+                        stats[label] = value;
+                    }
+                }
+            });
+            
+            // Method 3: Extract weather stats and icon
+            const weatherIcon = doc.querySelector('.weather-icon');
+            if (weatherIcon) {
+                const iconClass = weatherIcon.className;
+                stats['__weatherIcon'] = iconClass;
+            }
+            
+            doc.querySelectorAll('.weather-stat').forEach(stat => {
+                const labelDiv = stat.querySelector('.weather-label');
+                const valueDiv = stat.querySelector('.weather-value');
+                
+                if (labelDiv) {
+                    const label = labelDiv.textContent?.trim().replace(/\s+/g, ' ');
+                    
+                    if (valueDiv) {
+                        const value = valueDiv.textContent?.trim().replace(/\s+/g, ' ');
+                        if (label && value) {
+                            stats[label] = value;
+                        }
+                    } else {
+                        // Weather condition without value
+                        if (label) {
+                            stats[label] = '✓';
+                        }
+                    }
+                }
+            });
+
+            // Extract device info
+            const deviceEl = doc.querySelector('.device');
+            if (deviceEl) {
+                const deviceText = deviceEl.textContent?.trim();
+                if (deviceText) {
+                    stats['Device'] = deviceText;
+                }
+            }
+
+            // Extract bike/gear info - Method 1: from links
+            const gearLinks = doc.querySelectorAll('a[href*="/bikes/"], a[href*="/shoes/"]');
+            if (gearLinks.length > 0) {
+                const gearText = gearLinks[0].textContent?.trim();
+                if (gearText) {
+                    const href = gearLinks[0].getAttribute('href') || '';
+                    if (href.includes('/bikes/')) {
+                        stats['Bike'] = gearText;
+                    } else if (href.includes('/shoes/')) {
+                        stats['Shoes'] = gearText;
+                    }
+                }
+            }
+
+            // Extract bike/gear info - Method 2: from .gear div
+            const gearDiv = doc.querySelector('.gear');
+            if (gearDiv && !stats['Bike'] && !stats['Shoes']) {
+                const gearText = gearDiv.textContent?.trim();
+                if (gearText) {
+                    if (gearText.toLowerCase().includes('bike:')) {
+                        const bikeName = gearText.replace(/^bike:\s*/i, '').trim();
+                        if (bikeName) stats['Bike'] = bikeName;
+                    } else if (gearText.toLowerCase().includes('shoes:')) {
+                        const shoesName = gearText.replace(/^shoes:\s*/i, '').trim();
+                        if (shoesName) stats['Shoes'] = shoesName;
+                    }
+                }
+            }
+
+            return stats;
+        },
+
+        displayExpandedStats(activity, stats) {
+            // Remove existing stats container if any
+            const existing = activity.querySelector('.sff-expanded-stats');
+            if (existing) existing.remove();
+
+            // Organize stats into structured format
+            const organizedStats = this.organizeStats(stats);
+
+            // If no stats available (only device/bike), don't show anything
+            if (organizedStats.length === 0) {
+                return null;
+            }
+
+            // Create stats container
+            const statsContainer = document.createElement('div');
+            statsContainer.className = 'sff-expanded-stats';
+
+            // Build stats HTML
+            let statsHTML = '<div class="sff-stats-grid">';
+            
+            organizedStats.forEach(stat => {
+                if (stat.isHeader) {
+                    // Close current grid and add section header
+                    statsHTML += '</div>';
+                    if (stat.weatherIcon && stat.weatherCondition) {
+                        statsHTML += `<div class="sff-stats-section-header">${stat.label}: <div class="${stat.weatherIcon}" style="display: inline-block; width: 24px; height: 24px; margin: 0 4px; vertical-align: middle;"></div>${stat.weatherCondition}</div>`;
+                    } else if (stat.weatherIcon) {
+                        statsHTML += `<div class="sff-stats-section-header">${stat.label}: <div class="${stat.weatherIcon}" style="display: inline-block; width: 24px; height: 24px; margin-left: 4px; vertical-align: middle;"></div></div>`;
+                    } else {
+                        statsHTML += `<div class="sff-stats-section-header">${stat.label}</div>`;
+                    }
+                    statsHTML += '<div class="sff-stats-grid">';
+                } else {
+                    statsHTML += '<div class="sff-stat-item">';
+                    statsHTML += `<span class="sff-stat-label">${stat.label}</span>`;
+                    
+                    if (stat.avg && stat.max) {
+                        statsHTML += `<span class="sff-stat-value"><b>Avg:</b> ${stat.avg}</span>`;
+                        statsHTML += `<span class="sff-stat-subvalue"><b>Max:</b> ${stat.max}</span>`;
+                    } else {
+                        statsHTML += `<span class="sff-stat-value">${stat.value}</span>`;
+                    }
+                    
+                    statsHTML += '</div>';
+                }
+            });
+            
+            statsHTML += '</div>';
+            statsContainer.innerHTML = statsHTML;
+
+            // Find the best insertion point
+            const achievementSummary = activity.querySelector('[data-testid="achievement_summary"]');
+            const contentSection = activity.querySelector('.hWGNo, .ZbtW4');
+            const imagesSection = activity.querySelector('[data-testid="entry-images"]');
+            const kudosSection = activity.querySelector('[data-testid="kudos_comments_container"]');
+            
+            let insertionPoint = null;
+            
+            if (kudosSection) {
+                insertionPoint = kudosSection.parentElement;
+                if (insertionPoint) {
+                    kudosSection.before(statsContainer);
+                }
+            } else if (imagesSection) {
+                imagesSection.after(statsContainer);
+            } else if (achievementSummary) {
+                const parentSection = achievementSummary.closest('.hWGNo, .ZbtW4');
+                if (parentSection) {
+                    parentSection.after(statsContainer);
+                } else {
+                    achievementSummary.after(statsContainer);
+                }
+            } else if (contentSection) {
+                contentSection.after(statsContainer);
+            } else {
+                const activityContainer = activity.querySelector('[data-testid="activity_entry_container"]');
+                if (activityContainer) {
+                    activityContainer.appendChild(statsContainer);
+                }
+            }
+
+            return statsContainer;
+        },
+
+        organizeStats(rawStats) {
+            const filtered = { ...rawStats };
+
+            const organized = [];
+            const weatherStats = [];
+            const gearStats = [];
+            const processed = new Set();
+            
+            // Extract and store weather icon separately
+            const weatherIcon = filtered['__weatherIcon'];
+            delete filtered['__weatherIcon'];
+            
+            // Extract weather condition for header
+            let weatherCondition = null;
+            const conditionKeywords = ['Partly Cloudy', 'Mostly Cloudy', 'Overcast', 'Clear', 'Cloudy', 'Sunny', 'Rainy', 'Windy'];
+            for (const keyword of conditionKeywords) {
+                if (filtered[keyword]) {
+                    weatherCondition = keyword;
+                    delete filtered[keyword];
+                    break;
+                } else if (filtered[keyword.toLowerCase()]) {
+                    weatherCondition = filtered[keyword.toLowerCase()];
+                    delete filtered[keyword.toLowerCase()];
+                    break;
+                }
+            }
+
+            // Define weather-related keywords
+            const weatherKeywords = ['temperature', 'humidity', 'wind', 'feels like', 'weather'];
+
+            // Normalize "Heartrate" to "Heart Rate"
+            if (filtered['Heartrate Avg'] && !filtered['Heart Rate Avg']) {
+                filtered['Heart Rate Avg'] = filtered['Heartrate Avg'];
+                delete filtered['Heartrate Avg'];
+            }
+            if (filtered['Heartrate Max'] && !filtered['Heart Rate Max']) {
+                filtered['Heart Rate Max'] = filtered['Heartrate Max'];
+                delete filtered['Heartrate Max'];
+            }
+
+            // Define stat groups that should be combined (avg/max pairs)
+            const statGroups = [
+                { base: 'Speed', label: 'Speed' },
+                { base: 'Heart Rate', label: 'Heart Rate' },
+                { base: 'Cadence', label: 'Cadence' },
+                { base: 'Power', label: 'Power' },
+                { base: 'Pace', label: 'Pace' },
+                { base: 'Grade', label: 'Grade' },
+                { base: 'VAM', label: 'VAM' }
+            ];
+
+            // Process grouped stats (avg/max pairs)
+            statGroups.forEach(group => {
+                const avgKey = group.label + ' Avg';
+                const maxKey = group.label + ' Max';
+                
+                const avgValue = filtered[avgKey];
+                const maxValue = filtered[maxKey];
+
+                if (avgValue || maxValue) {
+                    if (avgValue && maxValue) {
+                        organized.push({
+                            label: group.label,
+                            avg: avgValue,
+                            max: maxValue
+                        });
+                        processed.add(avgKey);
+                        processed.add(maxKey);
+                    } else if (avgValue) {
+                        organized.push({
+                            label: group.label,
+                            value: avgValue
+                        });
+                        processed.add(avgKey);
+                    } else if (maxValue) {
+                        organized.push({
+                            label: group.label,
+                            value: maxValue
+                        });
+                        processed.add(maxKey);
+                    }
+                }
+            });
+
+            // Group time-related stats together
+            const timeStats = [];
+            const timeKeywords = ['moving time', 'elapsed time'];
+            
+            // Define gear-related keywords
+            const gearKeywords = ['device', 'bike', 'shoes', 'gear'];
+            
+            // Separate weather stats, time stats, and gear stats
+            Object.keys(filtered).forEach(key => {
+                if (!processed.has(key)) {
+                    const lowerKey = key.toLowerCase();
+                    const isWeather = weatherKeywords.some(keyword => lowerKey.includes(keyword));
+                    const isTime = timeKeywords.some(keyword => lowerKey.includes(keyword));
+                    const isGear = gearKeywords.some(keyword => lowerKey === keyword);
+                    
+                    const stat = {
+                        label: key,
+                        value: filtered[key]
+                    };
+                    
+                    if (isWeather) {
+                        weatherStats.push(stat);
+                    } else if (isTime) {
+                        timeStats.push(stat);
+                    } else if (isGear) {
+                        gearStats.push(stat);
+                    } else {
+                        organized.push(stat);
+                    }
+                    processed.add(key);
+                }
+            });
+            
+            // Calculate Time stopped (Elapsed - Moving)
+            const movingTimeStat = timeStats.find(s => s.label.toLowerCase().includes('moving time'));
+            const elapsedTimeStat = timeStats.find(s => s.label.toLowerCase().includes('elapsed time'));
+            
+            if (movingTimeStat && elapsedTimeStat) {
+                const movingSeconds = this.parseTimeToSeconds(movingTimeStat.value);
+                const elapsedSeconds = this.parseTimeToSeconds(elapsedTimeStat.value);
+                
+                if (movingSeconds !== null && elapsedSeconds !== null && elapsedSeconds > movingSeconds) {
+                    const stoppedSeconds = elapsedSeconds - movingSeconds;
+                    const stoppedTime = this.formatSecondsToTime(stoppedSeconds);
+                    
+                    const elapsedIndex = timeStats.indexOf(elapsedTimeStat);
+                    timeStats.splice(elapsedIndex + 1, 0, {
+                        label: 'Time stopped',
+                        value: stoppedTime
+                    });
+                }
+            }
+            
+            // Add time stats at the beginning
+            organized.unshift(...timeStats);
+
+            // Add weather section
+            if (weatherStats.length > 0) {
+                organized.push({
+                    isHeader: true,
+                    label: 'Weather',
+                    weatherIcon: weatherIcon,
+                    weatherCondition: weatherCondition
+                });
+                organized.push(...weatherStats);
+            }
+
+            // Add gear section
+            if (gearStats.length > 0) {
+                organized.push({
+                    isHeader: true,
+                    label: 'Equipment'
+                });
+                organized.push(...gearStats);
+            }
+
+            return organized;
+        },
+
+        parseTimeToSeconds(timeString) {
+            if (!timeString) return null;
+            
+            let totalSeconds = 0;
+            
+            // Check for colon-separated format first (HH:MM:SS or MM:SS)
+            if (timeString.includes(':')) {
+                const parts = timeString.split(':').map(p => parseInt(p.trim()));
+                if (parts.length === 3) {
+                    totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                } else if (parts.length === 2) {
+                    totalSeconds = parts[0] * 60 + parts[1];
+                }
+                return totalSeconds;
+            }
+            
+            // Otherwise check for h/m/s suffix format
+            const hourMatch = timeString.match(/(\d+)h/);
+            const minMatch = timeString.match(/(\d+)m/);
+            const secMatch = timeString.match(/(\d+)s/);
+            
+            if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
+            if (minMatch) totalSeconds += parseInt(minMatch[1]) * 60;
+            if (secMatch) totalSeconds += parseInt(secMatch[1]);
+            
+            return totalSeconds;
+        },
+
+        formatSecondsToTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            let result = '';
+            if (hours > 0) result += `${hours}h `;
+            if (minutes > 0) result += `${minutes}m `;
+            if (secs > 0 || result === '') result += `${secs}s`;
+            
+            return result.trim();
         }
     };
 
