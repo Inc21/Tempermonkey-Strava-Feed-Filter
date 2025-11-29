@@ -97,6 +97,7 @@
         hideFooter: false,
         showKudosButton: false,
         showSeeMoreButton: true,
+        seeMoreButtonMode: 'always',
         showNotifications: true,
         minKm: "",
         maxKm: "",
@@ -1417,6 +1418,16 @@
             for (const k of numKeys) {
                 if (merged[k] === 0 || merged[k] === '0') merged[k] = '';
             }
+
+            // Migration: derive seeMoreButtonMode from legacy boolean if not set
+            if (!merged.seeMoreButtonMode) {
+                if (merged.showSeeMoreButton === false) {
+                    merged.seeMoreButtonMode = 'never';
+                } else {
+                    merged.seeMoreButtonMode = 'always';
+                }
+            }
+
             return merged;
         },
 
@@ -1621,6 +1632,19 @@
             panel.querySelectorAll('input[type=checkbox][data-typ]').forEach(input => {
                 settings.types[input.dataset.typ] = input.checked;
             });
+
+            // Persist current see-more mode from the select, if present
+            const modeSelect = panel.querySelector('.sff-seeMoreMode');
+            if (modeSelect) {
+                const value = modeSelect.value;
+                if (value === 'always' || value === 'smallOnly' || value === 'never') {
+                    settings.seeMoreButtonMode = value;
+                } else {
+                    settings.seeMoreButtonMode = 'always';
+                }
+                // Maintain legacy boolean for compatibility
+                settings.showSeeMoreButton = settings.seeMoreButtonMode !== 'never';
+            }
 
             UtilsModule.saveSettings(settings);
             console.log('💾 Settings saved:', settings);
@@ -2270,11 +2294,15 @@
                     </div>
                     
                     <div style="margin-bottom: 20px;">
-                        <label class="sff-chip ${settings.showSeeMoreButton ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-showSeeMoreButton" ${settings.showSeeMoreButton ? 'checked' : ''}>
+                        <label class="sff-chip">
                             Show "Show more stats" button
                         </label>
-                        <p class="sff-desc">Adds a button to each activity to view detailed stats without leaving the feed.</p>
+                        <select class="sff-seeMoreMode" style="margin-left: 22px; padding: 4px 8px; font-size: 13px;">
+                            <option value="always" ${settings.seeMoreButtonMode === 'always' ? 'selected' : ''}>Always show</option>
+                            <option value="smallOnly" ${settings.seeMoreButtonMode === 'smallOnly' ? 'selected' : ''}>Only on small screens (≤ 990px)</option>
+                            <option value="never" ${settings.seeMoreButtonMode === 'never' ? 'selected' : ''}>Never show</option>
+                        </select>
+                        <p class="sff-desc">Controls when the extra stats button appears on each activity.</p>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
@@ -2649,13 +2677,6 @@
                         UIModule.syncSecondaryKudosVisibility();
                     }
 
-                    // See more button toggle
-                    if (e.target.classList.contains('sff-showSeeMoreButton')) {
-                        settings.showSeeMoreButton = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.manageSeeMoreButtons();
-                    }
-
                     // Notification bell toggle
                     if (e.target.classList.contains('sff-showNotifications')) {
                         settings.showNotifications = e.target.checked;
@@ -2672,83 +2693,6 @@
 
                     // Your challenges section
                     if (e.target.classList.contains('sff-hideChallenges')) {
-                        settings.hideChallenges = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateChallengesVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // Joined challenge cards
-                    if (e.target.classList.contains('sff-hideJoinedChallenges')) {
-                        settings.hideJoinedChallenges = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateJoinedChallengesVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // Suggested Friends
-                    if (e.target.classList.contains('sff-hideSuggestedFriends')) {
-                        settings.hideSuggestedFriends = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateSuggestedFriendsVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // Your Clubs
-                    if (e.target.classList.contains('sff-hideYourClubs')) {
-                        settings.hideYourClubs = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateYourClubsVisibility();
-                        LogicModule.filterActivities();
-                    }
-
-                    // External embeds
-                    if (e.target.classList.contains('sff-hideMyWindsock')) {
-                        settings.hideMyWindsock = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateMyWindsockVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideSummitbag')) {
-                        settings.hideSummitbag = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateSummitbagVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideBandok')) {
-                        settings.hideBandok = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateBandokVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideCoros')) {
-                        settings.hideCoros = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateCorosVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideJoinWorkout')) {
-                        settings.hideJoinWorkout = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateJoinWorkoutVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideCoachCat')) {
-                        settings.hideCoachCat = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateCoachCatVisibility();
-                    }
-                    // Footer
-                    if (e.target.classList.contains('sff-hideFooter')) {
-                        settings.hideFooter = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateFooterVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
-                        settings.hideAthleteJoinedClub = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateAthleteJoinedClubVisibility();
-                        LogicModule.filterActivities();
-                    }
-                    
-                    // Activity visibility rules
-                    if (e.target.classList.contains('sff-hideNoMap')) {
-                        settings.hideNoMap = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.filterActivities();
                     }
@@ -2768,6 +2712,27 @@
 
                     // Update count display
                     UIModule.updateActivityCount(panel);
+                }
+
+                // See more button mode (select, not a checkbox)
+                if (e.target.classList.contains('sff-seeMoreMode')) {
+                    const value = e.target.value;
+                    if (value === 'always' || value === 'smallOnly' || value === 'never') {
+                        settings.seeMoreButtonMode = value;
+                    } else {
+                        settings.seeMoreButtonMode = 'always';
+                    }
+                    // Maintain legacy boolean for compatibility
+                    settings.showSeeMoreButton = settings.seeMoreButtonMode !== 'never';
+
+                    // Persist all current settings just like Apply, but without reloading
+                    try {
+                        UIModule.applySettings(panel);
+                    } catch (e2) {}
+                    UtilsModule.saveSettings(settings);
+
+                    // Re-apply see-more buttons immediately
+                    LogicModule.manageSeeMoreButtons();
                 }
             });
 
@@ -3099,6 +3064,11 @@
                     top: panel.style.top,
                     right: panel.style.right
                 });
+
+                // Re-evaluate visibility of "Show more stats" buttons on viewport changes
+                try {
+                    LogicModule.manageSeeMoreButtons();
+                } catch (e) {}
             });
         },
 
@@ -4001,8 +3971,26 @@
         },
 
         manageSeeMoreButtons() {
-            if (!settings.enabled || !settings.showSeeMoreButton) {
-                // Remove all existing buttons if feature is disabled
+            // Determine visibility based on 3-way mode + screen width, with legacy fallback
+            let mode = settings.seeMoreButtonMode;
+            if (!mode) {
+                mode = settings.showSeeMoreButton === false ? 'never' : 'always';
+            }
+
+            const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 0;
+            const isSmall = width <= 990;
+
+            let shouldShow = false;
+            if (mode === 'always') {
+                shouldShow = true;
+            } else if (mode === 'smallOnly') {
+                shouldShow = isSmall;
+            } else if (mode === 'never') {
+                shouldShow = false;
+            }
+
+            if (!settings.enabled || !shouldShow) {
+                // Remove all existing buttons if feature is disabled or should not show for this mode/viewport
                 document.querySelectorAll('.sff-see-more-btn').forEach(btn => btn.remove());
                 document.querySelectorAll('.sff-expanded-stats').forEach(stats => stats.remove());
                 return;
