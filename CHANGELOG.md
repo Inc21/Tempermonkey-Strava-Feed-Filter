@@ -6,6 +6,30 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v2.4.6] - 30.11.2025 (Firefox & Chrome Extensions)
+
+### 🐛 Bug Fixes
+
+- **Notification Badge**: Fixed notification badge not clearing when viewing notifications
+  - Badge now properly marks all notifications as read when notification panel is opened
+  - Implemented correct Strava API endpoint (`/frontend/athlete/notifications/mark_all_read`)
+  - Added CSRF token authentication for API requests
+  - Behavior now matches Strava's native notification system exactly
+- **Badge Styling**: Fixed notification badge appearance in Chrome
+  - Changed color from orange to red to match Strava's design
+  - Adjusted size and positioning for better visual consistency
+  - Badge now properly positioned at top-right corner with white border and shadow
+
+### ⚙️ Technical Improvements
+
+- **"Hide Start Trial" Button**: Added missing functionality in Firefox extension
+  - Feature now works correctly in both Chrome and Firefox extensions
+  - Properly hides the orange "Start Trial" subscription button from header
+- Improved notification read state detection with more robust checking
+- Enhanced error logging for notification API calls
+
+---
+
 ## [v2.4.5] - 30.11.2025 (Firefox & Chrome Extensions)
 
 ### 📱 Mobile-First Improvements

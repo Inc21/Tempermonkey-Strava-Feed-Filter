@@ -59,6 +59,7 @@
   async function init(){
     const toggle = document.getElementById('toggle-enabled');
     const versionEl = document.getElementById('version');
+    const changelogVersionEl = document.getElementById('changelog-version');
     const settings = await loadSettings();
     toggle.checked = !!settings.enabled;
 
@@ -69,11 +70,17 @@
         if (versionEl) {
           versionEl.textContent = `v${manifest.version}`;
         }
+        if (changelogVersionEl) {
+          changelogVersionEl.textContent = manifest.version;
+        }
       }
     } catch (e) {
       console.error('Failed to set version:', e);
       if (versionEl) {
-        versionEl.textContent = 'v2.4.5'; // Fallback
+        versionEl.textContent = 'v2.4.6'; // Fallback
+      }
+      if (changelogVersionEl) {
+        changelogVersionEl.textContent = '2.4.6'; // Fallback
       }
     }
 

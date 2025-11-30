@@ -59,14 +59,20 @@
   async function init(){
     const toggle = document.getElementById('toggle-enabled');
     const versionEl = document.getElementById('version');
+    const changelogVersionEl = document.getElementById('changelog-version');
     const settings = await loadSettings();
     toggle.checked = !!settings.enabled;
 
     // Set dynamic version from manifest
     try {
       const manifest = browser.runtime.getManifest();
-      if (manifest && manifest.version && versionEl) {
-        versionEl.textContent = `v${manifest.version}`;
+      if (manifest && manifest.version) {
+        if (versionEl) {
+          versionEl.textContent = `v${manifest.version}`;
+        }
+        if (changelogVersionEl) {
+          changelogVersionEl.textContent = manifest.version;
+        }
       }
     } catch (e) {}
 
