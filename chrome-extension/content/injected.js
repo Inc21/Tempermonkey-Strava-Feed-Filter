@@ -79,7 +79,8 @@
         ignoredAthletes: [],
         types: {},
         hideNoMap: false,
-        hideGiveGift: false,
+        hideGiveGift: true,
+        hideStartTrial: true,
         hideClubPosts: false,
         hideChallenges: false,
         hideJoinedChallenges: false,
@@ -95,7 +96,7 @@
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
         hideFooter: false,
-        showKudosButton: false,
+        showKudosButton: true,
         showSeeMoreButton: true,
         seeMoreButtonMode: 'always',
         showNotifications: true,
@@ -1681,6 +1682,8 @@
             UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
             const giftChk = panel.querySelector('.sff-hideGift');
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
+            const startTrialChk = panel.querySelector('.sff-hideStartTrial');
+            settings.hideStartTrial = startTrialChk ? startTrialChk.checked : settings.hideStartTrial;
 
             settings.types = {};
             panel.querySelectorAll('input[type=checkbox][data-typ]').forEach(input => {
@@ -1720,6 +1723,7 @@
                 document.body.removeAttribute('data-sff-dashboard');
                 // On non-dashboard pages, apply global and embed settings
                 LogicModule.updateGiftVisibility();
+                LogicModule.updateStartTrialVisibility();
                 LogicModule.updateChallengesVisibility();
                 LogicModule.updateSuggestedFriendsVisibility();
                 LogicModule.updateYourClubsVisibility();
@@ -2314,10 +2318,6 @@
                                 <input type="checkbox" class="sff-hideClubPosts" ${settings.hideClubPosts ? 'checked' : ''}>
                                 Hide club posts
                             </label>
-                           <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
-                                <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
-                                Hide "Give a Gift" button
-                            </label>
                         </div>
                     </div>
                     <div class="sff-buttons">
@@ -2345,6 +2345,24 @@
                         Manage your Strava Feed Filter settings.
                     </p>
                     
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Header Settings</h4>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
+                            Hide "Give a Gift" button
+                        </label>
+                        <p class="sff-desc">Hides the orange "Give a Gift" button from the header navigation.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.hideStartTrial ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideStartTrial" ${settings.hideStartTrial ? 'checked' : ''}>
+                            Hide "Start Trial" button
+                        </label>
+                        <p class="sff-desc">Hides the orange "Start Trial" subscription button from the header navigation.</p>
+                    </div>
+                    
                     <div style="margin-bottom: 20px;">
                         <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
                             <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
@@ -2352,6 +2370,18 @@
                         </label>
                         <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
                     </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
+                            Show notifications bell (mobile)
+                        </label>
+                        <p class="sff-desc">Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.</p>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Activity Settings</h4>
                     
                     <div style="margin-bottom: 20px;">
                         <label class="sff-chip">
@@ -2363,14 +2393,6 @@
                             <option value="never" ${settings.seeMoreButtonMode === 'never' ? 'selected' : ''}>Never show</option>
                         </select>
                         <p class="sff-desc">Controls when the extra stats button appears on each activity.</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
-                            Show notifications bell (mobile)
-                        </label>
-                        <p class="sff-desc">Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.</p>
                     </div>
                     
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
@@ -2755,6 +2777,13 @@
                         settings.hideGiveGift = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateGiftVisibility();
+                    }
+
+                    // Start Trial button
+                    if (e.target.classList.contains('sff-hideStartTrial')) {
+                        settings.hideStartTrial = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateStartTrialVisibility();
                     }
 
                     // Your challenges section
@@ -3335,6 +3364,29 @@
                 });
             } catch (e) {
                 console.warn('updateGiftVisibility error:', e);
+            }
+        },
+
+        updateStartTrialVisibility() {
+            try {
+                // Target: <li class="nav-item upgrade"><a class="experiment btn btn-sm btn-primary" href="/subscribe?cta=free-trial&element=link&origin=global_nav">Start Trial</a></li>
+                const links = document.querySelectorAll('li.nav-item.upgrade a[href*="/subscribe"][href*="cta=free-trial"][href*="origin=global_nav"]');
+                links.forEach(a => {
+                    const li = a.closest('li.nav-item.upgrade');
+                    const targetElement = li || a;
+                    
+                    if (settings.enabled && settings.hideStartTrial) {
+                        if (targetElement.dataset.sffHiddenBy !== 'sff') {
+                            targetElement.dataset.sffHiddenBy = 'sff';
+                            targetElement.style.display = 'none';
+                        }
+                    } else if (targetElement.dataset.sffHiddenBy === 'sff') {
+                        targetElement.style.display = '';
+                        delete targetElement.dataset.sffHiddenBy;
+                    }
+                });
+            } catch (e) {
+                console.warn('updateStartTrialVisibility error:', e);
             }
         },
 
@@ -4069,6 +4121,7 @@
                 try {
                     this.filterActivities();
                     this.updateGiftVisibility();
+                    this.updateStartTrialVisibility();
                     this.updateChallengesVisibility();
                     this.updateSuggestedFriendsVisibility();
                     this.updateYourClubsVisibility();
@@ -4114,6 +4167,7 @@
                 // When filter is enabled, apply all filtering
                 this.filterActivities();
                 this.updateGiftVisibility();
+                this.updateStartTrialVisibility();
                 this.updateChallengesVisibility();
                 this.updateFooterVisibility();
                 this.updateJoinedChallengesVisibility();
@@ -4162,6 +4216,17 @@
                     if (a.dataset.sffHiddenBy === 'sff') {
                         a.style.display = '';
                         delete a.dataset.sffHiddenBy;
+                    }
+                });
+                
+                // Reset Start Trial button visibility
+                const startTrialLinks = document.querySelectorAll('li.nav-item.upgrade a[href*="/subscribe"][href*="cta=free-trial"]');
+                startTrialLinks.forEach(a => {
+                    const li = a.closest('li.nav-item.upgrade');
+                    const targetElement = li || a;
+                    if (targetElement.dataset.sffHiddenBy === 'sff') {
+                        targetElement.style.display = '';
+                        delete targetElement.dataset.sffHiddenBy;
                     }
                 });
                 // Reset footer visibility
@@ -4746,6 +4811,9 @@
 
         // Apply gift button hiding immediately
         LogicModule.updateGiftVisibility();
+        
+        // Apply Start Trial button hiding immediately
+        LogicModule.updateStartTrialVisibility();
 
         // Apply challenges section hiding immediately
         LogicModule.updateChallengesVisibility();
@@ -4772,6 +4840,7 @@
         // Setup observer for dynamically loaded content to hide gift buttons and challenges
         const observer = new MutationObserver(() => {
             LogicModule.updateGiftVisibility();
+            LogicModule.updateStartTrialVisibility();
             LogicModule.updateChallengesVisibility();
             LogicModule.updateFooterVisibility();
             LogicModule.updateJoinedChallengesVisibility();
