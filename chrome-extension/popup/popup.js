@@ -65,10 +65,17 @@
     // Set dynamic version from manifest
     try {
       const manifest = chrome.runtime.getManifest();
-      if (manifest && manifest.version && versionEl) {
-        versionEl.textContent = `v${manifest.version}`;
+      if (manifest && manifest.version) {
+        if (versionEl) {
+          versionEl.textContent = `v${manifest.version}`;
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to set version:', e);
+      if (versionEl) {
+        versionEl.textContent = 'v2.4.5'; // Fallback
+      }
+    }
 
     // Initialize badge
     try {

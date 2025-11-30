@@ -2333,7 +2333,7 @@
                     </div>
                     <div class="sff-copyright">
                         <p>Report a bug or dead filter: <a href="https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues" target="_blank">HERE</a></p>
-                        <p id="sff-version" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">Version</p>
+                        <p id="sff-version" style="opacity: 0.7; margin-top: 5px;">Version</p>
                     </div>
                 </div>
 
@@ -2513,10 +2513,17 @@
 
             // Set dynamic version from manifest
             try {
-                const manifest = browser.runtime.getManifest();
                 const versionEl = panel.querySelector('#sff-version');
-                if (manifest && manifest.version && versionEl) {
-                    versionEl.textContent = `Version ${manifest.version}`;
+                if (versionEl) {
+                    if (ext && ext.runtime && ext.runtime.getManifest) {
+                        const manifest = ext.runtime.getManifest();
+                        if (manifest && manifest.version) {
+                            versionEl.textContent = `Version ${manifest.version}`;
+                        }
+                    } else {
+                        // Fallback version if extension API not available
+                        versionEl.textContent = 'Version 2.4.5';
+                    }
                 }
             } catch (error) {
                 console.log('Could not get manifest version:', error);
