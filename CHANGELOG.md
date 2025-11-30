@@ -6,6 +6,24 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v2.4.7] - 30.11.2025 (Firefox & Chrome Extensions)
+
+### 🐛 Bug Fixes
+
+- **Chrome Extension**: Fixed message listener not working for popup communication
+  - Changed from Firefox-only `browser.runtime.onMessage` to cross-browser compatible approach
+  - Now properly checks for both `chrome.runtime.onMessage` and `browser.runtime.onMessage`
+  - Ensures filter button loads immediately without needing to open popup first
+
+### ✨ Enhancements
+
+- **Popup**: Added "See what's new in v{version}" link to both Chrome and Firefox extension popups
+  - Links directly to GitHub CHANGELOG.md
+  - Version number dynamically pulled from manifest
+  - Positioned after the helper text for better visibility
+
+---
+
 ## [v2.4.6] - 30.11.2025 (Firefox & Chrome Extensions)
 
 ### 🐛 Bug Fixes
@@ -24,7 +42,10 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 - **"Hide Start Trial" Button**: Added missing functionality in Firefox extension
   - Feature now works correctly in both Chrome and Firefox extensions
-  - Properly hides the orange "Start Trial" subscription button from header
+  - Hides the orange "Start Trial" subscription button from header navigation
+  - Specifically for Strava free users who haven't purchased a premium subscription yet
+  - Users can enable this in Settings > Header Settings
+  - Bug reported by Reddit user: andreasbeer1981
 - Improved notification read state detection with more robust checking
 - Enhanced error logging for notification API calls
 

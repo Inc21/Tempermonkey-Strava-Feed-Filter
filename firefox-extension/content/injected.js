@@ -4889,12 +4889,14 @@
 
     // Initialize
     async function init() {
-        console.log(' Clean Filter: Initializing...');
+        console.log('🔧 Clean Filter: Initializing...');
+        console.log('📍 Current URL:', window.location.pathname);
 
         // Load settings before any feature uses them
         if (!settings) {
             try {
                 settings = await UtilsModule.loadSettings();
+                console.log('✅ Settings loaded:', settings.enabled);
             } catch (e) {
                 console.error('Failed to load settings, using defaults:', e);
                 settings = { ...DEFAULTS };
@@ -4905,12 +4907,20 @@
         setupGlobalFeatures();
 
         // Only create UI elements and run filtering on dashboard
-        if (UtilsModule.isOnDashboard()) {
+        const isDashboard = UtilsModule.isOnDashboard();
+        console.log('📊 Is dashboard:', isDashboard);
+        
+        if (isDashboard) {
             // Mark body as dashboard for responsive CSS that relies on this flag
             document.body.setAttribute('data-sff-dashboard', 'true');
+            console.log('🏷️ Dashboard attribute set');
             
             // Always create UI elements so users can toggle filtering on/off
-            if (!document.querySelector('.sff-clean-panel')) {
+            const existingPanel = document.querySelector('.sff-clean-panel');
+            console.log('🔍 Existing panel:', existingPanel ? 'Found' : 'Not found');
+            
+            if (!existingPanel) {
+                console.log('🔨 Creating UI elements...');
                 UIModule.createElements();
             }
             

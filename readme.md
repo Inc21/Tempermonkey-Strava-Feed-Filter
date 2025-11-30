@@ -19,7 +19,8 @@ with Strava's design.
 
 ## 🆕 What's New
 
-- **Latest: v2.4.6** — 🐛 **Bug fixes!** Fixed notification badge not clearing when viewing notifications - now properly marks all as read using Strava's API with CSRF authentication. Fixed badge color (now red instead of orange) and improved positioning in Chrome. Added missing "Hide Start Trial" functionality to Firefox (now works in both extensions).
+- **Latest: v2.4.7** — 🐛 **Bug fixes & enhancements!** Fixed extension message listener for proper popup communication. Added "See what's new" link to extension popups linking to GitHub changelog.
+- **v2.4.6** — 🐛 **Bug fixes!** Fixed notification badge not clearing when viewing notifications - now properly marks all as read using Strava's API with CSRF authentication. Fixed badge color (now red instead of orange) and improved positioning in Chrome. Added missing "Hide Start Trial" functionality for Strava free users without premium subscriptions (bug reported by Reddit user: andreasbeer1981).
 - **v2.4.5** — 📱 **Major mobile improvements!** Both Firefox and Chrome extensions now feature a notification bell for mobile screens (≤990px), bidirectional panel resizing (drag from left or right edge), and viewport-aware UI that automatically adapts to screen size. Complete feature parity achieved between both extensions.
 - **v2.3.3** — Added filtering for Bandok.com and COROS external service embeds. Enhanced settings menu with import/export functionality and reset options. Improved athlete ignore list management.
 - **Firefox Extension v2.4.2 ALPHA** — "Show More Stats" now works on individual activities in group rides! Each participant gets their own stats button. Plus bug fixes for duplicate Heart Rate display, Walk filtering, and scroll flickering.

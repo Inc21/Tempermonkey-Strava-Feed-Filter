@@ -77,10 +77,10 @@
     } catch (e) {
       console.error('Failed to set version:', e);
       if (versionEl) {
-        versionEl.textContent = 'v2.4.6'; // Fallback
+        versionEl.textContent = 'v2.4.7'; // Fallback
       }
       if (changelogVersionEl) {
-        changelogVersionEl.textContent = '2.4.6'; // Fallback
+        changelogVersionEl.textContent = '2.4.7'; // Fallback
       }
     }
 

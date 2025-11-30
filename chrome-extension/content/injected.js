@@ -4931,7 +4931,7 @@
 
     // Initialize
     async function init() {
-        console.log(' Clean Filter: Initializing...');
+        console.log('🔧 Clean Filter: Initializing...');
 
         // Load settings before any feature uses them
         if (!settings) {
@@ -4967,41 +4967,46 @@
 
     // Listen for popup toggle messages to enable/disable and re-apply filters
     try {
-        if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
-            browser.runtime.onMessage.addListener((msg) => {
-                if (msg && msg.type === 'SFF_TOGGLE_ENABLED') {
-                    settings.enabled = !!msg.enabled;
-                    try { UtilsModule.saveSettings(settings); } catch (e) {}
-                    // On dashboard: ensure UI exists and update toggle state
-                    if (UtilsModule.isOnDashboard()) {
-                        if (!document.querySelector('.sff-clean-panel')) {
-                            try { UIModule.createElements(); } catch (e) {}
-                        }
-                        // Update toggle checkbox and text to reflect new state
-                        const toggleCheckbox = document.querySelector('.sff-enabled-toggle');
-                        const toggleText = document.querySelector('.sff-toggle-text');
-                        if (toggleCheckbox) toggleCheckbox.checked = settings.enabled;
-                        if (toggleText) toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
-                        
-                        try { UIModule.syncSecondaryKudosVisibility(); } catch (e) {}
-                        try { LogicModule.filterActivities(); } catch (e) {}
-                        try { LogicModule.setupAutoFilter(); } catch (e) {}
+        const messageHandler = (msg) => {
+            if (msg && msg.type === 'SFF_TOGGLE_ENABLED') {
+                settings.enabled = !!msg.enabled;
+                try { UtilsModule.saveSettings(settings); } catch (e) {}
+                // On dashboard: ensure UI exists and update toggle state
+                if (UtilsModule.isOnDashboard()) {
+                    if (!document.querySelector('.sff-clean-panel')) {
+                        try { UIModule.createElements(); } catch (e) {}
                     }
-                    try { LogicModule.applyAllFilters(); } catch (e) {}
+                    // Update toggle checkbox and text to reflect new state
+                    const toggleCheckbox = document.querySelector('.sff-enabled-toggle');
+                    const toggleText = document.querySelector('.sff-toggle-text');
+                    if (toggleCheckbox) toggleCheckbox.checked = settings.enabled;
+                    if (toggleText) toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
+                    
+                    try { UIModule.syncSecondaryKudosVisibility(); } catch (e) {}
+                    try { LogicModule.filterActivities(); } catch (e) {}
+                    try { LogicModule.setupAutoFilter(); } catch (e) {}
                 }
-                // Handle settings import/update
-                if (msg && msg.type === 'SFF_SETTINGS_UPDATED') {
-                    // Reload settings from storage and refresh everything
-                    UtilsModule.loadSettings().then(newSettings => {
-                        settings = newSettings;
-                        // Reload the page to apply new settings
-                        location.reload();
-                    }).catch(e => {
-                        console.error('Failed to reload settings:', e);
-                        location.reload(); // Reload anyway
-                    });
-                }
-            });
+                try { LogicModule.applyAllFilters(); } catch (e) {}
+            }
+            // Handle settings import/update
+            if (msg && msg.type === 'SFF_SETTINGS_UPDATED') {
+                // Reload settings from storage and refresh everything
+                UtilsModule.loadSettings().then(newSettings => {
+                    settings = newSettings;
+                    // Reload the page to apply new settings
+                    location.reload();
+                }).catch(e => {
+                    console.error('Failed to reload settings:', e);
+                    location.reload(); // Reload anyway
+                });
+            }
+        };
+        
+        // Use chrome.runtime for Chrome, browser.runtime for Firefox
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+            chrome.runtime.onMessage.addListener(messageHandler);
+        } else if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
+            browser.runtime.onMessage.addListener(messageHandler);
         }
     } catch (e) {
         console.warn('Failed to attach runtime message listener:', e);
