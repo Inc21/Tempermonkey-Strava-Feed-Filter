@@ -1243,21 +1243,30 @@
 
       .sff-notification-badge {
         position: absolute !important;
-        top: 2px !important;
-        right: 2px !important;
-        background: #fc5200 !important;
+        top: -6px !important;
+        right: -6px !important;
+        background: #dc3545 !important;
         color: white !important;
-        border-radius: 10px !important;
-        padding: 2px 6px !important;
+        border-radius: 9px !important;
+        padding: 0 5px !important;
         font-size: 11px !important;
         font-weight: 700 !important;
         min-width: 18px !important;
+        height: 18px !important;
         text-align: center !important;
         display: none !important;
+        line-height: 1.2 !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+        border: 2px solid white !important;
       }
 
-      .sff-notification-badge.show {
-        display: block !important;
+      .sff-notification-bell .sff-notification-badge.show {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
       .sff-notification-overlay {
@@ -1872,11 +1881,58 @@
             } else {
                 overlay.classList.add('show');
                 this.fetchAndRenderNotifications(button, overlay);
+                
+                // Mark all notifications as read when opening (like Strava does)
+                this.markAllNotificationsAsRead(button);
             }
         },
 
         closeNotificationOverlay(overlay) {
             overlay.classList.remove('show');
+        },
+        
+        async markAllNotificationsAsRead(button) {
+            try {
+                console.log('📬 Marking all notifications as read...');
+                
+                // Get CSRF token from meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!csrfToken) {
+                    console.warn('⚠️ No CSRF token found');
+                    return;
+                }
+                
+                // Use Strava's actual endpoint
+                const response = await fetch('/frontend/athlete/notifications/mark_all_read', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRF-Token': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('📡 Mark-all-read response status:', response.status);
+                
+                if (response.ok) {
+                    console.log('✅ All notifications marked as read');
+                    // Update badge to show 0
+                    const badge = button.querySelector('.sff-notification-badge');
+                    if (badge) {
+                        badge.textContent = '0';
+                        badge.classList.remove('show');
+                    }
+                    button.title = 'Notifications';
+                } else {
+                    console.warn('⚠️ Failed to mark all as read:', response.status);
+                    const text = await response.text();
+                    console.warn('Response:', text.substring(0, 200));
+                }
+            } catch (error) {
+                console.error('❌ Error marking all as read:', error);
+            }
         },
         
         formatNotificationTime(displayDate) {
@@ -1928,16 +1984,24 @@
                 
                 const data = await response.json();
                 console.log('✅ Badge data received:', data.length, 'notifications');
-                const unreadCount = data.filter(item => item.read === false).length;
+                
+                // More robust unread check - handle both boolean and string values
+                const unreadCount = data.filter(item => item.read === false || item.read === 'false' || !item.read).length;
+                console.log('📊 Unread count:', unreadCount);
                 
                 const badge = button.querySelector('.sff-notification-badge');
                 if (badge) {
                     badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    console.log('🔴 Setting badge text to:', badge.textContent);
                     if (unreadCount > 0) {
                         badge.classList.add('show');
+                        console.log('🔴 Badge should now be visible');
                     } else {
                         badge.classList.remove('show');
+                        console.log('⚪ Badge hidden (no unread)');
                     }  
+                } else {
+                    console.error('❌ Badge element not found!');
                 }
                 
                 button.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications';
@@ -1990,8 +2054,8 @@
                     return;
                 }
                 
-                // Count unread
-                const unreadCount = data.filter(item => item.read === false).length;
+                // Count unread - more robust check
+                const unreadCount = data.filter(item => item.read === false || item.read === 'false' || !item.read).length;
                 console.log(`📊 Unread count: ${unreadCount}`);
                 
                 // Update badge
@@ -2011,7 +2075,8 @@
                 
                 data.forEach(item => {
                     const fullLink = `https://www.strava.com${item.actionable_link}`;
-                    const isUnread = item.read === false;
+                    // More robust unread check
+                    const isUnread = item.read === false || item.read === 'false' || !item.read;
                     const formattedTime = this.formatNotificationTime(item.display_date);
                     
                     const itemDiv = document.createElement('div');
@@ -2027,6 +2092,7 @@
                     
                     // Make the entire item clickable
                     itemDiv.addEventListener('click', () => {
+                        // Just navigate - notifications are already marked as read when overlay opened
                         window.location.href = fullLink;
                     });
                     
