@@ -5,6 +5,8 @@
     allowedAthletes: [],
     ignoredAthletes: [],
     types: {},
+    recordingDevices: [],
+    recordingDevicesCustom: "",
     hideNoMap: false,
     hideGiveGift: false,
     hideClubPosts: false,

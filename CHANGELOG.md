@@ -1,5 +1,33 @@
 # Changelog
 
+## [v2.5.0] - 08.12.2025 (Firefox Extension)
+
+### Features Added
+
+- **Compact Settings Panel with Info Icons**: Helper text moved to clickable info icons
+  - All settings now have blue ℹ icons for explanations
+  - Tooltips appear below icons with close button
+  - Click outside tooltip to dismiss automatically
+  - Saves significant UI space while maintaining accessibility
+- **Recording Devices Filter**: New filter for hiding activities by device type
+  - Predefined devices: Apple, Bryton, COROS, Elite, Fitbit, Garmin, Hammerhead, MyWhoosh, Peloton, Polar, Rouvy, Samsung, Stages, Strava, Suunto, Tacx, TrainerRoad, Wahoo, Wahoo SYSTM, Whoop, Zwift
+  - Custom device text field for user-defined devices
+  - Select All / Clear All quick actions
+
+### UI/UX Improvements
+
+- Settings panel now more compact with info icons replacing verbose helper text
+- Tooltip positioning optimized for panel boundaries and screen space
+- Better icon alignment with settings labels
+- Consistent spacing and visual hierarchy throughout settings
+
+### Bug Fixes
+
+- Fixed info icon tooltip positioning to stay within viewport
+- Improved device filter to properly handle group activities
+
+---
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Semantic Versioning](https://semver.org/).
