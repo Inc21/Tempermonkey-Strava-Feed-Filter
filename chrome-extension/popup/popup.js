@@ -5,6 +5,8 @@
     allowedAthletes: [],
     ignoredAthletes: [],
     types: {},
+    recordingDevices: [],
+    recordingDevicesCustom: "",
     hideNoMap: false,
     hideGiveGift: false,
     hideClubPosts: false,
@@ -74,15 +76,7 @@
           changelogVersionEl.textContent = manifest.version;
         }
       }
-    } catch (e) {
-      console.error('Failed to set version:', e);
-      if (versionEl) {
-        versionEl.textContent = 'v2.4.7'; // Fallback
-      }
-      if (changelogVersionEl) {
-        changelogVersionEl.textContent = '2.4.7'; // Fallback
-      }
-    }
+    } catch (e) {}
 
     // Initialize badge
     try {

@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.5.0] - 08.12.2025 (Firefox Extension)
+## [v2.5.0] - 09.12.2025 (Firefox & Chrome Extensions)
 
 ### Features Added
 
@@ -13,6 +13,7 @@
   - Predefined devices: Apple, Bryton, COROS, Elite, Fitbit, Garmin, Hammerhead, MyWhoosh, Peloton, Polar, Rouvy, Samsung, Stages, Strava, Suunto, Tacx, TrainerRoad, Wahoo, Wahoo SYSTM, Whoop, Zwift
   - Custom device text field for user-defined devices
   - Select All / Clear All quick actions
+  - **Full support for group activities** - properly detects and filters based on devices used by all participants
 
 ### UI/UX Improvements
 
@@ -20,11 +21,16 @@
 - Tooltip positioning optimized for panel boundaries and screen space
 - Better icon alignment with settings labels
 - Consistent spacing and visual hierarchy throughout settings
+- Recording devices displayed in multi-column grid layout (4 columns, responsive to 2 on mobile)
 
 ### Bug Fixes
 
 - Fixed info icon tooltip positioning to stay within viewport
-- Improved device filter to properly handle group activities
+- **Fixed device filter for group activities** - now properly checks all participants' devices
+- Improved device detection to prioritize reliable metadata over user-editable activity names
+  - Checks Virtual tag first (most reliable indicator)
+  - Searches activity description and stats sections
+  - Falls back to activity title only as last resort
 
 ---
 

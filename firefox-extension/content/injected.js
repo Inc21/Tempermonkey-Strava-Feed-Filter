@@ -4193,62 +4193,157 @@
 
                 // Recording device filtering
                 if (!shouldHide && (settings.recordingDevices.length > 0 || (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()))) {
-                    let deviceFound = null;
+                    // Check if this is a group activity
+                    const isGroupActivity = Array.from(activity.querySelectorAll('button')).some(btn =>
+                        /\b(rode|ran|walked|hiked|swam)\s+with\b/i.test(btn.textContent || '')
+                    );
                     
-                    // First, try to get device from API cache using activity ID
-                    const activityId = activity.id || activity.getAttribute('id')?.replace('feed-entry-', '');
-                    if (activityId && activityDeviceCache.has(activityId)) {
-                        deviceFound = activityDeviceCache.get(activityId);
-                    }
-                    
-                    // If not in cache, try to find device in DOM text (scan once for first device found)
-                    if (!deviceFound) {
-                        const activityText = activity.textContent || '';
-                        const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
-                        
-                        const match = deviceRegex.exec(activityText);
-                        if (match) {
-                            deviceFound = match[1];
+                    if (isGroupActivity) {
+                        // For group activities, check ALL individual activities within the group
+                        const individualActivities = activity.querySelectorAll('ul > li');
+                        if (individualActivities.length > 0) {
+                            let allActivitiesMatchDevice = true;
+                            let foundAtLeastOneDevice = false;
+                            
+                            individualActivities.forEach(individualActivity => {
+                                // Try multiple methods to find device info
+                                let deviceFound = null;
+                                
+                                // 1. Check for Virtual tag first (most reliable indicator)
+                                const virtualTag = individualActivity.querySelector('[data-testid="tag"]');
+                                const isVirtual = virtualTag && /virtual/i.test(virtualTag.textContent || '');
+                                
+                                // 2. For virtual activities, look for device info in stats or description
+                                if (isVirtual) {
+                                    // Check activity description/stats for device mentions
+                                    const description = individualActivity.querySelector('[data-testid="activity_description_wrapper"]');
+                                    const stats = individualActivity.querySelector('[data-testid="activity_stats"], .activity-stats');
+                                    const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '');
+                                    
+                                    // Look for device-specific indicators in description/stats
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const match = deviceRegex.exec(searchText);
+                                    if (match) {
+                                        deviceFound = match[1];
+                                    }
+                                    
+                                    // If still not found, check activity title as last resort for virtual platforms
+                                    if (!deviceFound) {
+                                        const activityTitle = individualActivity.querySelector('a[data-testid="activity_name"], h3 a');
+                                        if (activityTitle) {
+                                            const titleText = activityTitle.textContent || '';
+                                            // Only check for common virtual platforms that appear in default titles
+                                            if (/\bzwift\b/i.test(titleText)) deviceFound = 'Zwift';
+                                            else if (/\brouvy\b/i.test(titleText)) deviceFound = 'Rouvy';
+                                            else if (/\bmywhoosh\b/i.test(titleText)) deviceFound = 'MyWhoosh';
+                                            else if (/\btrainerroad\b/i.test(titleText)) deviceFound = 'TrainerRoad';
+                                        }
+                                    }
+                                } else {
+                                    // 3. For non-virtual activities, check stats/description first
+                                    const description = individualActivity.querySelector('[data-testid="activity_description_wrapper"]');
+                                    const stats = individualActivity.querySelector('[data-testid="activity_stats"], .activity-stats');
+                                    const statsSection = individualActivity.querySelector('[data-testid="entry-header"], .entry-header');
+                                    
+                                    // Look in stats and description
+                                    const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '') + ' ' + (statsSection?.textContent || '');
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const match = deviceRegex.exec(searchText);
+                                    if (match) {
+                                        deviceFound = match[1];
+                                    }
+                                }
+                                
+                                if (deviceFound) {
+                                    foundAtLeastOneDevice = true;
+                                    const deviceLower = deviceFound.toLowerCase();
+                                    
+                                    // Check against preset devices
+                                    const matchesPreset = settings.recordingDevices.some(preset => 
+                                        deviceLower.includes(preset.toLowerCase())
+                                    );
+                                    
+                                    // Check against custom devices
+                                    let matchesCustom = false;
+                                    if (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()) {
+                                        const customDevices = settings.recordingDevicesCustom.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
+                                        matchesCustom = customDevices.some(custom => deviceLower.includes(custom));
+                                    }
+                                    
+                                    // If this activity doesn't match the device filter, don't hide the group
+                                    if (!matchesPreset && !matchesCustom) {
+                                        allActivitiesMatchDevice = false;
+                                    }
+                                } else {
+                                    // If we can't find a device for this activity, don't hide the group
+                                    allActivitiesMatchDevice = false;
+                                }
+                            });
+                            
+                            // Only hide if ALL activities in the group match the device filter AND we found at least one device
+                            if (allActivitiesMatchDevice && foundAtLeastOneDevice) {
+                                shouldHide = true;
+                            }
                         }
-                    }
-                    
-                    // If still no device found, try DOM element lookups
-                    if (!deviceFound) {
-                        const deviceNameEl = activity.querySelector('[data-testid="device"], .device-name, [data-device-name]');
-                        if (deviceNameEl) {
-                            deviceFound = deviceNameEl.textContent?.trim() || null;
-                        }
-                    }
-                    
-                    // If still nothing, search stats section
-                    if (!deviceFound) {
-                        const statsSection = activity.querySelector('[data-testid="activity_stats"], .activity-stats, .stats');
-                        if (statsSection) {
-                            const allText = statsSection.textContent || '';
-                            const deviceMatch = allText.match(/(?:Recorded on|Device|Device:)\s*([^\n,<]+)/);
-                            if (deviceMatch) deviceFound = deviceMatch[1].trim();
-                        }
-                    }
-                    
-                    // Check if the found device matches the filter
-                    if (deviceFound) {
-                        const deviceLower = deviceFound.toLowerCase();
+                    } else {
+                        // For individual activities, use the original logic
+                        let deviceFound = null;
                         
-                        // Check against preset devices
-                        const matchesPreset = settings.recordingDevices.some(preset => 
-                            deviceLower.includes(preset.toLowerCase())
-                        );
-                        
-                        // Check against custom devices
-                        let matchesCustom = false;
-                        if (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()) {
-                            const customDevices = settings.recordingDevicesCustom.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
-                            matchesCustom = customDevices.some(custom => deviceLower.includes(custom));
+                        // First, try to get device from API cache using activity ID
+                        const activityId = activity.id || activity.getAttribute('id')?.replace('feed-entry-', '');
+                        if (activityId && activityDeviceCache.has(activityId)) {
+                            deviceFound = activityDeviceCache.get(activityId);
                         }
                         
-                        // Hide if device matches
-                        if (matchesPreset || matchesCustom) {
-                            shouldHide = true;
+                        // If not in cache, try to find device in DOM text (scan once for first device found)
+                        if (!deviceFound) {
+                            const activityText = activity.textContent || '';
+                            const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                            
+                            const match = deviceRegex.exec(activityText);
+                            if (match) {
+                                deviceFound = match[1];
+                            }
+                        }
+                        
+                        // If still no device found, try DOM element lookups
+                        if (!deviceFound) {
+                            const deviceNameEl = activity.querySelector('[data-testid="device"], .device-name, [data-device-name]');
+                            if (deviceNameEl) {
+                                deviceFound = deviceNameEl.textContent?.trim() || null;
+                            }
+                        }
+                        
+                        // If still nothing, search stats section
+                        if (!deviceFound) {
+                            const statsSection = activity.querySelector('[data-testid="activity_stats"], .activity-stats, .stats');
+                            if (statsSection) {
+                                const allText = statsSection.textContent || '';
+                                const deviceMatch = allText.match(/(?:Recorded on|Device|Device:)\s*([^\n,<]+)/);
+                                if (deviceMatch) deviceFound = deviceMatch[1].trim();
+                            }
+                        }
+                        
+                        // Check if the found device matches the filter
+                        if (deviceFound) {
+                            const deviceLower = deviceFound.toLowerCase();
+                            
+                            // Check against preset devices
+                            const matchesPreset = settings.recordingDevices.some(preset => 
+                                deviceLower.includes(preset.toLowerCase())
+                            );
+                            
+                            // Check against custom devices
+                            let matchesCustom = false;
+                            if (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()) {
+                                const customDevices = settings.recordingDevicesCustom.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
+                                matchesCustom = customDevices.some(custom => deviceLower.includes(custom));
+                            }
+                            
+                            // Hide if device matches
+                            if (matchesPreset || matchesCustom) {
+                                shouldHide = true;
+                            }
                         }
                     }
                 }

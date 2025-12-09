@@ -4,7 +4,7 @@ A powerful Tampermonkey userscript that provides advanced filtering
 capabilities for your Strava activity feed. Built with a modular architecture
 for maximum performance and maintainability.
 
-> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. In v2.3.2 we refreshed activity-type detection across every platform so specialised activities and group posts filter correctly. **As of v2.4.5, both Firefox and Chrome extensions feature enhanced mobile support with notification system and bidirectional panel resizing.** The userscript remains available for all browsers.
+> Note: As of v1.2.4, this project includes Firefox Extension (desktop and Android). As of v2.2.5, Chrome Extension with complete feature parity is also available. As of v2.3.1, a Safari iOS–compatible userscript (`userscript/sff-safari.user.js`) is available. In v2.3.2 we refreshed activity-type detection across every platform so specialised activities and group posts filter correctly. **As of v2.4.5, both Firefox and Chrome extensions feature enhanced mobile support with notification system and bidirectional panel resizing. As of v2.5.0, both extensions include a compact settings panel with info icons and device-based activity filtering.** The userscript remains available for all browsers.
 
 ![Strava Feed Filter in action](./src/readme-images/filter-panel-overview.png)
 *Filter panel*
@@ -19,7 +19,8 @@ with Strava's design.
 
 ## 🆕 What's New
 
-- **Latest: v2.4.7** — 🐛 **Bug fixes & enhancements!** Fixed extension message listener for proper popup communication. Added "See what's new" link to extension popups linking to GitHub changelog.
+- **Latest: v2.5.0** — ✨ **Major UI & filtering improvements!** Compact settings panel with clickable info icons replacing verbose helper text. New device-based filtering with support for 21+ predefined devices (Zwift, Garmin, Wahoo, etc.) plus custom device field. Full support for group activities with improved device detection prioritizing metadata over user-editable names.
+- **v2.4.7** — 🐛 **Bug fixes & enhancements!** Fixed extension message listener for proper popup communication. Added "See what's new" link to extension popups linking to GitHub changelog.
 - **v2.4.6** — 🐛 **Bug fixes!** Fixed notification badge not clearing when viewing notifications - now properly marks all as read using Strava's API with CSRF authentication. Fixed badge color (now red instead of orange) and improved positioning in Chrome. Added missing "Hide Start Trial" functionality for Strava free users without premium subscriptions (bug reported by Reddit user: andreasbeer1981).
 - **v2.4.5** — 📱 **Major mobile improvements!** Both Firefox and Chrome extensions now feature a notification bell for mobile screens (≤990px), bidirectional panel resizing (drag from left or right edge), and viewport-aware UI that automatically adapts to screen size. Complete feature parity achieved between both extensions.
 - **v2.3.3** — Added filtering for Bandok.com and COROS external service embeds. Enhanced settings menu with import/export functionality and reset options. Improved athlete ignore list management.
@@ -33,7 +34,12 @@ with Strava's design.
 - **Keyword Filtering**: Hide activities containing specific keywords in titles
 - **Activity Type Filtering**: Granular control over 40+ activity types
   (Run, Ride, Virtual activities, etc.)
-- **Quick tip – isolate one type fast**: Click “Select All”, then deselect the activity you’d like to show. For example, to see only hikes: open **Activity Types**, press **Select All**, then untick **Hike**. The feed will show only hikes while hiding every other category.
+- **Recording Device Filtering**: Hide activities by recording device (NEW in v2.5.0)
+  - 21+ predefined devices: Apple, Bryton, COROS, Elite, Fitbit, Garmin, Hammerhead, MyWhoosh, Peloton, Polar, Rouvy, Samsung, Stages, Strava, Suunto, Tacx, TrainerRoad, Wahoo, Wahoo SYSTM, Whoop, Zwift
+  - Custom device text field for user-defined devices
+  - Select All / Clear All quick actions
+  - Full support for group activities
+- **Quick tip – isolate one type fast**: Click "Select All", then deselect the activity you'd like to show. For example, to see only hikes: open **Activity Types**, press **Select All**, then untick **Hike**. The feed will show only hikes while hiding every other category.
 
   > 💡 Want the opposite? Hit **Clear All** and tick just the one type you want to hide.
 
@@ -52,6 +58,10 @@ with Strava's design.
 
 ### 🎨 User Interface
 
+- **Compact Settings Panel**: Info icons replace verbose helper text (NEW in v2.5.0)
+  - Blue ℹ icons provide explanations on click
+  - Tooltips with close button and click-outside dismiss
+  - Saves significant UI space while maintaining accessibility
 - **Mobile Notification System**: Bell icon on mobile screens (≤990px) for quick access to Strava notifications
 - **Responsive Design**: Adapts to different screen sizes and Strava layouts
 - **Bidirectional Panel Resizing**: Drag left or right edge to resize the filter panel (280px - 600px)

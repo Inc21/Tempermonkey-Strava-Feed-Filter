@@ -78,6 +78,8 @@
         allowedAthletes: [],
         ignoredAthletes: [],
         types: {},
+        recordingDevices: [],
+        recordingDevicesCustom: "",
         hideNoMap: false,
         hideGiveGift: true,
         hideStartTrial: true,
@@ -649,8 +651,18 @@
         margin-top: 3px !important;
       }
       
+      .sff-devices {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(max(80px, calc((100% - 24px) / 4)), 1fr)) !important;
+        gap: 4px 8px !important; /* Increased gap */
+        margin-top: 3px !important;
+      }
+      
       @media (max-width: 400px) {
         .sff-types {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+        .sff-devices {
           grid-template-columns: repeat(2, 1fr) !important;
         }
       }
@@ -690,6 +702,69 @@
         margin-top: 2px !important;
         transform: scale(0.85) !important;
         flex-shrink: 0 !important;
+      }
+
+      .sff-label-with-info {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+      }
+
+      .sff-info-icon {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        background: #0066cc !important;
+        color: white !important;
+        border-radius: 50% !important;
+        font-size: 12px !important;
+        font-weight: bold !important;
+        cursor: help !important;
+        user-select: none !important;
+        flex-shrink: 0 !important;
+        margin-top: 1px !important;
+      }
+
+      .sff-info-icon:hover {
+        background: #0052a3 !important;
+      }
+
+      .sff-info-box {
+        position: fixed !important;
+        z-index: 2147483648 !important;
+        background: white !important;
+        border: 1px solid #ddd !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+        max-width: 320px !important;
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+        color: #333 !important;
+      }
+
+      .sff-info-box-content {
+        margin-bottom: 12px !important;
+      }
+
+      .sff-info-box-close {
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        font-size: 18px !important;
+        color: #999 !important;
+        cursor: pointer !important;
+        line-height: 1 !important;
+        position: absolute !important;
+        top: 8px !important;
+        right: 8px !important;
+      }
+
+      .sff-info-box-close:hover {
+        color: #333 !important;
       }
 
       .sff-switch {
@@ -1656,6 +1731,16 @@
                 .map(x => x.trim())
                 .filter(Boolean);
 
+            settings.recordingDevices = Array.from(panel.querySelector('.sff-devices').querySelectorAll('input[type="checkbox"][data-device]:checked'))
+                .map(input => input.dataset.device)
+                .filter(Boolean);
+
+            settings.recordingDevicesCustom = panel.querySelector('.sff-devices-custom').value
+                .split(',')
+                .map(x => x.trim())
+                .filter(Boolean)
+                .join(', ');
+
             const getNumOrEmpty = (selector) => {
                 const v = panel.querySelector(selector).value.trim();
                 return v === '' ? '' : +v;
@@ -2249,6 +2334,32 @@
                     </div>
                     <div class="sff-row sff-dropdown">
                         <div class="sff-dropdown-header">
+                            <span class="sff-label">Recording Devices</span>
+                            <div class="sff-dropdown-right">
+                                <span class="sff-dropdown-indicator">▼</span>
+                            </div>
+                        </div>
+                        <div class="sff-dropdown-content">
+                            <div class="sff-devices-actions">
+                                <button type="button" class="sff-devices-select" data-action="select-all">Select All</button>
+                                <button type="button" class="sff-devices-select" data-action="clear-all">Clear All</button>
+                            </div>
+                            <div class="sff-devices">
+                                ${['Apple', 'Bryton', 'COROS', 'Elite', 'Fitbit', 'Garmin', 'Hammerhead', 'MyWhoosh', 'Peloton', 'Polar', 'Rouvy', 'Samsung', 'Stages', 'Strava', 'Suunto', 'Tacx', 'TrainerRoad', 'Wahoo', 'Wahoo SYSTM', 'Whoop', 'Zwift'].map(device => `
+                                    <label class="sff-chip ${settings.recordingDevices && settings.recordingDevices.includes(device) ? 'checked' : ''}">
+                                        <input type="checkbox" class="sff-device-checkbox" data-device="${device}" ${settings.recordingDevices && settings.recordingDevices.includes(device) ? 'checked' : ''}>
+                                        ${device}
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <div class="sff-row" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                                <label class="sff-label">Custom Devices (comma-separated):</label>
+                                <textarea class="sff-input sff-devices-custom" placeholder="e.g. MyDevice, OtherGarmin" style="min-height: 60px;">${settings.recordingDevicesCustom || ''}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sff-row sff-dropdown">
+                        <div class="sff-dropdown-header">
                             <span class="sff-label">Min/Max Filters</span>
                             <div class="sff-dropdown-right">
                                 <span class="sff-dropdown-indicator">▼</span>
@@ -2414,35 +2525,43 @@
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Header Settings</h4>
                     
                     <div style="margin-bottom: 20px;">
-                        <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
-                            Hide "Give a Gift" button
-                        </label>
-                        <p class="sff-desc">Hides the orange "Give a Gift" button from the header navigation.</p>
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
+                                Hide "Give a Gift" button
+                            </label>
+                            <span class="sff-info-icon" data-info="Hides the orange 'Give a Gift' button from the header navigation.">ℹ</span>
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
-                        <label class="sff-chip ${settings.hideStartTrial ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-hideStartTrial" ${settings.hideStartTrial ? 'checked' : ''}>
-                            Hide "Start Trial" button
-                        </label>
-                        <p class="sff-desc">Hides the orange "Start Trial" subscription button from the header navigation.</p>
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.hideStartTrial ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideStartTrial" ${settings.hideStartTrial ? 'checked' : ''}>
+                                Hide "Start Trial" button
+                            </label>
+                            <span class="sff-info-icon" data-info="Hides the orange 'Start Trial' subscription button from the header navigation.">ℹ</span>
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
-                        <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
-                            Show "Give 👍 to Everyone" button
-                        </label>
-                        <p class="sff-desc">Adds a button to the header to give kudos to all visible activities.</p>
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
+                                Show "Give 👍 to Everyone" button
+                            </label>
+                            <span class="sff-info-icon" data-info="Adds a button to the header to give kudos to all visible activities.">ℹ</span>
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
-                        <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
-                            <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
-                            Show notifications bell (mobile)
-                        </label>
-                        <p class="sff-desc">Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.</p>
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
+                                Show notifications bell (mobile)
+                            </label>
+                            <span class="sff-info-icon" data-info="Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.">ℹ</span>
+                        </div>
                     </div>
                     
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
@@ -2450,30 +2569,35 @@
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Activity Settings</h4>
                     
                     <div style="margin-bottom: 20px;">
-                        <label class="sff-chip">
-                            Show "Show more stats" button
-                        </label>
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip">
+                                Show "Show more stats" button
+                            </label>
+                            <span class="sff-info-icon" data-info="Controls when the extra stats button appears on each activity.">ℹ</span>
+                        </div>
                         <select class="sff-seeMoreMode" style="margin-left: 22px; padding: 4px 8px; font-size: 13px;">
                             <option value="always" ${settings.seeMoreButtonMode === 'always' ? 'selected' : ''}>Always show</option>
                             <option value="smallOnly" ${settings.seeMoreButtonMode === 'smallOnly' ? 'selected' : ''}>Only on small screens (≤ 990px)</option>
                             <option value="never" ${settings.seeMoreButtonMode === 'never' ? 'selected' : ''}>Never show</option>
                         </select>
-                        <p class="sff-desc">Controls when the extra stats button appears on each activity.</p>
                     </div>
                     
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
                     
-                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Backup & Restore</h4>
-                    <p class="sff-settings-desc" style="margin-bottom: 12px;">
-                        Export your configuration to back it up, or import a previously saved backup.
-                    </p>
+                    <div class="sff-label-with-info">
+                        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Backup & Restore</h4>
+                        <span class="sff-info-icon" data-info="Export your configuration to back it up, or import a previously saved backup to restore your settings.">ℹ</span>
+                    </div>
                     <button class="sff-settings-btn sff-action-export">Export Settings</button>
                     <button class="sff-settings-btn sff-action-import">Import Settings</button>
                     <input type="file" class="sff-file-input sff-file-import" accept=".json">
                     
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
                     
-                    <button class="sff-settings-btn danger sff-action-reset">Reset to Defaults</button>
+                    <div class="sff-label-with-info">
+                        <button class="sff-settings-btn danger sff-action-reset">Reset to Defaults</button>
+                        <span class="sff-info-icon" data-info="Restore all settings to their default values. This action cannot be undone.">ℹ</span>
+                    </div>
                 </div>
             `;
         },
@@ -2948,6 +3072,19 @@
                         LogicModule.filterActivities();
                     }
 
+                    // Recording device chips
+                    if (e.target.hasAttribute('data-device')) {
+                        // Update recorded devices list
+                        const devicesEl = panel.querySelector('.sff-devices');
+                        if (devicesEl) {
+                            settings.recordingDevices = Array.from(devicesEl.querySelectorAll('input[type="checkbox"][data-device]:checked'))
+                                .map(input => input.dataset.device)
+                                .filter(Boolean);
+                        }
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.filterActivities();
+                    }
+
                     // Update count display
                     UIModule.updateActivityCount(panel);
                 }
@@ -3002,6 +3139,98 @@
                 });
             }
 
+            // Recording devices select all/clear all
+            const devicesActions = panel.querySelector('.sff-devices-actions');
+            if (devicesActions) {
+                devicesActions.addEventListener('click', (event) => {
+                    const button = event.target instanceof Element ? event.target.closest('button[data-action]') : null;
+                    if (!button) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const shouldCheck = button.dataset.action === 'select-all';
+                    const checkboxes = [...panel.querySelectorAll('.sff-devices input[type="checkbox"][data-device]')];
+                    if (!checkboxes.length) {
+                        console.warn('⚠️ No recording device checkboxes found for bulk toggle');
+                        return;
+                    }
+
+                    checkboxes.forEach(cb => {
+                        const device = cb.dataset.device;
+                        cb.checked = shouldCheck;
+                        cb.closest('.sff-chip')?.classList.toggle('checked', shouldCheck);
+                    });
+
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                });
+            }
+
+            // Info icon click handler
+            panel.addEventListener('click', (event) => {
+                const infoIcon = event.target.closest('.sff-info-icon');
+                if (!infoIcon) return;
+                event.stopPropagation();
+                
+                const infoText = infoIcon.getAttribute('data-info');
+                if (!infoText) return;
+                
+                // Close any existing info box
+                const existingBox = document.querySelector('.sff-info-box');
+                if (existingBox) existingBox.remove();
+                
+                // Create new info box
+                const box = document.createElement('div');
+                box.className = 'sff-info-box';
+                box.innerHTML = `
+                    <div class="sff-info-box-content">${infoText}</div>
+                    <button class="sff-info-box-close" aria-label="Close">×</button>
+                `;
+                document.body.appendChild(box);
+                
+                // Position the box with smart placement
+                const rect = infoIcon.getBoundingClientRect();
+                const panelRect = panel.getBoundingClientRect();
+                
+                // Start below the icon, aligned with panel's right side
+                let left = panelRect.right - 330; // box width ~320px, with 10px margin
+                let top = rect.bottom + 12;
+                
+                // Adjust if goes off-screen to the right
+                if (left + 330 > window.innerWidth - 10) {
+                    left = window.innerWidth - 340;
+                }
+                
+                // Adjust if goes off-screen to the left
+                if (left < 10) {
+                    left = 10;
+                }
+                
+                // Adjust if goes off-screen at bottom
+                if (top + 200 > window.innerHeight) {
+                    top = rect.top - 200;
+                    if (top < 10) top = 10;
+                }
+                
+                box.style.left = `${left}px`;
+                box.style.top = `${top}px`;
+                
+                // Close button handler
+                box.querySelector('.sff-info-box-close').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    box.remove();
+                });
+            });
+
+            // Close info box when clicking outside
+            const closeInfoBox = (e) => {
+                const infoBox = document.querySelector('.sff-info-box');
+                if (infoBox && !infoBox.contains(e.target) && !e.target.closest('.sff-info-icon')) {
+                    infoBox.remove();
+                }
+            };
+            document.addEventListener('click', closeInfoBox, { once: false });
+
             // Apply button
             panel.querySelector('.sff-save').addEventListener('click', async () => {
                 console.log('💾 Applying and refreshing...');
@@ -3040,6 +3269,9 @@
                 cleanupDraggable && cleanupDraggable();
                 cleanupResizable && cleanupResizable();
                 document.removeEventListener('click', handleClickOutside);
+                document.removeEventListener('click', closeInfoBox);
+                const infoBox = document.querySelector('.sff-info-box');
+                if (infoBox) infoBox.remove();
             };
         },
 
@@ -3991,6 +4223,163 @@
                             
                             if (isRide) {
                                  if (settings.types['Ride']) shouldHide = true;
+                            }
+                        }
+                    }
+                }
+
+                // Recording device filtering
+                if (!shouldHide && (settings.recordingDevices.length > 0 || (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()))) {
+                    // Check if this is a group activity
+                    const isGroupActivity = Array.from(activity.querySelectorAll('button')).some(btn =>
+                        /\b(rode|ran|walked|hiked|swam)\s+with\b/i.test(btn.textContent || '')
+                    );
+                    
+                    if (isGroupActivity) {
+                        // For group activities, check ALL individual activities within the group
+                        const individualActivities = activity.querySelectorAll('ul > li');
+                        if (individualActivities.length > 0) {
+                            let allActivitiesMatchDevice = true;
+                            let foundAtLeastOneDevice = false;
+                            
+                            individualActivities.forEach(individualActivity => {
+                                // Try multiple methods to find device info
+                                let deviceFound = null;
+                                
+                                // 1. Check for Virtual tag first (most reliable indicator)
+                                const virtualTag = individualActivity.querySelector('[data-testid="tag"]');
+                                const isVirtual = virtualTag && /virtual/i.test(virtualTag.textContent || '');
+                                
+                                // 2. For virtual activities, look for device info in stats or description
+                                if (isVirtual) {
+                                    // Check activity description/stats for device mentions
+                                    const description = individualActivity.querySelector('[data-testid="activity_description_wrapper"]');
+                                    const stats = individualActivity.querySelector('[data-testid="activity_stats"], .activity-stats');
+                                    const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '');
+                                    
+                                    // Look for device-specific indicators in description/stats
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const match = deviceRegex.exec(searchText);
+                                    if (match) {
+                                        deviceFound = match[1];
+                                    }
+                                    
+                                    // If still not found, check activity title as last resort for virtual platforms
+                                    if (!deviceFound) {
+                                        const activityTitle = individualActivity.querySelector('a[data-testid="activity_name"], h3 a');
+                                        if (activityTitle) {
+                                            const titleText = activityTitle.textContent || '';
+                                            // Only check for common virtual platforms that appear in default titles
+                                            if (/\bzwift\b/i.test(titleText)) deviceFound = 'Zwift';
+                                            else if (/\brouvy\b/i.test(titleText)) deviceFound = 'Rouvy';
+                                            else if (/\bmywhoosh\b/i.test(titleText)) deviceFound = 'MyWhoosh';
+                                            else if (/\btrainerroad\b/i.test(titleText)) deviceFound = 'TrainerRoad';
+                                        }
+                                    }
+                                } else {
+                                    // 3. For non-virtual activities, check stats/description first
+                                    const description = individualActivity.querySelector('[data-testid="activity_description_wrapper"]');
+                                    const stats = individualActivity.querySelector('[data-testid="activity_stats"], .activity-stats');
+                                    const statsSection = individualActivity.querySelector('[data-testid="entry-header"], .entry-header');
+                                    
+                                    // Look in stats and description
+                                    const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '') + ' ' + (statsSection?.textContent || '');
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const match = deviceRegex.exec(searchText);
+                                    if (match) {
+                                        deviceFound = match[1];
+                                    }
+                                }
+                                
+                                if (deviceFound) {
+                                    foundAtLeastOneDevice = true;
+                                    const deviceLower = deviceFound.toLowerCase();
+                                    
+                                    // Check against preset devices
+                                    const matchesPreset = settings.recordingDevices.some(preset => 
+                                        deviceLower.includes(preset.toLowerCase())
+                                    );
+                                    
+                                    // Check against custom devices
+                                    let matchesCustom = false;
+                                    if (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()) {
+                                        const customDevices = settings.recordingDevicesCustom.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
+                                        matchesCustom = customDevices.some(custom => deviceLower.includes(custom));
+                                    }
+                                    
+                                    // If this activity doesn't match the device filter, don't hide the group
+                                    if (!matchesPreset && !matchesCustom) {
+                                        allActivitiesMatchDevice = false;
+                                    }
+                                } else {
+                                    // If we can't find a device for this activity, don't hide the group
+                                    allActivitiesMatchDevice = false;
+                                }
+                            });
+                            
+                            // Only hide if ALL activities in the group match the device filter AND we found at least one device
+                            if (allActivitiesMatchDevice && foundAtLeastOneDevice) {
+                                shouldHide = true;
+                            }
+                        }
+                    } else {
+                        // For individual activities, use the original logic
+                        let deviceFound = null;
+                        
+                        // First, try to get device from API cache using activity ID
+                        const activityId = activity.id || activity.getAttribute('id')?.replace('feed-entry-', '');
+                        if (activityId && activityDeviceCache.has(activityId)) {
+                            deviceFound = activityDeviceCache.get(activityId);
+                        }
+                        
+                        // If not in cache, try to find device in DOM text (scan once for first device found)
+                        if (!deviceFound) {
+                            const activityText = activity.textContent || '';
+                            const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                            
+                            const match = deviceRegex.exec(activityText);
+                            if (match) {
+                                deviceFound = match[1];
+                            }
+                        }
+                        
+                        // If still no device found, try DOM element lookups
+                        if (!deviceFound) {
+                            const deviceNameEl = activity.querySelector('[data-testid="device"], .device-name, [data-device-name]');
+                            if (deviceNameEl) {
+                                deviceFound = deviceNameEl.textContent?.trim() || null;
+                            }
+                        }
+                        
+                        // If still nothing, search stats section
+                        if (!deviceFound) {
+                            const statsSection = activity.querySelector('[data-testid="activity_stats"], .activity-stats, .stats');
+                            if (statsSection) {
+                                const allText = statsSection.textContent || '';
+                                const deviceMatch = allText.match(/(?:Recorded on|Device|Device:)\s*([^\n,<]+)/);
+                                if (deviceMatch) deviceFound = deviceMatch[1].trim();
+                            }
+                        }
+                        
+                        // Check if the found device matches the filter
+                        if (deviceFound) {
+                            const deviceLower = deviceFound.toLowerCase();
+                            
+                            // Check against preset devices
+                            const matchesPreset = settings.recordingDevices.some(preset => 
+                                deviceLower.includes(preset.toLowerCase())
+                            );
+                            
+                            // Check against custom devices
+                            let matchesCustom = false;
+                            if (settings.recordingDevicesCustom && settings.recordingDevicesCustom.trim()) {
+                                const customDevices = settings.recordingDevicesCustom.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
+                                matchesCustom = customDevices.some(custom => deviceLower.includes(custom));
+                            }
+                            
+                            // Hide if device matches
+                            if (matchesPreset || matchesCustom) {
+                                shouldHide = true;
                             }
                         }
                     }
