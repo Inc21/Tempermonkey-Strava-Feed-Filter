@@ -11,7 +11,7 @@
         (document.head || document.documentElement).appendChild(style);
         return style;
       } catch (e) {
-        console.error('GM_addStyle shim failed:', e);
+        // GM_addStyle shim failed
         return null;
       }
     };
@@ -57,7 +57,7 @@
             try {
                 localStorage.setItem(key, JSON.stringify(value));
             } catch (e) {
-                console.warn('Fallback save to localStorage failed:', e);
+                // Fallback save to localStorage failed
             }
             // Also save to extension storage
             try {
@@ -68,7 +68,7 @@
         }
     };
 
-    console.log('🚀 Clean Filter: Script starting...');
+    // Clean Filter: Script starting
 
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
@@ -717,19 +717,23 @@
         width: 16px !important;
         height: 16px !important;
         min-width: 16px !important;
-        background: #0066cc !important;
-        color: white !important;
+        background: transparent !important;
+        color: #666 !important;
+        border: 1.5px solid #999 !important;
         border-radius: 50% !important;
-        font-size: 12px !important;
+        font-size: 11px !important;
         font-weight: bold !important;
         cursor: help !important;
         user-select: none !important;
         flex-shrink: 0 !important;
         margin-top: 1px !important;
+        font-family: Arial, sans-serif !important;
       }
 
       .sff-info-icon:hover {
-        background: #0052a3 !important;
+        border-color: #555 !important;
+        color: #333 !important;
+        background: rgba(0, 0, 0, 0.03) !important;
       }
 
       .sff-info-box {
@@ -1570,8 +1574,8 @@
         async saveSettings(s) {
             try {
                 await Storage.set(STORAGE_KEY, s);
-            } catch(e) {
-                console.error('Error saving settings:', e);
+            } catch (e) {
+                // Error saving settings
             }
         },
 
@@ -1587,6 +1591,39 @@
         // Page detection
         isOnDashboard() {
             return window.location.pathname === '/dashboard' || window.location.pathname === '/';
+        },
+
+        // Convert pace from min:sec format to decimal minutes
+        // "7:55" -> 7.917, "7.5" -> 7.5, "" -> ""
+        parsePaceInput(value) {
+            if (!value || value.trim() === '') return '';
+            const v = value.trim();
+            
+            // Check if it's in min:sec format (e.g., "7:55")
+            const match = v.match(/^(\d{1,2}):(\d{2})$/);
+            if (match) {
+                const mins = parseInt(match[1], 10);
+                const secs = parseInt(match[2], 10);
+                if (!isNaN(mins) && !isNaN(secs) && secs < 60) {
+                    return mins + (secs / 60);
+                }
+            }
+            
+            // Otherwise treat as decimal number
+            const num = parseFloat(v);
+            return isNaN(num) ? '' : num;
+        },
+
+        // Format pace for display: decimal -> min:sec
+        // 7.917 -> "7:55", 7.5 -> "7:30", "" -> ""
+        formatPaceForDisplay(value) {
+            if (value === '' || value === null || value === undefined) return '';
+            if (typeof value === 'number' && value > 0) {
+                const mins = Math.floor(value);
+                const secs = Math.round((value - mins) * 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            return value.toString();
         },
 
         // Data parsing utilities
@@ -1752,8 +1789,12 @@
             settings.maxMins = getNumOrEmpty('.sff-maxMins');
             settings.minElevM = getNumOrEmpty('.sff-minElevM');
             settings.maxElevM = getNumOrEmpty('.sff-maxElevM');
-            settings.minPace = getNumOrEmpty('.sff-minPace');
-            settings.maxPace = getNumOrEmpty('.sff-maxPace');
+            
+            // Pace: parse min:sec format (e.g., "7:55") or decimal (e.g., "7.92")
+            const minPaceValue = panel.querySelector('.sff-minPace').value.trim();
+            const maxPaceValue = panel.querySelector('.sff-maxPace').value.trim();
+            settings.minPace = UtilsModule.parsePaceInput(minPaceValue);
+            settings.maxPace = UtilsModule.parsePaceInput(maxPaceValue);
             settings.unitSystem = panel.querySelector('.sff-unit-btn.active').dataset.unit;
             settings.hideNoMap = panel.querySelector('.sff-hideNoMap').checked;
             settings.hideClubPosts = panel.querySelector('.sff-hideClubPosts').checked;
@@ -1798,11 +1839,11 @@
             }
 
             UtilsModule.saveSettings(settings);
-            console.log('💾 Settings saved:', settings);
+            // Settings saved
         },
 
         createElements() {
-            console.log('🔧 Clean Filter: Creating elements...');
+            // Clean Filter: Creating elements
 
             // Remove existing
             document.querySelectorAll('.sff-clean-btn, .sff-clean-panel, .sff-secondary-nav').forEach(el => el.remove());
@@ -1875,7 +1916,7 @@
             document.body.appendChild(btn);
             document.body.appendChild(panel);
 
-            console.log('✅ Clean Filter: Elements added');
+            // Clean Filter: Elements added
 
             // Get secondary elements (we're only on dashboard at this point)
             const secondaryFilterBtn = document.querySelector('.sff-secondary-filter-btn');
@@ -1892,7 +1933,7 @@
                 const shouldShow = settings.enabled && settings.showKudosButton;
                 // Use setProperty with !important to override CSS rules
                 secondaryKudosBtn.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
-                console.log('🔄 Secondary kudos button visibility updated:', shouldShow ? 'visible' : 'hidden');
+                // Secondary kudos button visibility updated
             }
         },
 
@@ -1916,7 +1957,7 @@
         },
 
         _createNotificationBell() {
-            console.log('🔔 Creating notification bell with JSON endpoint');
+            // Creating notification bell
             
             const button = document.createElement('button');
             button.className = 'sff-notification-bell';
@@ -1978,12 +2019,12 @@
         
         async markAllNotificationsAsRead(button) {
             try {
-                console.log('📬 Marking all notifications as read...');
+                // Marking all notifications as read
                 
                 // Get CSRF token from meta tag
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 if (!csrfToken) {
-                    console.warn('⚠️ No CSRF token found');
+                    // No CSRF token found
                     return;
                 }
                 
@@ -1999,10 +2040,10 @@
                     }
                 });
                 
-                console.log('📡 Mark-all-read response status:', response.status);
+                // Mark-all-read response
                 
                 if (response.ok) {
-                    console.log('✅ All notifications marked as read');
+                    // All notifications marked as read
                     // Update badge to show 0
                     const badge = button.querySelector('.sff-notification-badge');
                     if (badge) {
@@ -2011,12 +2052,11 @@
                     }
                     button.title = 'Notifications';
                 } else {
-                    console.warn('⚠️ Failed to mark all as read:', response.status);
+                    // Failed to mark all as read
                     const text = await response.text();
-                    console.warn('Response:', text.substring(0, 200));
                 }
             } catch (error) {
-                console.error('❌ Error marking all as read:', error);
+                // Error marking all as read
             }
         },
         
@@ -2063,35 +2103,29 @@
                 });
                 
                 if (!response.ok) {
-                    console.warn('⚠️ Failed to fetch notifications for badge:', response.status);
                     return;
                 }
                 
                 const data = await response.json();
-                console.log('✅ Badge data received:', data.length, 'notifications');
                 
                 // More robust unread check - handle both boolean and string values
                 const unreadCount = data.filter(item => item.read === false || item.read === 'false' || !item.read).length;
-                console.log('📊 Unread count:', unreadCount);
                 
                 const badge = button.querySelector('.sff-notification-badge');
                 if (badge) {
                     badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-                    console.log('🔴 Setting badge text to:', badge.textContent);
                     if (unreadCount > 0) {
                         badge.classList.add('show');
-                        console.log('🔴 Badge should now be visible');
                     } else {
                         badge.classList.remove('show');
-                        console.log('⚪ Badge hidden (no unread)');
                     }  
                 } else {
-                    console.error('❌ Badge element not found!');
+                    // Badge element not found
                 }
                 
                 button.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Notifications';
             } catch (error) {
-                console.error('❌ Error updating notification badge:', error);
+                // Error updating notification badge
             }
         },
 
@@ -2103,7 +2137,6 @@
             listContainer.innerHTML = '<div class="sff-notification-loading">Loading notifications...</div>';
             
             try {
-                console.log('📡 Fetching notifications from: /frontend/athlete/notifications');
                 
                 const response = await fetch('/frontend/athlete/notifications', {
                     credentials: 'same-origin',
@@ -2113,26 +2146,19 @@
                     }
                 });
                 
-                console.log('📡 Response status:', response.status);
-                
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('❌ Response error:', errorText.substring(0, 500));
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const contentType = response.headers.get('content-type');
-                console.log('📡 Content-Type:', contentType);
                 
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
-                    console.error('❌ Not JSON response:', text.substring(0, 200));
                     throw new Error('Response is not JSON');
                 }
                 
                 const data = await response.json();
-                console.log(`✅ Fetched ${data.length} notifications`);
-                console.log('📋 Sample notification:', data[0]);
                 
                 if (data.length === 0) {
                     listContainer.innerHTML = '<div class="sff-notification-empty">No notifications</div>';
@@ -2141,7 +2167,6 @@
                 
                 // Count unread - more robust check
                 const unreadCount = data.filter(item => item.read === false || item.read === 'false' || !item.read).length;
-                console.log(`📊 Unread count: ${unreadCount}`);
                 
                 // Update badge
                 if (badge) {
@@ -2185,8 +2210,7 @@
                 });
                 
             } catch (error) {
-                console.error('❌ Error fetching notifications:', error);
-                console.error('❌ Error stack:', error.stack);
+                // Error fetching notifications
                 listContainer.innerHTML = `
                     <div class="sff-notification-error">
                         Error loading notifications.<br>
@@ -2397,8 +2421,8 @@
                             <div class="sff-row">
                                 <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
                                 <div class="sff-input-group">
-                                    <input type="number" class="sff-input sff-minPace" min="0" step="0.1" value="${settings.minPace}" placeholder="Min (Slowest)">
-                                    <input type="number" class="sff-input sff-maxPace" min="0" step="0.1" value="${settings.maxPace}" placeholder="Max (Fastest)">
+                                    <input type="text" class="sff-input sff-minPace" value="${UtilsModule.formatPaceForDisplay(settings.minPace)}" placeholder="e.g. 7:55 (slowest)" pattern="^(\d{1,2}:\d{2}|\d+\.?\d*)$">
+                                    <input type="text" class="sff-input sff-maxPace" value="${UtilsModule.formatPaceForDisplay(settings.maxPace)}" placeholder="e.g. 4:30 (fastest)" pattern="^(\d{1,2}:\d{2}|\d+\.?\d*)$">
                                 </div>
                             </div>
                         </div>
@@ -2530,7 +2554,7 @@
                                 <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
                                 Hide "Give a Gift" button
                             </label>
-                            <span class="sff-info-icon" data-info="Hides the orange 'Give a Gift' button from the header navigation.">ℹ</span>
+                            <span class="sff-info-icon" data-info="Removes the orange 'Give a Gift' subscription button from the top navigation bar on all Strava pages. Helps reduce visual clutter and distractions.">?</span>
                         </div>
                     </div>
                     
@@ -2540,7 +2564,7 @@
                                 <input type="checkbox" class="sff-hideStartTrial" ${settings.hideStartTrial ? 'checked' : ''}>
                                 Hide "Start Trial" button
                             </label>
-                            <span class="sff-info-icon" data-info="Hides the orange 'Start Trial' subscription button from the header navigation.">ℹ</span>
+                            <span class="sff-info-icon" data-info="Removes the orange 'Start Trial' button from the header navigation. Useful if you're on a free account and don't want constant upgrade prompts.">?</span>
                         </div>
                     </div>
                     
@@ -2550,7 +2574,7 @@
                                 <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
                                 Show "Give 👍 to Everyone" button
                             </label>
-                            <span class="sff-info-icon" data-info="Adds a button to the header to give kudos to all visible activities.">ℹ</span>
+                            <span class="sff-info-icon" data-info="Adds a convenient button to the header that automatically gives kudos to all currently visible activities on your feed. Great for quickly supporting your friends!">?</span>
                         </div>
                     </div>
                     
@@ -2560,7 +2584,7 @@
                                 <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
                                 Show notifications bell (mobile)
                             </label>
-                            <span class="sff-info-icon" data-info="Displays a notification bell on mobile screens (≤990px) to view your Strava notifications.">ℹ</span>
+                            <span class="sff-info-icon" data-info="Displays a notification bell icon on mobile screens (≤990px width) so you can easily check your Strava notifications without navigating away from the feed.">?</span>
                         </div>
                     </div>
                     
@@ -2573,7 +2597,7 @@
                             <label class="sff-chip">
                                 Show "Show more stats" button
                             </label>
-                            <span class="sff-info-icon" data-info="Controls when the extra stats button appears on each activity.">ℹ</span>
+                            <span class="sff-info-icon" data-info="Shows a 'Show more stats' button on each activity that opens detailed statistics directly on the current page. No need to navigate away - your feed position is preserved! Perfect for quickly viewing pace, heart rate, power data, and more without losing your place.">?</span>
                         </div>
                         <select class="sff-seeMoreMode" style="margin-left: 22px; padding: 4px 8px; font-size: 13px;">
                             <option value="always" ${settings.seeMoreButtonMode === 'always' ? 'selected' : ''}>Always show</option>
@@ -2586,7 +2610,7 @@
                     
                     <div class="sff-label-with-info">
                         <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Backup & Restore</h4>
-                        <span class="sff-info-icon" data-info="Export your configuration to back it up, or import a previously saved backup to restore your settings.">ℹ</span>
+                        <span class="sff-info-icon" data-info="Save your current filter settings to a JSON file as a backup, or restore previously saved settings. Useful for syncing preferences across devices or recovering your configuration after a browser reset.">?</span>
                     </div>
                     <button class="sff-settings-btn sff-action-export">Export Settings</button>
                     <button class="sff-settings-btn sff-action-import">Import Settings</button>
@@ -2596,14 +2620,14 @@
                     
                     <div class="sff-label-with-info">
                         <button class="sff-settings-btn danger sff-action-reset">Reset to Defaults</button>
-                        <span class="sff-info-icon" data-info="Restore all settings to their default values. This action cannot be undone.">ℹ</span>
+                        <span class="sff-info-icon" data-info="Clears all your custom settings and returns everything to default values. This will remove all keywords, athlete lists, filter criteria, and preferences. This action cannot be undone - consider exporting your settings first!">?</span>
                     </div>
                 </div>
             `;
         },
 
         setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
-            console.log('🎯 Clean Filter: Setting up events...');
+            // Clean Filter: Setting up events
 
             // --- New Settings UI Events ---
             const settingsToggle = panel.querySelector('.sff-settings-toggle');
@@ -2663,8 +2687,8 @@
                     URL.revokeObjectURL(url);
                     
                     UIModule.showToast(panel, 'Settings exported successfully!', 'success');
-                } catch(e) {
-                    console.error('Export failed:', e);
+                } catch (e) {
+                    // Export failed
                     UIModule.showToast(panel, 'Export failed. See console.', 'error');
                 }
             });
@@ -2699,8 +2723,8 @@
                         setTimeout(() => {
                             location.reload();
                         }, 1500);
-                    } catch(err) {
-                        console.error('Import error:', err);
+                    } catch (err) {
+                        // Import error
                         UIModule.showToast(panel, 'Import failed: Invalid file.', 'error');
                     }
                 };
@@ -2723,6 +2747,21 @@
             });
             // -----------------------------
 
+            // Real-time pace input formatting
+            const paceInputs = panel.querySelectorAll('.sff-minPace, .sff-maxPace');
+            paceInputs.forEach(input => {
+                input.addEventListener('blur', (e) => {
+                    const value = e.target.value.trim();
+                    if (!value) return;
+                    
+                    // Simply replace . with : for easier typing
+                    // e.g., "5.31" -> "5:31" (not decimal conversion)
+                    if (value.includes('.') && !value.includes(':')) {
+                        e.target.value = value.replace('.', ':');
+                    }
+                });
+            });
+
             // Set dynamic version from manifest
             try {
                 const versionEl = panel.querySelector('#sff-version');
@@ -2738,7 +2777,7 @@
                     }
                 }
             } catch (error) {
-                console.log('Could not get manifest version:', error);
+                // Could not get manifest version
             }
 
             // Track if we're currently resizing to prevent click-outside from firing
@@ -2808,10 +2847,10 @@
             // Toggle panel function
             const togglePanel = () => {
                 const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
-                console.log('🔄 Toggle panel called. Currently visible:', isVisible);
+                // Toggle panel called
 
                 if (!isVisible) {
-                    console.log('📁 Showing panel...');
+                    // Showing panel
                     // Close all dropdowns before showing the panel
                     panel.querySelectorAll('.sff-dropdown.open').forEach(dropdown => {
                         dropdown.classList.remove('open');
@@ -2836,14 +2875,14 @@
 
                     // Ensure panel stays within viewport after positioning
                     this.keepInViewport(panel);
-                    console.log('✅ Panel should now be visible');
+                    // Panel should now be visible
 
                     // Add click outside handler
                     setTimeout(() => {
                         document.addEventListener('click', handleClickOutside);
                     }, 0);
                 } else {
-                    console.log('😫 Hiding panel...');
+                    // Hiding panel
                     // Hide panel
                     panel.classList.remove('show');
                     panel.style.opacity = '0';
@@ -2861,7 +2900,6 @@
 
             // Toggle panel on button click
             btn.addEventListener('click', (e) => {
-                console.log('🔥 Filter button clicked!');
                 e.stopPropagation();
                 togglePanel();
             });
@@ -2869,7 +2907,6 @@
             // Setup secondary filter button event (only if exists)
             if (secondaryFilterBtn) {
                 secondaryFilterBtn.addEventListener('click', (e) => {
-                    console.log('🔥 Secondary filter button clicked!');
                     e.stopPropagation();
                     togglePanel();
                 });
@@ -3122,7 +3159,7 @@
                     const shouldCheck = button.dataset.action === 'select-all';
                     const checkboxes = [...panel.querySelectorAll('.sff-types input[type="checkbox"][data-typ]')];
                     if (!checkboxes.length) {
-                        console.warn('⚠️ No activity type checkboxes found for bulk toggle');
+                        // No activity type checkboxes found for bulk toggle
                         return;
                     }
 
@@ -3151,7 +3188,7 @@
                     const shouldCheck = button.dataset.action === 'select-all';
                     const checkboxes = [...panel.querySelectorAll('.sff-devices input[type="checkbox"][data-device]')];
                     if (!checkboxes.length) {
-                        console.warn('⚠️ No recording device checkboxes found for bulk toggle');
+                        // No recording device checkboxes found for bulk toggle
                         return;
                     }
 
@@ -3233,7 +3270,7 @@
 
             // Apply button
             panel.querySelector('.sff-save').addEventListener('click', async () => {
-                console.log('💾 Applying and refreshing...');
+                // Applying and refreshing
                 this.applySettings(panel);
                 try {
                     await UtilsModule.saveSettings(settings);
@@ -3261,7 +3298,7 @@
             this.updateActivityCount(panel);
             this.updateFilterLabels(panel, settings.unitSystem);
 
-            console.log('✅ Events attached');
+            // Events attached
 
             // Return cleanup function for when the script is unloaded
             return () => {
@@ -3643,7 +3680,7 @@
                     }
                 });
             } catch (e) {
-                console.warn('updateJoinedChallengesVisibility error:', e);
+                // updateJoinedChallengesVisibility error
             }
         },
         updateGiftVisibility() {
@@ -3661,7 +3698,7 @@
                     }
                 });
             } catch (e) {
-                console.warn('updateGiftVisibility error:', e);
+                // updateGiftVisibility error
             }
         },
 
@@ -3684,7 +3721,7 @@
                     }
                 });
             } catch (e) {
-                console.warn('updateStartTrialVisibility error:', e);
+                // updateStartTrialVisibility error
             }
         },
 
@@ -3703,7 +3740,7 @@
                     }
                 }
             } catch (e) {
-                console.warn('updateChallengesVisibility error:', e);
+                // updateChallengesVisibility error
             }
         },
 
@@ -3722,7 +3759,7 @@
                     }
                 }
             } catch (e) {
-                console.warn('updateSuggestedFriendsVisibility error:', e);
+                // updateSuggestedFriendsVisibility error
             }
         },
 
@@ -3741,7 +3778,7 @@
                     }
                 }
             } catch (e) {
-                console.warn('updateYourClubsVisibility error:', e);
+                // updateYourClubsVisibility error
             }
         },
 
@@ -3773,14 +3810,13 @@
                     delete footerSection.dataset.sffHiddenBy;
                 }
             } catch (e) {
-                console.warn('updateFooterVisibility error:', e);
+                // updateFooterVisibility error
             }
         },
 
         updateMyWindsockVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for myWindsock content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain myWindsock content
@@ -3790,12 +3826,10 @@
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains the myWindsock report and not other content
                         if (text.includes('-- myWindsock Report --') && text.length < 500) { // Limit to avoid hiding large containers
-                            console.log('🔮 Found myWindsock content in text element:', element);
                             if (settings.enabled && settings.hideMyWindsock) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🔮 myWindsock text content hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3805,14 +3839,13 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateMyWindsockVisibility error:', e);
+                // updateMyWindsockVisibility error
             }
         },
 
         updateWandrerVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for Wandrer content`);
 
                 activities.forEach(activity => {
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
@@ -3834,14 +3867,13 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateWandrerVisibility error:', e);
+                // updateWandrerVisibility error
             }
         },
 
         updateSummitbagVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for summitbag content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain summitbag content
@@ -3851,12 +3883,10 @@
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains summitbag and not other content
                         if (text.includes('summitbag.com') && text.length < 500) { // Limit to avoid hiding large containers
-                            console.log('🏔️ Found summitbag content in text element:', element);
                             if (settings.enabled && settings.hideSummitbag) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🏔️ summitbag text content hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3866,7 +3896,7 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateSummitbagVisibility error:', e);
+                // updateSummitbagVisibility error
             }
         },
 
@@ -3886,7 +3916,6 @@
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🎯 Bandok.com description hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3896,7 +3925,7 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateBandokVisibility error:', e);
+                // updateBandokVisibility error
             }
         },
 
@@ -3909,14 +3938,13 @@
 
                     textElements.forEach(element => {
                         const text = element.textContent?.trim() || '';
-                        // Match "-- from COROS" or similar patterns
-                        const hasCoros = /--\s*from\s+coros/i.test(text) || /--\s*coros/i.test(text);
+                        // Match "-- from COROS" (English), "-- von COROS" (German), or similar patterns
+                        const hasCoros = /--\s*(from|von)\s+coros/i.test(text) || /--\s*coros/i.test(text);
                         if (hasCoros && text.length < 500) {
                             if (settings.enabled && settings.hideCoros) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('⌚ COROS description hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3926,14 +3954,13 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateCorosVisibility error:', e);
+                // updateCorosVisibility error
             }
         },
 
         updateRunHealthVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for Run Health content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain Run Health content
@@ -3943,12 +3970,10 @@
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains Run Health and not other content
                         if (text.includes('www.myTF.run') && text.length < 500) { // Limit to avoid hiding large containers
-                            console.log('🏃 Found Run Health content in text element:', element);
                             if (settings.enabled && settings.hideRunHealth) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🏃 Run Health text content hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3958,14 +3983,13 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateRunHealthVisibility error:', e);
+                // updateRunHealthVisibility error
             }
         },
 
         updateJoinWorkoutVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for JOIN workout content`);
 
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain JOIN workout content
@@ -3976,12 +4000,10 @@
                         // Detect JOIN workout embeds
                         const hasJoin = /\bJOIN workout\b/i.test(text) || text.includes('strava.com/clubs/join-cycling');
                         if (hasJoin && text.length < 800) { // Limit to avoid hiding large containers
-                            console.log('🧩 Found JOIN workout content in text element:', element);
                             if (settings.enabled && settings.hideJoinWorkout) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🧩 JOIN workout text content hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -3991,14 +4013,13 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateJoinWorkoutVisibility error:', e);
+                // updateJoinWorkoutVisibility error
             }
         },
 
         updateCoachCatVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                console.log(`🔍 Checking ${activities.length} activities for CoachCat content`);
 
                 activities.forEach(activity => {
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
@@ -4007,12 +4028,10 @@
                         const text = element.textContent?.trim() || '';
                         const hasCoachCat = /\bCoachCat Training Summary\b/i.test(text) || text.includes('fascatcoaching.com/app');
                         if (hasCoachCat && text.length < 800) {
-                            console.log('🐱 Found CoachCat content in text element:', element);
                             if (settings.enabled && settings.hideCoachCat) {
                                 if (element.dataset.sffHiddenBy !== 'sff') {
                                     element.dataset.sffHiddenBy = 'sff';
                                     element.style.display = 'none';
-                                    console.log('🐱 CoachCat text content hidden:', element);
                                 }
                             } else if (element.dataset.sffHiddenBy === 'sff') {
                                 element.style.display = '';
@@ -4022,7 +4041,7 @@
                     });
                 });
             } catch (e) {
-                console.warn('updateCoachCatVisibility error:', e);
+                // updateCoachCatVisibility error
             }
         },
 
@@ -4059,7 +4078,6 @@
                         if (container.dataset.sffHiddenJoinedClub !== 'sff') {
                             container.dataset.sffHiddenJoinedClub = 'sff';
                             container.style.setProperty('display', 'none', 'important');
-                            console.log('🙅 Hiding "Athlete joined a club" entry:', container);
                         }
                     } else if (container.dataset.sffHiddenJoinedClub === 'sff') {
                         container.style.removeProperty('display');
@@ -4067,7 +4085,7 @@
                     }
                 });
             } catch (e) {
-                console.warn('updateAthleteJoinedClubVisibility error:', e);
+                // updateAthleteJoinedClubVisibility error
             }
         },
 
@@ -4483,7 +4501,7 @@
                 }
             });
 
-            console.log(`🎯 Filtered ${hiddenCount}/${activities.length} activities`);
+            // Filtered activities
             const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
             const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
             if (btn) btn.textContent = `(${hiddenCount})`;
@@ -4493,7 +4511,7 @@
             try {
                 this.manageSeeMoreButtons();
             } catch (e) {
-                console.error('manageSeeMoreButtons error:', e);
+                // manageSeeMoreButtons error
             }
         },
 
@@ -4591,7 +4609,7 @@
                     this.updateAthleteJoinedClubVisibility();
                     this.manageSeeMoreButtons();
                 } catch (e) {
-                    console.error('Auto-filter error:', e);
+                    // Auto-filter error
                 }
             }, 250);
 
@@ -4791,7 +4809,7 @@
                         seeMoreBtn.disabled = true;
                         
                         try {
-                            const stats = await this.fetchActivityStats(activityId);
+                            const stats = await this.fetchActivityStats(activityId, activity);
                             const statsContainer = this.displayExpandedStats(activity, stats);
                             
                             if (statsContainer) {
@@ -4806,7 +4824,7 @@
                                 }, 2000);
                             }
                         } catch (error) {
-                            console.error('Failed to fetch activity stats:', error);
+                            // Failed to fetch activity stats
                             seeMoreBtn.textContent = 'Error - Try again';
                         } finally {
                             seeMoreBtn.disabled = false;
@@ -4816,7 +4834,7 @@
             });
         },
 
-        async fetchActivityStats(activityId) {
+        async fetchActivityStats(activityId, activityElement) {
             const response = await fetch(`/activities/${activityId}`);
             if (!response.ok) throw new Error('Failed to fetch activity');
             
@@ -4825,6 +4843,32 @@
             const doc = parser.parseFromString(html, 'text/html');
             
             const stats = {};
+            
+            // Extract start time from feed element if provided
+            if (activityElement) {
+                const timeEl = activityElement.querySelector('time[data-testid="date_at_time"]');
+                if (timeEl) {
+                    // Use the displayed text (respects user's 12h/24h preference)
+                    const displayTime = timeEl.textContent?.trim();
+                    if (displayTime) {
+                        stats['__ActivityStart'] = displayTime;
+                        
+                        // Try to get datetime attribute for calculation, or parse the display text
+                        let datetime = timeEl.getAttribute('datetime');
+                        if (!datetime) {
+                            // Parse the display text to create a Date object
+                            datetime = this.parseDisplayTimeToISO(displayTime);
+                        }
+                        
+                        if (datetime) {
+                            const startDate = new Date(datetime);
+                            if (!isNaN(startDate.getTime())) {
+                                stats['__ActivityStartDate'] = startDate;
+                            }
+                        }
+                    }
+                }
+            }
             
             // Method 1: Extract from inline-stats (ul li structure)
             doc.querySelectorAll('.inline-stats li').forEach(li => {
@@ -4949,6 +4993,62 @@
                 }
             }
 
+            // Calculate end time if we have start date and elapsed time
+            if (stats['__ActivityStartDate'] && stats['Elapsed Time']) {
+                const elapsedSeconds = this.parseTimeToSeconds(stats['Elapsed Time']);
+                if (elapsedSeconds !== null) {
+                    const endDate = new Date(stats['__ActivityStartDate'].getTime() + elapsedSeconds * 1000);
+                    
+                    // Format end time to match start time format
+                    const startDisplay = stats['__ActivityStart'];
+                    if (startDisplay) {
+                        // Check if it's 12h or 24h format based on AM/PM presence
+                        const is12Hour = /AM|PM/i.test(startDisplay);
+                        
+                        const timeOptions = {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: is12Hour
+                        };
+                        
+                        // Check if date is included (e.g., "Today at" vs just time)
+                        const hasDate = /today|yesterday|\d{1,2}\s+\w+/i.test(startDisplay);
+                        
+                        let endFormatted;
+                        if (hasDate) {
+                            // Include date in format
+                            const dateOptions = {
+                                month: 'short',
+                                day: 'numeric',
+                                ...timeOptions
+                            };
+                            
+                            // Check if same day
+                            const startDate = stats['__ActivityStartDate'];
+                            const sameDay = startDate.getDate() === endDate.getDate() && 
+                                          startDate.getMonth() === endDate.getMonth() && 
+                                          startDate.getFullYear() === endDate.getFullYear();
+                            
+                            if (sameDay) {
+                                // Same day, just show time
+                                endFormatted = endDate.toLocaleTimeString([], timeOptions);
+                            } else {
+                                // Different day, show full date
+                                endFormatted = endDate.toLocaleString([], dateOptions);
+                            }
+                        } else {
+                            // Just time
+                            endFormatted = endDate.toLocaleTimeString([], timeOptions);
+                        }
+                        
+                        stats['__ActivityEnd'] = endFormatted;
+                    }
+                }
+            }
+            
+            // Clean up the temp date object
+            delete stats['__ActivityStartDate'];
+
             return stats;
         },
 
@@ -4988,7 +5088,10 @@
                     statsHTML += '<div class="sff-stat-item">';
                     statsHTML += `<span class="sff-stat-label">${stat.label}</span>`;
                     
-                    if (stat.avg && stat.max) {
+                    if (stat.start && stat.end) {
+                        statsHTML += `<span class="sff-stat-value"><b>Start:</b> ${stat.start}</span>`;
+                        statsHTML += `<span class="sff-stat-subvalue"><b>End:</b> ${stat.end}</span>`;
+                    } else if (stat.avg && stat.max) {
                         statsHTML += `<span class="sff-stat-value"><b>Avg:</b> ${stat.avg}</span>`;
                         statsHTML += `<span class="sff-stat-subvalue"><b>Max:</b> ${stat.max}</span>`;
                     } else {
@@ -5000,7 +5103,39 @@
             });
             
             statsHTML += '</div>';
+            
+            // Add a "Hide stats" button at the bottom
+            statsHTML += '<div style="text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">';
+            statsHTML += '<button class="sff-hide-stats-btn" style="padding: 6px 16px; background: #fc4c02; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">Hide stats</button>';
+            statsHTML += '</div>';
+            
             statsContainer.innerHTML = statsHTML;
+            
+            // Add click handler for the hide button
+            const hideBtn = statsContainer.querySelector('.sff-hide-stats-btn');
+            if (hideBtn) {
+                hideBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // Calculate stats container height to scroll back up by that amount
+                    const statsHeight = statsContainer.offsetHeight;
+                    
+                    // Scroll up by the stats height
+                    window.scrollBy({
+                        top: -statsHeight,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Small delay to allow smooth scroll, then collapse
+                    setTimeout(() => {
+                        const seeMoreBtn = activity.querySelector('.sff-see-more-btn');
+                        if (seeMoreBtn) {
+                            seeMoreBtn.click();
+                        }
+                    }, 300);
+                });
+            }
 
             // Find the best insertion point
             const achievementSummary = activity.querySelector('[data-testid="achievement_summary"]');
@@ -5047,6 +5182,12 @@
             // Extract and store weather icon separately
             const weatherIcon = filtered['__weatherIcon'];
             delete filtered['__weatherIcon'];
+            
+            // Extract Activity Start and End times
+            const activityStart = filtered['__ActivityStart'];
+            const activityEnd = filtered['__ActivityEnd'];
+            delete filtered['__ActivityStart'];
+            delete filtered['__ActivityEnd'];
             
             // Extract weather condition for header
             let weatherCondition = null;
@@ -5175,6 +5316,15 @@
             
             // Add time stats at the beginning
             organized.unshift(...timeStats);
+            
+            // Add Time of Day as THE FIRST stat if we have both start and end
+            if (activityStart && activityEnd) {
+                organized.unshift({
+                    label: 'Time of Day',
+                    start: activityStart,
+                    end: activityEnd
+                });
+            }
 
             // Add weather section
             if (weatherStats.length > 0) {
@@ -5238,7 +5388,51 @@
             if (secs > 0 || result === '') result += `${secs}s`;
             
             return result.trim();
-        }
+        },
+        
+        parseDisplayTimeToISO(displayTime) {
+            // Parse Strava's display time formats like "Today at 18:48" or "Today at 6:48 PM"
+            const now = new Date();
+            let targetDate = new Date(now);
+            const atIndex = displayTime.indexOf(' at ');
+            if (atIndex === -1) return null;
+            const datePart = displayTime.substring(0, atIndex).trim();
+            const timePart = displayTime.substring(atIndex + 4).trim();
+            if (datePart.toLowerCase() === 'today') {
+                targetDate = new Date(now);
+            } else if (datePart.toLowerCase() === 'yesterday') {
+                targetDate = new Date(now);
+                targetDate.setDate(targetDate.getDate() - 1);
+            } else {
+                const yearNow = now.getFullYear();
+                const parsedDate = new Date(datePart + ' ' + yearNow);
+                if (!isNaN(parsedDate.getTime())) {
+                    targetDate = parsedDate;
+                } else {
+                    return null;
+                }
+            }
+            let hours, minutes;
+            const isPM = /PM/i.test(timePart);
+            const isAM = /AM/i.test(timePart);
+            if (isPM || isAM) {
+                const timeOnly = timePart.replace(/\s*(AM|PM)/i, '').trim();
+                const [h, m] = timeOnly.split(':').map(p => parseInt(p, 10));
+                hours = h;
+                minutes = m;
+                if (isPM && hours !== 12) {
+                    hours += 12;
+                } else if (isAM && hours === 12) {
+                    hours = 0;
+                }
+            } else {
+                const [h, m] = timePart.split(':').map(p => parseInt(p, 10));
+                hours = h;
+                minutes = m;
+            }
+            targetDate.setHours(hours, minutes, 0, 0);
+            return targetDate.toISOString();
+        },
     };
 
     // Initialize utilities and update settings references
@@ -5315,19 +5509,40 @@
         // Store observer for cleanup if needed
         window.__sffGlobalObserver = observer;
 
+        // Performance: Disconnect global observer when user is inactive for better battery life
+        let inactivityTimer;
+        const handleActivity = () => {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            if (!observer) return;
+            // Reconnect if disconnected
+            try {
+                observer.observe(document.body, { childList: true, subtree: true });
+            } catch (e) {
+                // Already observing
+            }
+            // Disconnect after 5 minutes of inactivity to reduce CPU usage
+            inactivityTimer = setTimeout(() => {
+                if (observer) observer.disconnect();
+            }, 300000); // 5 minutes
+        };
+        ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, handleActivity, { passive: true, once: false });
+        });
+        handleActivity(); // Start timer
+
         // Popup-based controls are handled via browser action; no content panel needed
     }
 
     // Initialize
-    async function init() {
-        console.log('🔧 Clean Filter: Initializing...');
+    (async function init() {
+        // Clean Filter: Initializing
 
         // Load settings before any feature uses them
         if (!settings) {
             try {
                 settings = await UtilsModule.loadSettings();
             } catch (e) {
-                console.error('Failed to load settings, using defaults:', e);
+                // Failed to load settings, using defaults
                 settings = { ...DEFAULTS };
             }
         }
@@ -5352,7 +5567,7 @@
             LogicModule.filterActivities();
             LogicModule.setupAutoFilter();
         }
-    }
+    })();
 
     // Listen for popup toggle messages to enable/disable and re-apply filters
     try {
@@ -5385,7 +5600,7 @@
                     // Reload the page to apply new settings
                     location.reload();
                 }).catch(e => {
-                    console.error('Failed to reload settings:', e);
+                    // Failed to reload settings
                     location.reload(); // Reload anyway
                 });
             }
@@ -5398,13 +5613,7 @@
             browser.runtime.onMessage.addListener(messageHandler);
         }
     } catch (e) {
-        console.warn('Failed to attach runtime message listener:', e);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+        // Failed to attach runtime message listener
     }
 
     // Handle navigation changes in SPA
@@ -5441,7 +5650,7 @@
     // Check for page changes periodically
     setInterval(checkPageChange, 500);
 
-    console.log('✅ Clean Filter: Setup complete');
+    // Clean Filter: Setup complete
 
 })();
 // ===== End original script body =====
