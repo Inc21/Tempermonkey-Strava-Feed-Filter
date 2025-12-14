@@ -1,7 +1,9 @@
 // Strava Feed Filter - injected page script for Firefox WebExtension
 // This is derived from userscript/userscript/strava-feed-filter-clean.js (header removed)
 // A small GM_addStyle shim is provided so existing CSS injection works.
+
 (function() {
+  // console.log('SFF: IIFE started');
   if (typeof window.GM_addStyle !== 'function') {
     window.GM_addStyle = function(cssText) {
       try {
@@ -34,41 +36,53 @@
     const ext = (typeof browser !== 'undefined') ? browser : (typeof chrome !== 'undefined' ? chrome : null);
     const Storage = {
         async get(key, defaults) {
+            // console.log('SFF: Storage.get called with key:', key);
             try {
                 if (ext && ext.storage && ext.storage.local) {
+                    // console.log('SFF: Using extension storage, ext type:', typeof ext);
                     // Race against a timeout to avoid hanging if the background service worker is asleep
                     const p = ext.storage.local.get(key);
                     const timeout = new Promise((_, reject) => setTimeout(() => reject('timeout'), 300));
                     const obj = await Promise.race([p, timeout]);
+                    // console.log('SFF: Extension storage result:', obj);
                     return (obj && Object.prototype.hasOwnProperty.call(obj, key)) ? obj[key] : defaults;
                 }
             } catch (e) {
+                // console.error('SFF: Extension storage error, falling back to localStorage', e);
                 // Fallback to localStorage on timeout or error
             }
             try {
                 const raw = localStorage.getItem(key);
+                // console.log('SFF: localStorage result:', raw);
                 return raw ? JSON.parse(raw) : defaults;
-            } catch (_) {
+            } catch (e) {
+                // console.error('SFF: localStorage error', e);
                 return defaults;
             }
         },
         async set(key, value) {
+            // console.log('SFF: Storage.set called with key:', key, 'value:', value);
             // Always save to localStorage as a synchronous fallback cache
             try {
                 localStorage.setItem(key, JSON.stringify(value));
             } catch (e) {
+                // console.error('SFF: localStorage set error', e);
                 // Fallback save to localStorage failed
             }
             // Also save to extension storage
             try {
                 if (ext && ext.storage && ext.storage.local) {
+                    // console.log('SFF: Setting in extension storage');
                     await ext.storage.local.set({ [key]: value });
                 }
-            } catch (_) {}
+            } catch (e) {
+                // console.error('SFF: Extension storage set error', e);
+            }
         }
     };
 
     // Clean Filter: Script starting
+    console.log('SFF: Script starting');
 
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
@@ -1534,8 +1548,11 @@
     const UtilsModule = {
         // Settings management
         async loadSettings() {
+            // console.log('SFF: UtilsModule.loadSettings called');
             const s = await Storage.get(STORAGE_KEY, DEFAULTS);
+            // console.log('SFF: Raw settings from storage:', s);
             const merged = { ...DEFAULTS, ...(s || {}) };
+            // console.log('SFF: Merged settings:', merged);
             // Migration: convert stored zeros to empty strings so placeholders show
             const numKeys = ['minKm','maxKm','minMins','maxMins','minElevM','maxElevM','minPace','maxPace'];
             for (const k of numKeys) {
@@ -1551,6 +1568,7 @@
                 }
             }
 
+            // console.log('SFF: Final settings:', merged);
             return merged;
         },
 
@@ -1573,7 +1591,15 @@
 
         // Page detection
         isOnDashboard() {
-            return window.location.pathname === '/dashboard' || window.location.pathname === '/';
+            const path = window.location.pathname;
+            // console.log('SFF: Checking if on dashboard, path:', path);
+            // More comprehensive dashboard detection
+            const isDashboard = path === '/dashboard' || path === '/' || 
+                              path.startsWith('/dashboard/') || path.startsWith('/home') ||
+                              // Some users might land on these pages that should also be considered dashboard
+                              path.includes('feed') || path.includes('activities');
+            // console.log('SFF: isOnDashboard result:', isDashboard);
+            return isDashboard;
         },
 
         // Convert pace from min:sec format to decimal minutes
@@ -2546,7 +2572,7 @@
                     
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Header Settings</h4>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
@@ -2556,7 +2582,7 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.hideStartTrial ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideStartTrial" ${settings.hideStartTrial ? 'checked' : ''}>
@@ -2566,7 +2592,7 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
@@ -2576,7 +2602,7 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
@@ -2590,7 +2616,7 @@
                     
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Activity Settings</h4>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip">
                                 Show "Show more stats" button
@@ -2756,6 +2782,62 @@
                     // e.g., "5.31" -> "5:31" (not decimal conversion)
                     if (value.includes('.') && !value.includes(':')) {
                         e.target.value = value.replace('.', ':');
+                    }
+                });
+            });
+
+            // Real-time text input updates for immediate effect
+            const textInputs = panel.querySelectorAll('.sff-keywords, .sff-devices-custom, .sff-allowed-athletes, .sff-ignored-athletes, .sff-minKm, .sff-maxKm, .sff-minMins, .sff-maxMins, .sff-minElevM, .sff-maxElevM');
+            textInputs.forEach(input => {
+                // For textarea and number inputs, update on blur (when user leaves the field)
+                input.addEventListener('blur', () => {
+                    UIModule.applySettings(panel);
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                });
+                
+                // For number inputs, also update on Enter key press
+                if (input.type === 'number') {
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            UIModule.applySettings(panel);
+                            UtilsModule.saveSettings(settings);
+                            LogicModule.filterActivities();
+                        }
+                    });
+                }
+            });
+
+            // Real-time pace input updates
+            paceInputs.forEach(input => {
+                input.addEventListener('blur', (e) => {
+                    const value = e.target.value.trim();
+                    if (!value) return;
+                    
+                    // Simply replace . with : for easier typing
+                    // e.g., "5.31" -> "5:31" (not decimal conversion)
+                    if (value.includes('.') && !value.includes(':')) {
+                        e.target.value = value.replace('.', ':');
+                    }
+                    
+                    // Apply settings and filter immediately
+                    UIModule.applySettings(panel);
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                });
+                
+                // Also update on Enter key press
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const value = e.target.value.trim();
+                        if (value && value.includes('.') && !value.includes(':')) {
+                            e.target.value = value.replace('.', ':');
+                        }
+                        
+                        // Apply settings and filter immediately
+                        UIModule.applySettings(panel);
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.filterActivities();
                     }
                 });
             });
@@ -5472,8 +5554,13 @@
     // Setup global features that work on all pages
     let globalFeaturesInitialized = false;
     function setupGlobalFeatures() {
-        if (globalFeaturesInitialized) return;
+        // console.log('SFF: setupGlobalFeatures called');
+        if (globalFeaturesInitialized) {
+            // console.log('SFF: Global features already initialized');
+            return;
+        }
         globalFeaturesInitialized = true;
+        // console.log('SFF: Initializing global features');
 
         // Apply gift button hiding immediately
         LogicModule.updateGiftVisibility();
@@ -5547,11 +5634,13 @@
         });
         handleActivity(); // Start timer
 
+        // console.log('SFF: setupGlobalFeatures completed');
         // Popup-based controls are handled via browser action; no content panel needed
     }
 
     // Initialize
     async function init() {
+        // console.log('SFF: Init function called');
         // Clean Filter: Initializing
         // Current URL: checking
 
@@ -5559,46 +5648,67 @@
         if (!settings) {
             try {
                 settings = await UtilsModule.loadSettings();
+                // console.log('SFF: Settings loaded', settings);
                 // Settings loaded
             } catch (e) {
+                // console.error('SFF: Failed to load settings', e);
                 // Failed to load settings, using defaults
                 settings = { ...DEFAULTS };
             }
         }
 
+        // console.log('SFF: Setting up global features');
         // Always setup global features on all pages
         setupGlobalFeatures();
+        // console.log('SFF: Global features setup complete');
 
         // Only create UI elements and run filtering on dashboard
         const isDashboard = UtilsModule.isOnDashboard();
+        // console.log('SFF: Is on dashboard:', isDashboard);
         
         if (isDashboard) {
+            // console.log('SFF: Initializing dashboard features');
             // Mark body as dashboard for responsive CSS that relies on this flag
             document.body.setAttribute('data-sff-dashboard', 'true');
             
             // Always create UI elements so users can toggle filtering on/off
             const existingPanel = document.querySelector('.sff-clean-panel');
+            // console.log('SFF: Existing panel:', existingPanel);
             
             if (!existingPanel) {
+                // console.log('SFF: Creating UI elements');
                 // Creating UI elements
                 UIModule.createElements();
+                // console.log('SFF: UI elements created');
+            } else {
+                // console.log('SFF: Panel already exists');
             }
             
             // Ensure secondary kudos button is properly synchronized
+            // console.log('SFF: Syncing secondary kudos visibility');
             UIModule.syncSecondaryKudosVisibility();
             // Ensure header kudos button is created/removed according to settings immediately
+            // console.log('SFF: Managing header kudos button');
             LogicModule.manageHeaderKudosButton();
             // Inject "See more" buttons on activities
+            // console.log('SFF: Managing see more buttons');
             LogicModule.manageSeeMoreButtons();
+            // console.log('SFF: Filtering activities');
             LogicModule.filterActivities();
+            // console.log('SFF: Setting up auto filter');
             LogicModule.setupAutoFilter();
+            // console.log('SFF: Dashboard initialization complete');
+        } else {
+            // console.log('SFF: Not on dashboard, skipping dashboard initialization');
         }
     }
 
     // Listen for popup toggle messages to enable/disable and re-apply filters
     try {
+        // Use browser.runtime for Firefox (similar to how Chrome version handles both)
         if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
             browser.runtime.onMessage.addListener((msg) => {
+                console.log('SFF: Received message', msg);
                 if (msg && msg.type === 'SFF_TOGGLE_ENABLED') {
                     settings.enabled = !!msg.enabled;
                     try { UtilsModule.saveSettings(settings); } catch (e) {}
@@ -5621,6 +5731,7 @@
                 }
                 // Handle settings import/update
                 if (msg && msg.type === 'SFF_SETTINGS_UPDATED') {
+                    console.log('SFF: Settings updated, reloading');
                     // Reload settings from storage and refresh everything
                     UtilsModule.loadSettings().then(newSettings => {
                         settings = newSettings;
@@ -5634,6 +5745,7 @@
             });
         }
     } catch (e) {
+        console.error('SFF: Failed to attach runtime message listener', e);
         // Failed to attach runtime message listener
     }
 
@@ -5672,6 +5784,10 @@
     setInterval(checkPageChange, 500);
 
     // Clean Filter: Setup complete
+    
+    // Initialize the extension when the script loads
+    // console.log('SFF: Calling init() for initial load');
+    init();
 
 })();
 // ===== End original script body =====

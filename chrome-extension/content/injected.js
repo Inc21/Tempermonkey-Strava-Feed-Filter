@@ -2548,7 +2548,7 @@
                     
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Header Settings</h4>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.hideGiveGift ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideGift" ${settings.hideGiveGift ? 'checked' : ''}>
@@ -2558,7 +2558,7 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.hideStartTrial ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideStartTrial" ${settings.hideStartTrial ? 'checked' : ''}>
@@ -2568,7 +2568,7 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
@@ -2578,7 +2578,7 @@
                         </div>
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.showNotifications ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-showNotifications" ${settings.showNotifications ? 'checked' : ''}>
@@ -2592,7 +2592,7 @@
                     
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Activity Settings</h4>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 7.5px;">
                         <div class="sff-label-with-info">
                             <label class="sff-chip">
                                 Show "Show more stats" button
@@ -2758,6 +2758,62 @@
                     // e.g., "5.31" -> "5:31" (not decimal conversion)
                     if (value.includes('.') && !value.includes(':')) {
                         e.target.value = value.replace('.', ':');
+                    }
+                });
+            });
+
+            // Real-time text input updates for immediate effect
+            const textInputs = panel.querySelectorAll('.sff-keywords, .sff-devices-custom, .sff-allowed-athletes, .sff-ignored-athletes, .sff-minKm, .sff-maxKm, .sff-minMins, .sff-maxMins, .sff-minElevM, .sff-maxElevM');
+            textInputs.forEach(input => {
+                // For textarea and number inputs, update on blur (when user leaves the field)
+                input.addEventListener('blur', () => {
+                    UIModule.applySettings(panel);
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                });
+                
+                // For number inputs, also update on Enter key press
+                if (input.type === 'number') {
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            UIModule.applySettings(panel);
+                            UtilsModule.saveSettings(settings);
+                            LogicModule.filterActivities();
+                        }
+                    });
+                }
+            });
+
+            // Real-time pace input updates
+            paceInputs.forEach(input => {
+                input.addEventListener('blur', (e) => {
+                    const value = e.target.value.trim();
+                    if (!value) return;
+                    
+                    // Simply replace . with : for easier typing
+                    // e.g., "5.31" -> "5:31" (not decimal conversion)
+                    if (value.includes('.') && !value.includes(':')) {
+                        e.target.value = value.replace('.', ':');
+                    }
+                    
+                    // Apply settings and filter immediately
+                    UIModule.applySettings(panel);
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.filterActivities();
+                });
+                
+                // Also update on Enter key press
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const value = e.target.value.trim();
+                        if (value && value.includes('.') && !value.includes(':')) {
+                            e.target.value = value.replace('.', ':');
+                        }
+                        
+                        // Apply settings and filter immediately
+                        UIModule.applySettings(panel);
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.filterActivities();
                     }
                 });
             });

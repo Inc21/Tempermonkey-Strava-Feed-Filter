@@ -1,5 +1,26 @@
 # Changelog
 
+## [v2.5.1] - 13.12.2025 (Firefox & Chrome Extensions)
+
+### Features Added
+
+- **Enhanced Info Icons**: Changed blue ℹ icons to ? for better UX
+- **More Compact Settings**: Reduced vertical spacing between settings by 62.5% for a more compact panel
+- **Improved Pace Entry**: Users can now type 5.51 and it automatically converts to 5:51 format
+- **COROS Embed Fix**: Fixed filtering for COROS external service embeds in activity descriptions
+
+### Show More Stats Improvements
+
+- **Time of Day Field**: Added new "Time of the day" section with Start and End times as the first item in stats display
+- **Hide Stats Button**: Added "Hide stats" button at the bottom of the stats panel to close the stats view
+- **Scroll Position Restoration**: When hiding stats, the UI smoothly scrolls back to the previous position in the feed
+
+### Bug Fixes
+
+- **Immediate Settings Updates**: Fixed issue where text-based settings (keywords, custom devices, numeric filters) required Apply & Refresh to take effect. Now all settings update immediately when the user leaves the input field or presses Enter.
+
+---
+
 ## [v2.5.0] - 09.12.2025 (Firefox & Chrome Extensions)
 
 ### Features Added
@@ -413,6 +434,12 @@ The format is based on [Semantic Versioning](https://semver.org/).
 ### Initial Release
 
 - First working **Tampermonkey userscript**
+- Basic floating, draggable filter panel with:
+  - Simple keyword filter
+  - Minimum distance filter
+  - Basic activity type checkboxes
+- Save & load filter preferences
+- Hidden posts counter with unhide option
 - Basic floating, draggable filter panel with:
   - Simple keyword filter
   - Minimum distance filter
