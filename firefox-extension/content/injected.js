@@ -3087,15 +3087,98 @@
                         LogicModule.updateStartTrialVisibility();
                     }
 
-                    // Your challenges section
+                    // Your challenges section (sidebar + feed cards)
                     if (e.target.classList.contains('sff-hideChallenges')) {
+                        settings.hideChallenges = e.target.checked;
                         UtilsModule.saveSettings(settings);
+                        LogicModule.updateChallengesVisibility();
                         LogicModule.filterActivities();
                     }
+
+                    // Suggested friends sidebar section
+                    if (e.target.classList.contains('sff-hideSuggestedFriends')) {
+                        settings.hideSuggestedFriends = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateSuggestedFriendsVisibility();
+                    }
+
+                    // Your clubs sidebar section
+                    if (e.target.classList.contains('sff-hideYourClubs')) {
+                        settings.hideYourClubs = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateYourClubsVisibility();
+                    }
+
+                    // Footer visibility
+                    if (e.target.classList.contains('sff-hideFooter')) {
+                        settings.hideFooter = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateFooterVisibility();
+                    }
+
+                    // External service embeds
+                    if (e.target.classList.contains('sff-hideMyWindsock')) {
+                        settings.hideMyWindsock = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateMyWindsockVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideSummitbag')) {
+                        settings.hideSummitbag = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateSummitbagVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideRunHealth')) {
+                        settings.hideRunHealth = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateRunHealthVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideWandrer')) {
+                        settings.hideWandrer = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateWandrerVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideBandok')) {
+                        settings.hideBandok = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateBandokVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCoros')) {
+                        settings.hideCoros = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCorosVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideJoinWorkout')) {
+                        settings.hideJoinWorkout = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateJoinWorkoutVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideCoachCat')) {
+                        settings.hideCoachCat = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateCoachCatVisibility();
+                    }
+
                     if (e.target.classList.contains('sff-hideClubPosts')) {
                         settings.hideClubPosts = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.filterActivities();
+                    }
+
+                    // Other activity/entry-level filters
+                    if (e.target.classList.contains('sff-hideNoMap')) {
+                        settings.hideNoMap = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.filterActivities();
+                    }
+                    if (e.target.classList.contains('sff-hideJoinedChallenges')) {
+                        settings.hideJoinedChallenges = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateJoinedChallengesVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
+                        settings.hideAthleteJoinedClub = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateAthleteJoinedClubVisibility();
                     }
 
                     // Activity type chips
