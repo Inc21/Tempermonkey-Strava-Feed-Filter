@@ -38,5 +38,6 @@
         "Wandrer",
         "Xwlg",
         "Zwift"
-    ]
+    ],
+    "liveServer.settings.port": 5501
 }
