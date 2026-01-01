@@ -5142,7 +5142,11 @@
                     statsHTML += '<div class="sff-stats-grid">';
                 } else {
                     statsHTML += '<div class="sff-stat-item">';
-                    statsHTML += `<span class="sff-stat-label">${stat.label}</span>`;
+                    statsHTML += `<span class="sff-stat-label">${stat.label}`;
+                    if (stat.info) {
+                        statsHTML += ` <span class="sff-info-icon" title="${stat.info}">?</span>`;
+                    }
+                    statsHTML += '</span>';
                     
                     if (stat.start && stat.end) {
                         statsHTML += `<span class="sff-stat-value"><b>Start:</b> ${stat.start}</span>`;
@@ -5234,6 +5238,8 @@
             const weatherStats = [];
             const gearStats = [];
             const processed = new Set();
+            let distanceKmForIndex = null;
+            let elevationMForIndex = null;
             
             // Extract and store weather icon separately
             const weatherIcon = filtered['__weatherIcon'];
@@ -5272,6 +5278,17 @@
                 filtered['Heart Rate Max'] = filtered['Heartrate Max'];
                 delete filtered['Heartrate Max'];
             }
+
+            // Extract distance/elevation values for climbing index calculation (keep originals for display)
+            Object.keys(filtered).forEach(key => {
+                const lowerKey = key.toLowerCase();
+                if (distanceKmForIndex === null && (lowerKey === 'distance' || lowerKey.includes('distance'))) {
+                    distanceKmForIndex = this.parseDistanceToKm(filtered[key]);
+                }
+                if (elevationMForIndex === null && (lowerKey.includes('elev') || lowerKey.includes('elevation'))) {
+                    elevationMForIndex = this.parseElevationToM(filtered[key]);
+                }
+            });
 
             // Define stat groups that should be combined (avg/max pairs)
             const statGroups = [
@@ -5345,6 +5362,14 @@
                         gearStats.push(stat);
                     } else {
                         organized.push(stat);
+
+                        // Insert climbing index immediately after elevation stat if available
+                        if (lowerKey.includes('elev')) {
+                            const climbingIndex = this.calculateClimbingIndex(distanceKmForIndex, elevationMForIndex);
+                            if (climbingIndex) {
+                                organized.push(climbingIndex);
+                            }
+                        }
                     }
                     processed.add(key);
                 }
@@ -5446,6 +5471,88 @@
             return result.trim();
         },
         
+        parseDistanceToKm(distanceString) {
+            if (!distanceString) return null;
+            const cleaned = distanceString.replace(/,/g, '').trim().toLowerCase();
+            const numMatch = cleaned.match(/([\d.]+)/);
+            if (!numMatch) return null;
+            const value = parseFloat(numMatch[1]);
+            if (!Number.isFinite(value) || value <= 0) return null;
+            const isMiles = /mi\b/.test(cleaned) || /mile/.test(cleaned);
+            return isMiles ? value * 1.60934 : value; // default to km
+        },
+
+        parseElevationToM(elevationString) {
+            if (!elevationString) return null;
+            const cleaned = elevationString.replace(/,/g, '').trim().toLowerCase();
+            const numMatch = cleaned.match(/([\d.]+)/);
+            if (!numMatch) return null;
+            const value = parseFloat(numMatch[1]);
+            if (!Number.isFinite(value) || value < 0) return null;
+            const isFeet = /ft\b/.test(cleaned) || /foot/.test(cleaned) || /feet/.test(cleaned);
+            return isFeet ? value * 0.3048 : value; // default to meters
+        },
+
+        calculateClimbingIndex(distanceKm, elevationM) {
+            if (!distanceKm || !elevationM || distanceKm <= 0) return null;
+            const mPerKm = elevationM / distanceKm;
+
+            // 7-step thresholds to reduce gaps
+            let category = 'Flat';
+            let icon = this.climbIconImg('flat', 'Flat');
+            if (mPerKm >= 25) {
+                category = 'Extreme';
+                icon = this.climbIconImg('extreme', 'Extreme');
+            } else if (mPerKm >= 18) {
+                category = 'Mountainous';
+                icon = this.climbIconImg('mountanus', 'Mountainous');
+            } else if (mPerKm >= 13) {
+                category = 'Very hilly';
+                icon = this.climbIconImg('very_hilly', 'Very hilly');
+            } else if (mPerKm >= 9) {
+                category = 'Hilly';
+                icon = this.climbIconImg('hilly', 'Hilly');
+            } else if (mPerKm >= 6) {
+                category = 'Rolling';
+                icon = this.climbIconImg('rolling', 'Rolling');
+            } else if (mPerKm >= 3) {
+                category = 'Gentle';
+                icon = this.climbIconImg('gentle', 'Gentle');
+            }
+
+            return {
+                label: 'Climbing Index',
+                value: `${icon} ${category} · ${mPerKm.toFixed(1)} m/km`,
+                info: 'Meters climbed per km. Buckets: <3 Flat, 3-6 Gentle, 6-9 Rolling, 9-13 Hilly, 13-18 Very hilly, 18-25 Mountainous, 25+ Extreme.'
+            };
+        },
+
+        climbIconImg(key, label) {
+            const safeLabel = label || 'Climbing index';
+            const url = this.getClimbIconUrl(key);
+            return `<img class="sff-climb-svg sff-climb-${key}" src="${url}" alt="${safeLabel}">`;
+        },
+
+        getClimbIconUrl(key) {
+            const fileMap = {
+                flat: 'icons/flat.svg',
+                gentle: 'icons/gentle.svg',
+                rolling: 'icons/rolling.svg',
+                hilly: 'icons/hilly.svg',
+                very_hilly: 'icons/very_hilly.svg',
+                mountanus: 'icons/mountanus.svg',
+                extreme: 'icons/extreme.svg'
+            };
+            const file = fileMap[key] || fileMap.flat;
+            if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+                return chrome.runtime.getURL(file);
+            }
+            if (typeof browser !== 'undefined' && browser.runtime?.getURL) {
+                return browser.runtime.getURL(file);
+            }
+            return file; // fallback relative path
+        },
+
         parseDisplayTimeToISO(displayTime) {
             // Parse Strava's display time formats like "Today at 18:48" or "Today at 6:48 PM"
             const now = new Date();

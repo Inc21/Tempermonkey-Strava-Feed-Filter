@@ -41,3 +41,11 @@
 #sff-info-panel .sffip-link { color: #93c5fd; text-decoration: underline; }
 #sff-info-panel .sffip-link:hover { color: #bfdbfe; }
 #sff-info-panel .sffip-note { color: #d1d5db; opacity: .9; margin-top: 6px; }
+
+/* Climbing index icons (SVG) */
+.sff-climb-svg {
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  margin-right: 7px;
+}

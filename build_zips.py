@@ -18,14 +18,14 @@ def build_zip(src_dir, dest_zip):
 
 print("Building Chrome extension zip...")
 build_zip(
-    os.path.join(base, "chrome-extension"), 
-    os.path.join(dist, "StravaFeedFilter-Chrome-v2.3.2.zip")
+    os.path.join(base, "chrome-extension"),
+    os.path.join(dist, "StravaFeedFilter-Chrome-v2.6.0.zip")
 )
 
 print("Building Firefox extension zip...")
 build_zip(
-    os.path.join(base, "firefox-extension"), 
-    os.path.join(dist, "StravaFeedFilter-Firefox-v2.3.2.zip")
+    os.path.join(base, "firefox-extension"),
+    os.path.join(dist, "StravaFeedFilter-Firefox-v2.6.0.zip")
 )
 
 print("Done!")
