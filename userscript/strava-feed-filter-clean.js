@@ -1215,7 +1215,6 @@
             UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
             const giftChk = panel.querySelector('.sff-hideGift');
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
-
             settings.types = {};
             panel.querySelectorAll('input[type=checkbox][data-typ]').forEach(input => {
                 settings.types[input.dataset.typ] = input.checked;
@@ -1346,7 +1345,6 @@
             panel.appendChild(header);
             panel.appendChild(content);
             panel.appendChild(resizeHandle);
-
             return panel;
         },
 

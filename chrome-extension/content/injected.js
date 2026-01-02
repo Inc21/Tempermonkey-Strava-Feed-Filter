@@ -111,7 +111,8 @@
         minPace: "",
         maxPace: "",
         unitSystem: 'metric', // 'metric' or 'imperial'
-        enabled: true
+        enabled: true,
+        theme: 'light'
     };
 
     const TYPES = [
@@ -859,6 +860,22 @@
         background: #e04a00 !important;
       }
 
+      /* Dark theme for header kudos + filter buttons injected into Strava nav */
+      body[data-sff-theme="dark"] .sff-header-kudos-btn,
+      body[data-sff-theme="dark"] .sff-clean-btn,
+      body[data-sff-theme="dark"] .sff-secondary-filter-btn {
+        background: #111111 !important;
+        color: #fb923c !important;
+        border: 1px solid #fb923c !important;
+      }
+
+      body[data-sff-theme="dark"] .sff-header-kudos-btn:hover,
+      body[data-sff-theme="dark"] .sff-clean-btn:hover,
+      body[data-sff-theme="dark"] .sff-secondary-filter-btn:hover {
+        background: #fb923c !important;
+        color: #111111 !important;
+      }
+
       .sff-desc {
         font-size: 11px !important;
         color: #666 !important;
@@ -996,6 +1013,232 @@
         align-items: center !important;
         gap: 12px !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+      }
+
+      /* Dark theme overrides scoped to the filter panel and secondary nav */
+      .sff-clean-panel.sff-theme-dark {
+        background: #111111 !important;
+        border-color: #fc5200 !important;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.6) !important;
+        color: #f9fafb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header {
+        background: #18181b !important;
+        border-bottom: 1px solid #27272f !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header h3 {
+        color: #f9fafb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close {
+        border-color: #fb923c !important;
+        color: #f9fafb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close:hover {
+        background: rgba(251, 146, 60, 0.15) !important;
+        color: #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content {
+        background: #111111 !important;
+        color: #f9fafb !important;
+        scrollbar-width: thin;
+        scrollbar-color: #3f3f46 #09090b;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar {
+        width: 8px !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-track {
+        background: #09090b !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb {
+        background: #27272f !important;
+        border-radius: 4px !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb:hover {
+        background: #3f3f46 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-label,
+      .sff-clean-panel.sff-theme-dark h4,
+      .sff-clean-panel.sff-theme-dark p,
+      .sff-clean-panel.sff-theme-dark .sff-credits,
+      .sff-clean-panel.sff-theme-dark .sff-credits p:first-child,
+      .sff-clean-panel.sff-theme-dark .sff-copyright,
+      .sff-clean-panel.sff-theme-dark .sff-activity-count,
+      .sff-clean-panel.sff-theme-dark .sff-settings-desc,
+      .sff-clean-panel.sff-theme-dark .sff-toggle-text {
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-input {
+        background: #18181b !important;
+        border-color: #27272f !important;
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-chip {
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-dropdown-header {
+        background: #18181b !important;
+        border-color: #27272f !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-dropdown-content {
+        background: #09090b !important;
+        border-color: #27272f !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-dropdown-indicator {
+        color: #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-save {
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-save:hover {
+        background: #fc5200 !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-reset {
+        background: #111111 !important;
+        color: #f97316 !important;
+        border-color: #f97316 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-reset:hover {
+        background: #f97316 !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-footer {
+        background: #09090b !important;
+        border-color: #27272f !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark {
+        background: #111111 !important;
+        border-bottom-color: #27272f !important;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.6) !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-bmc a {
+        background: transparent !important;
+        color: #fb923c !important;
+        border: 1px solid #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-bmc a:hover {
+        background: #fb923c !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-toggle-section {
+        background: #18181b !important;
+        border-bottom-color: #27272f !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider {
+        background-color: #27272f !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-switch input:checked + .sff-slider {
+        background-color: #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider:before {
+        background-color: #f9fafb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-toggle {
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-toggle:hover {
+        color: #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode {
+        background: #18181b !important;
+        border: 1px solid #27272f !important;
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option {
+        background: #111111 !important;
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:hover,
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:checked {
+        background: #fb923c !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode:focus-visible,
+      .sff-clean-panel.sff-theme-dark .sff-input:focus-visible,
+      .sff-clean-panel.sff-theme-dark select:focus-visible,
+      .sff-clean-panel.sff-theme-dark textarea:focus-visible {
+        outline: 2px solid #fb923c !important;
+        outline-offset: 1px !important;
+        box-shadow: 0 0 0 1px #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #27272f !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn:hover {
+        background: #27272f !important;
+        border-color: #fb923c !important;
+        color: #fb923c !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger {
+        border-color: #f97316 !important;
+        color: #f97316 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger:hover {
+        background: #f97316 !important;
+        color: #111111 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
+        background: #111111 !important;
+        color: #fb923c !important;
+        border: 1px solid #fb923c !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
+        background: #fb923c !important;
+        color: #111111 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell {
+        background: #111111 !important;
+        border: 1px solid #fb923c !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell svg path {
+        fill: #fb923c !important;
       }
 
       /* Show secondary nav on smaller screens ONLY on dashboard */
@@ -1820,6 +2063,30 @@
             const startTrialChk = panel.querySelector('.sff-hideStartTrial');
             settings.hideStartTrial = startTrialChk ? startTrialChk.checked : settings.hideStartTrial;
 
+            const themeRadio = panel.querySelector('input[name="sff-theme"]:checked');
+            settings.theme = themeRadio && themeRadio.value === 'dark' ? 'dark' : 'light';
+
+            if (settings.theme === 'dark') {
+                panel.classList.add('sff-theme-dark');
+            } else {
+                panel.classList.remove('sff-theme-dark');
+            }
+            const secondaryNav = document.querySelector('.sff-secondary-nav');
+            if (secondaryNav) {
+                if (settings.theme === 'dark') {
+                    secondaryNav.classList.add('sff-theme-dark');
+                } else {
+                    secondaryNav.classList.remove('sff-theme-dark');
+                }
+            }
+
+            // Expose theme choice via body attribute for header buttons
+            if (settings.theme === 'dark') {
+                document.body.setAttribute('data-sff-theme', 'dark');
+            } else {
+                document.body.setAttribute('data-sff-theme', 'light');
+            }
+
             settings.types = {};
             panel.querySelectorAll('input[type=checkbox][data-typ]').forEach(input => {
                 settings.types[input.dataset.typ] = input.checked;
@@ -1854,8 +2121,11 @@
             // Set dashboard attribute for CSS targeting
             if (isDashboardPage) {
                 document.body.setAttribute('data-sff-dashboard', 'true');
+                // Ensure body theme attribute reflects current settings on load
+                document.body.setAttribute('data-sff-theme', settings.theme === 'dark' ? 'dark' : 'light');
             } else {
                 document.body.removeAttribute('data-sff-dashboard');
+                document.body.removeAttribute('data-sff-theme');
                 // On non-dashboard pages, apply global and embed settings
                 LogicModule.updateGiftVisibility();
                 LogicModule.updateStartTrialVisibility();
@@ -1912,6 +2182,12 @@
 
             // Create panel using helper method
             const panel = this._createPanel();
+
+            // Apply initial theme classes based on saved settings
+            if (settings.theme === 'dark') {
+                panel.classList.add('sff-theme-dark');
+                secondaryNav.classList.add('sff-theme-dark');
+            }
 
             document.body.appendChild(btn);
             document.body.appendChild(panel);
@@ -2589,6 +2865,23 @@
                     </div>
                     
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Appearance (Filter Only)</h4>
+                    <div class="sff-row">
+                        <label class="sff-label">Theme</label>
+                        <div class="sff-input-group">
+                            <label class="sff-chip">
+                                <input type="radio" name="sff-theme" value="light" ${settings.theme === 'dark' ? '' : 'checked'}>
+                                Light mode
+                            </label>
+                            <label class="sff-chip">
+                                <input type="radio" name="sff-theme" value="dark" ${settings.theme === 'dark' ? 'checked' : ''}>
+                                Dark mode
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
                     
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Activity Settings</h4>
                     
@@ -2633,6 +2926,7 @@
             const settingsToggle = panel.querySelector('.sff-settings-toggle');
             const filtersView = panel.querySelector('.sff-view-filters');
             const settingsView = panel.querySelector('.sff-view-settings');
+            const themeRadios = panel.querySelectorAll('input[name="sff-theme"]');
             
             if (settingsToggle) {
                 settingsToggle.addEventListener('click', (e) => {
@@ -2654,6 +2948,39 @@
                         settingsToggle.style.opacity = '0.8';
                         settingsToggle.style.pointerEvents = 'auto';
                     }
+                });
+            }
+
+            if (themeRadios && themeRadios.length) {
+                themeRadios.forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        const selected = panel.querySelector('input[name="sff-theme"]:checked');
+                        settings.theme = selected && selected.value === 'dark' ? 'dark' : 'light';
+
+                        if (settings.theme === 'dark') {
+                            panel.classList.add('sff-theme-dark');
+                        } else {
+                            panel.classList.remove('sff-theme-dark');
+                        }
+
+                        const secondaryNav = document.querySelector('.sff-secondary-nav');
+                        if (secondaryNav) {
+                            if (settings.theme === 'dark') {
+                                secondaryNav.classList.add('sff-theme-dark');
+                            } else {
+                                secondaryNav.classList.remove('sff-theme-dark');
+                            }
+                        }
+
+                        // Immediately reflect theme choice for header buttons
+                        if (settings.theme === 'dark') {
+                            document.body.setAttribute('data-sff-theme', 'dark');
+                        } else {
+                            document.body.setAttribute('data-sff-theme', 'light');
+                        }
+
+                        UtilsModule.saveSettings(settings);
+                    });
                 });
             }
 
@@ -5494,7 +5821,9 @@
         },
 
         calculateClimbingIndex(distanceKm, elevationM) {
-            if (!distanceKm || !elevationM || distanceKm <= 0) return null;
+            // Require a valid positive distance and a non-null elevation value.
+            // Allow elevationM === 0 so flat rides with distance still get an index.
+            if (distanceKm == null || distanceKm <= 0 || elevationM == null) return null;
             const mPerKm = elevationM / distanceKm;
 
             // 7-step thresholds to reduce gaps
