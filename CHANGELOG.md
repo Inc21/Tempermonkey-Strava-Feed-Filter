@@ -1,25 +1,41 @@
 # Changelog
 
-## [v2.6.0] - 03.01.2026 (Firefox & Chrome Extensions)
+## [v2.6.0] - 11.01.2026 (Firefox & Chrome Extensions)
 
-### Features Added
-
-- **Rouvy Filtering**: Added support for filtering Rouvy activities
-  - New "Hide Rouvy" option in External Services section
-  - Detects and hides activities with "rouvy.com" in descriptions/titles
-  - Added "Rouvy" to the supported Recording Devices list
-  - Filters out activities recorded with Rouvy when using device filtering
-
-### UI Enhancements
+### v2.6.0 Features Added
 
 - **Panel Dark Mode**: Full dark mode support matching Strava's theme
+  - Dark background (#111111) with orange accents (#fc5200)
+  - Secondary navigation bar with transparent background and dark buttons
+  - Notification bell with proper dark mode styling
 - **Climbing Index**: Added climbing index display with colored icons
+  - Located in the "Show More Stats" panel for each activity
+  - Visual representation of climbing difficulty based on meters per km (m/km):
+    - 🟩 **Flat** (<3 m/km): Gray icon, minimal climbing
+    - 🟩 **Gentle** (3-6 m/km): Green icon, mild rolling hills
+    - 🟩 **Rolling** (6-9 m/km): Green icon, moderate climbing
+    - 🟨 **Hilly** (9-13 m/km): Yellow icon, significant elevation gain
+    - 🟧 **Very Hilly** (13-18 m/km): Yellow icon, steep and challenging
+    - 🔴 **Mountainous** (18-25 m/km): Red icon, very steep
+    - 🔴 **Extreme** (25+ m/km): Red icon, extreme elevation gain
+  - Displays exact m/km value for precise climbing intensity assessment
+- **Rouvy Filtering**: Added support for filtering Rouvy activities with "Hide Rouvy" option in External Services section
+
+### v2.6.0 UI Enhancements
+
 - **Visual Refresh**:
   - **Settings Icon**: Updated to a modern gear icon
   - **Navigation**: Added "Back to Filter" button for better navigation flow
   - **Close Button**: Updated to a distinct red [X] button style
+  - **Filter Button Positioning**: Moved main filter button to Strava's header navigation (right after notification bell) on larger screens, with responsive fallback to fixed positioning on smaller screens
 
-### Improvements
+### v2.6.0 Bug Fixes
+
+- **Dark Mode Styling**: Fixed CSS cascade order for notification bell dark mode rule to properly override base styles
+- **Secondary Navigation**: Corrected dark mode background to white with proper button styling
+- **Navigation Spacing**: Adjusted spacing between notification bell and filter button for consistent alignment with other nav items
+
+### v2.6.0 Improvements
 
 - **External Service Detection**: Enhanced detection logic for external services to look for domain names in activity text
 
@@ -27,20 +43,20 @@
 
 ## [v2.5.1] - 13.12.2025 (Firefox & Chrome Extensions)
 
-### Features Added
+### v2.5.1 Features Added
 
 - **Enhanced Info Icons**: Changed blue ℹ icons to ? for better UX
 - **More Compact Settings**: Reduced vertical spacing between settings by 62.5% for a more compact panel
 - **Improved Pace Entry**: Users can now type 5.51 and it automatically converts to 5:51 format
 - **COROS Embed Fix**: Fixed filtering for COROS external service embeds in activity descriptions
 
-### Show More Stats Improvements
+### v2.5.1 Show More Stats Improvements
 
 - **Time of Day Field**: Added new "Time of the day" section with Start and End times as the first item in stats display
 - **Hide Stats Button**: Added "Hide stats" button at the bottom of the stats panel to close the stats view
 - **Scroll Position Restoration**: When hiding stats, the UI smoothly scrolls back to the previous position in the feed
 
-### Bug Fixes
+### v2.5.1 Bug Fixes
 
 - **Immediate Settings Updates**: Fixed issue where text-based settings (keywords, custom devices, numeric filters) required Apply & Refresh to take effect. Now all settings update immediately when the user leaves the input field or presses Enter.
 
@@ -48,7 +64,7 @@
 
 ## [v2.5.0] - 09.12.2025 (Firefox & Chrome Extensions)
 
-### Features Added
+### v2.5.0 Features Added
 
 - **Compact Settings Panel with Info Icons**: Helper text moved to clickable info icons
   - All settings now have blue ℹ icons for explanations
@@ -61,7 +77,7 @@
   - Select All / Clear All quick actions
   - **Full support for group activities** - properly detects and filters based on devices used by all participants
 
-### UI/UX Improvements
+### v2.5.0 UI/UX Improvements
 
 - Settings panel now more compact with info icons replacing verbose helper text
 - Tooltip positioning optimized for panel boundaries and screen space
@@ -69,7 +85,7 @@
 - Consistent spacing and visual hierarchy throughout settings
 - Recording devices displayed in multi-column grid layout (4 columns, responsive to 2 on mobile)
 
-### Bug Fixes
+### v2.5.0 Bug Fixes
 
 - Fixed info icon tooltip positioning to stay within viewport
 - **Fixed device filter for group activities** - now properly checks all participants' devices
@@ -88,14 +104,14 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.4.7] - 30.11.2025 (Firefox & Chrome Extensions)
 
-### 🐛 Bug Fixes
+### v2.4.7 Bug Fixes
 
 - **Chrome Extension**: Fixed message listener not working for popup communication
   - Changed from Firefox-only `browser.runtime.onMessage` to cross-browser compatible approach
   - Now properly checks for both `chrome.runtime.onMessage` and `browser.runtime.onMessage`
   - Ensures filter button loads immediately without needing to open popup first
 
-### ✨ Enhancements
+### v2.4.7 Enhancements
 
 - **Popup**: Added "See what's new in v{version}" link to both Chrome and Firefox extension popups
   - Links directly to GitHub CHANGELOG.md
@@ -106,7 +122,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.4.6] - 30.11.2025 (Firefox & Chrome Extensions)
 
-### 🐛 Bug Fixes
+### v2.4.6 Bug Fixes
 
 - **Notification Badge**: Fixed notification badge not clearing when viewing notifications
   - Badge now properly marks all notifications as read when notification panel is opened
@@ -118,7 +134,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
   - Adjusted size and positioning for better visual consistency
   - Badge now properly positioned at top-right corner with white border and shadow
 
-### ⚙️ Technical Improvements
+### v2.4.6 Technical Improvements
 
 - **"Hide Start Trial" Button**: Added missing functionality in Firefox extension
   - Feature now works correctly in both Chrome and Firefox extensions
@@ -133,7 +149,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.4.5] - 30.11.2025 (Firefox & Chrome Extensions)
 
-### 📱 Mobile-First Improvements
+### v2.4.5 Mobile-First Improvements
 
 - **Mobile Notification System**: New notification bell button for mobile screens (≤990px)
   - Real-time notification badge with unread count
@@ -150,7 +166,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
   - Secondary nav: Shows ≤1479px on dashboard
   - Automatic button repositioning based on viewport
 
-### ✨ Feature Parity Achieved
+### v2.4.5 Feature Parity Achieved
 
 - **Chrome Extension**: Complete feature match with Firefox extension
   - "Show More Stats" button with full statistics display
@@ -159,7 +175,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
   - All responsive behaviors matched
 - **Consistent Behavior**: Both extensions now have identical functionality across all screen sizes
 
-### 🔧 Technical Improvements
+### v2.4.5 Technical Improvements
 
 - CSS media queries properly control notification bell visibility
 - JavaScript no longer overrides responsive styles with inline `!important` rules
@@ -170,14 +186,14 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.4.2] - 24.11.2025 (Firefox Extension ALPHA)
 
-### Features Added - Firefox Extension Only
+### v2.4.2 Features Added - Firefox Extension Only
 
 - **Group Activity Stats**: "Show More Stats" button now appears on individual activities within group rides
   - Each participant's activity in a group ride gets their own stats button
   - Stats are fetched and displayed for each individual activity
   - Proper positioning ensures stats appear below each activity's content
 
-### Bug Fixes - Firefox Extension Only
+### v2.4.2 Bug Fixes - Firefox Extension Only
 
 - Fixed duplicate Heart Rate entries in stats display
 - Fixed Walk activity filtering - walks are now properly hidden when filtered
@@ -189,7 +205,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.4.1] - 24.11.2025 (Firefox Extension ALPHA)
 
-### Features Added - Firefox Extension Only
+### v2.4.1 Features Added - Firefox Extension Only
 
 - **Show More Stats**: New button on each activity to display detailed statistics including:
   - Time stats (Moving Time, Elapsed Time, Time Stopped)
@@ -201,14 +217,14 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Text Wrapping**: Long activity type names now wrap properly instead of being cut off
 - **Auto-collapse Dropdowns**: Opening one dropdown section automatically closes others for cleaner UI
 
-### Improvements - Firefox Extension Only
+### v2.4.1 Improvements - Firefox Extension Only
 
 - Enhanced stat extraction to handle multiple HTML formats from Strava
 - Improved time parsing to support both "HH:MM:SS" and "1h 23m 45s" formats
 - Weather conditions properly categorized and displayed with icons
 - Panel width optimized for desktop (380px) vs mobile (320px) screens
 
-### Notes
+### v2.4.1 Notes
 
 - This is an ALPHA release for testing on AMO before bringing "Show More Stats" to Chrome
 
@@ -216,7 +232,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.3.3] - 24.11.2025 (Chrome Extension & Userscripts)
 
-### Features Added
+### v2.3.3 Features Added
 
 - **New External Service Filters**:
   - Hide "Bandok.com" auto-generated activity names
@@ -227,7 +243,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
   - Reset settings to defaults
   - Improved settings panel organization
 
-### Improvements
+### v2.3.3 Improvements
 
 - Enhanced external service embed filtering system
 - Better athlete management with separate allowed/ignored lists
@@ -237,7 +253,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.3.2] - 10.11.2025 (All Platforms)
 
-### Improvements
+### v2.3.2 Improvements
 
 - Improved activity type detection to prioritise the most specific Strava label, preventing broad filters (e.g. "Run") from hiding specialised activities like "Trail Run".
 - Added synonym and multi-source matching so group posts such as "rode with…" are classified correctly before applying filters.
@@ -248,14 +264,14 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.3.1] - 26.10.2025 (Userscript)
 
-### Features Added
+### v2.3.1 Features Added
 
 - Safari iOS–compatible userscript: `userscript/sff-safari.user.js`
 - New filter: Hide activities tagged as "Commute"
 - External service embeds: Added Wandrer to the hide list
 - Preference to show/hide the "Give Kudos to Everyone" button; synced visibility for secondary nav button on smaller screens
 
-### Other Updates
+### v2.3.1 Other Updates
 
 - Minor responsive/UI tweaks for the settings panel and secondary navigation
 
@@ -263,13 +279,13 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v1.2.5] - 29.09.2025
 
-### Fixed
+### v1.2.5 Fixed
 
 - Firefox Extension (Desktop & Android)
   - "Give Kudos to Everyone" header button now displays immediately on first load when enabled. The initialization now calls `manageHeaderKudosButton()` during dashboard startup in `firefox-extension/content/injected.js`.
   - ON/OFF toolbar badge now reflects the saved state on browser startup without opening the popup. Implemented `firefox-extension/background.js` and wired it in the manifest.
 
-### Changed
+### v1.2.5 Changed
 
 - Firefox manifest now uses `background.scripts` (instead of `background.service_worker`) to support temporary add-on installation during development.
 - Dashboard `<body>` is marked with `data-sff-dashboard` on init to ensure responsive CSS applies immediately.
@@ -279,7 +295,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v2.2.5] - 29.09.2025 (Chrome)
 
-### Added
+### v2.2.5 Added
 
 - **Complete feature parity with Firefox extension**:
   - Full filter UI panel with all sections (keywords, allowed athletes, activity types, distance/duration/elevation/pace ranges, map filtering, section hiding, external embeds filtering)
@@ -293,14 +309,14 @@ The format is based on [Semantic Versioning](https://semver.org/).
   - Popup toggle updates badge and notifies content script
   - Background script initializes and maintains badge state
 
-### Technical Details
+### v2.2.5 Technical Details
 
 - Cross-browser compatibility layer using `ext` shim for Chrome/Firefox APIs
 - Message passing between popup and content script for real-time updates
 - Complete CSS injection with responsive breakpoints and secondary nav support
 - Modular architecture with UtilsModule, UIModule, and LogicModule separation
 
-### Installation Notes
+### v2.2.5 Installation Notes
 
 - Test locally via Chrome → Extensions → Enable Developer mode → Load unpacked → select `chrome-extension/`.
 - All Firefox features now available in Chrome with identical UI and functionality.
@@ -309,7 +325,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v1.2.4] - 27.09.2025
 
-### Added Features
+### v1.2.4 Added Features
 
 - Firefox Extension (Desktop)
   - Toolbar popup with Enable/Disable toggle
@@ -321,13 +337,13 @@ The format is based on [Semantic Versioning](https://semver.org/).
   - Hide "CoachCat Training Summary" embed in activity descriptions
   - Hide "Athlete joined a club" feed entries
 
-### Changed Behavior
+### v1.2.4 Changed Behavior
 
 - Userscript and extension now share consistent external-embed detection logic
 - More robust detection for "joined a club" (uses group header anchor and CTA detection)
 - UI copy and placement adjustments for the new filters
 
-### Important Notes
+### v1.2.4 Important Notes
 
 - Disclaimer: Strava occasionally changes the site. If something breaks, please report it on GitHub Issues before leaving a negative review so we can address it quickly.
 
@@ -335,12 +351,12 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v0.2.3] - 21.09.2025
 
-### New Features
+### v0.2.3 New Features
 
 - New dropdown in the separate sidebar to improve navigation and organization
 - New filter: Hide athletes' joined challenges from the feed
 
-### UI Improvements
+### v0.2.3 UI Improvements
 
 - Settings panel slightly widened for better readability
 - Panel content scrollbar is now always visible to prevent layout flicker
@@ -350,7 +366,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v0.2.2] - 07.09.2025
 
-### Major Features Added
+### v0.2.2 Major Features Added
 
 - **External Service Embeds Filtering**: New dedicated section for hiding
   third-party service embeds within activity descriptions
@@ -371,7 +387,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Enhanced Debugging**: Comprehensive console logging for external
   service filter troubleshooting
 
-### Logic Improvements
+### v0.2.2 Logic Improvements
 
 - **Granular Hiding Logic**: External service filters target only specific
   text elements (paragraphs, spans) with size limitations to avoid hiding
@@ -383,7 +399,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Global Section Management**: Section hiding works across all Strava
   pages where these sections appear
 
-### Filter Changes
+### v0.2.2 Filter Changes
 
 - **Improved Challenge Filtering**: Updated "Hide challenges" to
   "Hide your challenges" for better clarity and now targets the specific
@@ -393,7 +409,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v0.2.1] - 06.09.2025
 
-### Core Features Added
+### v0.2.1 Core Features Added
 
 - **Comprehensive Activity Type Filtering**: Expanded from basic checkboxes to
   40+ activity types including Virtual activities, E-bikes, Winter sports,
@@ -418,7 +434,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Enhanced UI**: Collapsible dropdown sections with organized filter
   categories
 
-### Performance Improvements
+### v0.2.1 Performance Improvements
 
 - **Modular Architecture**: Complete refactoring into CSS, UI, Logic, and Utils modules
 - **Performance Optimization**: Debounced filtering (250ms), efficient DOM
@@ -432,7 +448,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Cross-browser Compatibility**: Improved compatibility across major
   browsers
 
-### UI Enhancements
+### v0.2.1 UI Enhancements
 
 - **Settings Panel**: Reorganized into logical sections with improved visual
   hierarchy
@@ -445,7 +461,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 - **Auto-filtering**: Automatically processes new activities as they load in
   the feed
 
-### Technical Architecture
+### v0.2.1 Technical Architecture
 
 - **Code Organization**: Split monolithic script into functional modules
 - **Memory Efficiency**: Reduced memory footprint through optimized algorithms
@@ -456,7 +472,7 @@ The format is based on [Semantic Versioning](https://semver.org/).
 
 ## [v0.1.0] - 06.09.2025
 
-### Initial Release
+### v0.1.0 Initial Release
 
 - First working **Tampermonkey userscript**
 - Basic floating, draggable filter panel with:
