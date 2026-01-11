@@ -1,9 +1,23 @@
-// Strava Feed Filter - injected page script for Firefox WebExtension
+function getSettingsIconUrl(theme) {
+    const iconName = theme === 'dark' ? 'gear_orange.svg' : 'gear_gray.svg';
+    const file = `icons/${iconName}`;
+    try {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+            return chrome.runtime.getURL(file);
+        }
+        if (typeof browser !== 'undefined' && browser.runtime?.getURL) {
+            return browser.runtime.getURL(file);
+        }
+    } catch (e) {
+        // Context invalidated, return relative path
+    }
+    return file; // fallback relative path
+}
+
+// Strava Feed Filter - injected page script for Chrome WebExtension
 // This is derived from userscript/userscript/strava-feed-filter-clean.js (header removed)
 // A small GM_addStyle shim is provided so existing CSS injection works.
-
 (function() {
-  // console.log('SFF: IIFE started');
   if (typeof window.GM_addStyle !== 'function') {
     window.GM_addStyle = function(cssText) {
       try {
@@ -36,53 +50,41 @@
     const ext = (typeof browser !== 'undefined') ? browser : (typeof chrome !== 'undefined' ? chrome : null);
     const Storage = {
         async get(key, defaults) {
-            // console.log('SFF: Storage.get called with key:', key);
             try {
                 if (ext && ext.storage && ext.storage.local) {
-                    // console.log('SFF: Using extension storage, ext type:', typeof ext);
                     // Race against a timeout to avoid hanging if the background service worker is asleep
                     const p = ext.storage.local.get(key);
                     const timeout = new Promise((_, reject) => setTimeout(() => reject('timeout'), 300));
                     const obj = await Promise.race([p, timeout]);
-                    // console.log('SFF: Extension storage result:', obj);
                     return (obj && Object.prototype.hasOwnProperty.call(obj, key)) ? obj[key] : defaults;
                 }
             } catch (e) {
-                // console.error('SFF: Extension storage error, falling back to localStorage', e);
                 // Fallback to localStorage on timeout or error
             }
             try {
                 const raw = localStorage.getItem(key);
-                // console.log('SFF: localStorage result:', raw);
                 return raw ? JSON.parse(raw) : defaults;
-            } catch (e) {
-                // console.error('SFF: localStorage error', e);
+            } catch (_) {
                 return defaults;
             }
         },
         async set(key, value) {
-            // console.log('SFF: Storage.set called with key:', key, 'value:', value);
             // Always save to localStorage as a synchronous fallback cache
             try {
                 localStorage.setItem(key, JSON.stringify(value));
             } catch (e) {
-                // console.error('SFF: localStorage set error', e);
                 // Fallback save to localStorage failed
             }
             // Also save to extension storage
             try {
                 if (ext && ext.storage && ext.storage.local) {
-                    // console.log('SFF: Setting in extension storage');
                     await ext.storage.local.set({ [key]: value });
                 }
-            } catch (e) {
-                // console.error('SFF: Extension storage set error', e);
-            }
+            } catch (_) {}
         }
     };
 
     // Clean Filter: Script starting
-    console.log('SFF: Script starting');
 
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
@@ -108,6 +110,7 @@
         hideWandrer: false,
         hideBandok: false,
         hideCoros: false,
+        hideRouvy: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -273,51 +276,12 @@
         return { match: null, raw: candidates[0] || '' };
     }
 
-    // Global map to store activity ID -> device name from API responses
-    const activityDeviceCache = new Map();
 
-    // Intercept fetch calls to capture device info from Strava API responses
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-        const promise = originalFetch.apply(this, args);
-        return promise.then(response => {
-            // Clone response for parsing while preserving original
-            const responseClone = response.clone();
-            try {
-                // Check if this is a feed-related API call
-                const url = args[0] instanceof Request ? args[0].url : (typeof args[0] === 'string' ? args[0] : '');
-                if (url && (url.includes('/api/v') || url.includes('/athlete') || url.includes('graphql'))) {
-                    responseClone.json().then(data => {
-                        // Handle paginated feed entries
-                        if (data.entries && Array.isArray(data.entries)) {
-                            data.entries.forEach(entry => {
-                                if (entry.activity && entry.activity.id) {
-                                    // Store the device name if available
-                                    if (entry.activity.deviceName) {
-                                        activityDeviceCache.set(String(entry.activity.id), entry.activity.deviceName);
-                                    }
-                                }
-                            });
-                        }
-                        // Handle single activity responses
-                        if (data.activity && data.activity.id && data.activity.deviceName) {
-                            activityDeviceCache.set(String(data.activity.id), data.activity.deviceName);
-                        }
-                    }).catch(_ => {});
-                }
-            } catch (_) {}
-            return response;
-        });
-    };
 
     // CSS Module - Step 1 of modular refactoring
     function injectStyles() {
         GM_addStyle(`
       .sff-clean-btn {
-        position: fixed !important;
-        top: 10px !important;
-        right: 10px !important;
-        z-index: 2147483647 !important;
         padding: 5px 12px !important;
         background: #fc5200 !important;
         color: white !important;
@@ -356,10 +320,23 @@
         line-height: 1 !important;
       }
 
-      /* Drop the button earlier to avoid covering header buttons */
+      .sff-filter-nav-item {
+        padding-right: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+
+      li#notifications {
+        margin-left: 0 !important;
+        margin-right: 8px !important;
+      }
+
+      /* On smaller screens, adjust positioning */
       @media (max-width: 1460px) {
         .sff-clean-btn {
-          top: 56px !important; /* drop below header a bit */
+          position: fixed !important;
+          top: 56px !important;
+          right: 10px !important;
         }
       }
 
@@ -467,7 +444,7 @@
 
       .sff-panel-header h3 {
         margin: 0 !important;
-        font-size: 14px !important;
+        font-size: 20px !important;
         user-select: none !important;
         color: white !important;
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
@@ -545,19 +522,20 @@
       }
 
       .sff-panel-header .sff-close {
-        background: none !important;
+        background: #b71c1c !important;
         border: 1px solid white !important;
         font-size: 22px !important;
         color: white !important;
         cursor: pointer !important;
         padding: 2px 6px !important;
         border-radius: 4px !important;
-        line-height: 1 !important;
+        font-weight: 800 !important; line-height: 1 !important;
       }
 
       .sff-panel-header .sff-close:hover {
-        background: rgba(255,255,255,0.2) !important;
-        color: #fc5200 !important;
+        background: #8b0000 !important;
+        color: white !important;
+        border-color: white !important;
       }
 
       .sff-panel-content {
@@ -717,6 +695,43 @@
         }
       }
 
+      .sff-clean-panel .sff-chip {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
+        font-weight: 400 !important;
+        font-size: 14px !important; /* Increased for readability */
+        display: flex !important;
+        align-items: flex-start !important;
+        padding: 4px 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        line-height: 1.3 !important;
+        background: transparent !important;
+        cursor: pointer !important;
+        transition: none !important;
+        user-select: none !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sff-clean-panel .sff-chip:hover {
+        background: transparent !important;
+      }
+
+      .sff-clean-panel .sff-chip.checked {
+        background: transparent !important;
+        color: #333 !important;
+        font-weight: 400 !important; /* Ensure it's not bold when checked */
+      }
+
+      .sff-clean-panel .sff-chip input {
+        margin-right: 6px !important;
+        margin-left: 0 !important;
+        margin-top: 2px !important;
+        transform: scale(0.85) !important;
+        flex-shrink: 0 !important;
+      }
+
       .sff-label-with-info {
         display: flex !important;
         align-items: flex-start !important;
@@ -772,7 +787,7 @@
         border: none !important;
         padding: 0 !important;
         font-size: 18px !important;
-        color: #999 !important;
+        color: #dc3545 !important;
         cursor: pointer !important;
         line-height: 1 !important;
         position: absolute !important;
@@ -781,44 +796,7 @@
       }
 
       .sff-info-box-close:hover {
-        color: #333 !important;
-      }
-
-      .sff-clean-panel .sff-chip {
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
-        font-weight: 400 !important;
-        font-size: 14px !important; /* Increased for readability */
-        display: flex !important;
-        align-items: flex-start !important;
-        padding: 4px 0 !important;
-        border: none !important;
-        border-radius: 0 !important;
-        line-height: 1.3 !important;
-        background: transparent !important;
-        cursor: pointer !important;
-        transition: none !important;
-        user-select: none !important;
-        white-space: normal !important;
-        word-wrap: break-word !important;
-        overflow-wrap: break-word !important;
-      }
-
-      .sff-clean-panel .sff-chip:hover {
-        background: transparent !important;
-      }
-
-      .sff-clean-panel .sff-chip.checked {
-        background: transparent !important;
-        color: #333 !important;
-        font-weight: 400 !important; /* Ensure it's not bold when checked */
-      }
-
-      .sff-clean-panel .sff-chip input {
-        margin-right: 6px !important;
-        margin-left: 0 !important;
-        margin-top: 2px !important;
-        transform: scale(0.85) !important;
-        flex-shrink: 0 !important;
+        color: #dc3545 !important;
       }
 
       .sff-switch {
@@ -911,18 +889,675 @@
 
       /* Dark theme for header kudos + filter buttons injected into Strava nav */
       body[data-sff-theme="dark"] .sff-header-kudos-btn,
-      body[data-sff-theme="dark"] .sff-clean-btn,
-      body[data-sff-theme="dark"] .sff-secondary-filter-btn {
+      body[data-sff-theme="dark"] .sff-clean-btn {
         background: #111111 !important;
-        color: #fb923c !important;
-        border: 1px solid #fb923c !important;
+        color: #fc5200 !important;
+        border: 2px solid #fc5200 !important;
+      }
+      body[data-sff-theme="dark"] .sff-clean-btn .sff-btn-sub {
+        color: #fc5200 !important;
       }
 
       body[data-sff-theme="dark"] .sff-header-kudos-btn:hover,
-      body[data-sff-theme="dark"] .sff-clean-btn:hover,
-      body[data-sff-theme="dark"] .sff-secondary-filter-btn:hover {
-        background: #fb923c !important;
+      body[data-sff-theme="dark"] .sff-clean-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
+      }
+      body[data-sff-theme="dark"] .sff-back-btn {
+        background: #18181b !important;
+        border-color: #333333 !important;
+        color: #fc5200 !important;
+      }
+      body[data-sff-theme="dark"] .sff-back-btn:hover {
+        border-color: #fc5200 !important;
+        background: #27272f !important;
+      }
+
+
+      .sff-desc {
+        font-size: 11px !important;
+        color: #666 !important;
+        margin: -2px 0 8px 22px !important;
+      }
+      .sff-back-btn {
+        background: #f0f0f0 !important;
+        border: 1px solid #ccc !important;
+        cursor: pointer !important;
+        color: #333 !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+        margin-bottom: 16px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        border-radius: 4px !important;
+        width: 100% !important;
+        justify-content: center !important;
+        transition: all 0.2s ease !important;
+      }
+      .sff-back-btn:hover {
+        background: #e0e0e0 !important;
+        border-color: #bbb !important;
+      }
+
+
+      .sff-clean-panel .sff-buttons button {
+        padding: 6px 12px !important;
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+      }
+
+      .sff-clean-panel .sff-save {
+        background: #fc5200 !important;
+        color: white !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-clean-panel .sff-save:hover {
+        background: #e04700 !important;
+        border-color: #e04700 !important;
+      }
+
+      .sff-clean-panel .sff-reset {
+        background: white !important;
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
+      }
+
+      .sff-clean-panel .sff-reset:hover {
+        background: rgba(220, 53, 69, 0.05) !important;
+        color: #c82333 !important;
+        border-color: #c82333 !important;
+      }
+
+      .sff-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-top: 12px !important;
+        padding: 8px 12px !important;
+        background: #f8f9fa !important;
+        border: 1px solid #e9ecef !important;
+        border-radius: 6px !important;
+        gap: 8px !important;
+      }
+
+      .sff-credits {
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-size: 11px !important;
+        color: #666 !important;
+        flex: 1 !important;
+      }
+
+      .sff-credits p {
+        margin: 0 !important;
+        line-height: 1.3 !important;
+      }
+
+      .sff-credits p:first-child {
+        font-weight: 600 !important;
+        color: #333 !important;
+      }
+
+      .sff-credits a {
+        color: #fc5200 !important;
+        text-decoration: none !important;
+        font-weight: 700 !important;
+        transition: color 0.2s ease !important;
+      }
+
+      .sff-credits a:hover {
+        color: #e04a00 !important;
+        text-decoration: underline !important;
+      }
+
+      .sff-bmc {
+        text-align: right !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-top: none !important;
+        flex-shrink: 0 !important;
+      }
+
+      .sff-bmc a {
+        display: inline-block !important;
+        padding: 8px 16px !important;
+        background: #fc5200 !important;
+        color: #fff !important;
+        text-decoration: none !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s !important;
+      }
+
+      .sff-bmc a:hover {
+        background: #e04a00 !important;
+      }
+
+      .sff-copyright {
+        text-align: center !important;
+        margin-top: 6px !important;
+        padding-top: 6px !important;
+        border-top: 1px solid #eee !important;
+        font-size: 9px !important;
+        color: #aaa !important;
+      }
+
+      .sff-copyright p {
+        margin: 0 !important;
+        line-height: 1.2 !important;
+      }
+
+      /* Secondary navigation row for smaller screens */
+      .sff-secondary-nav {
+        position: fixed !important;
+        top: 55px !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 10 !important;
+        background: white !important;
+        border-bottom: 1px solid #e5e5e5 !important;
+        padding: 8px 16px !important;
+        display: none !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        gap: 12px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+      }
+
+      /* Dark theme overrides scoped to the filter panel and secondary nav */
+      .sff-clean-panel.sff-theme-dark {
+        background: #111111 !important;
+        border-color: #fc5200 !important;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.6) !important;
+        color: #f9fafb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header {
+        background: #18181b !important;
+        border-bottom: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header h3 {
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close:hover {
+        background: #8b0000 !important;
+        color: #fc5200 !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content {
+        background: #111111 !important;
+        color: #f9fafb !important;
+        scrollbar-width: thin;
+        scrollbar-color: #3f3f46 #09090b;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar {
+        width: 8px !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-track {
+        background: #09090b !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb {
+        background: #333333 !important;
+        border-radius: 4px !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb:hover {
+        background: #3f3f46 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-label,
+      .sff-clean-panel.sff-theme-dark h4,
+      .sff-clean-panel.sff-theme-dark p,
+      .sff-clean-panel.sff-theme-dark .sff-credits,
+      .sff-clean-panel.sff-theme-dark .sff-credits p:first-child,
+      .sff-clean-panel.sff-theme-dark .sff-copyright,
+      .sff-clean-panel.sff-theme-dark .sff-activity-count,
+      .sff-clean-panel.sff-theme-dark .sff-settings-desc,
+      .sff-clean-panel.sff-theme-dark .sff-toggle-text {
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-input {
+        background: #18181b !important;
+        border-color: #333333 !important;
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-chip {
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-dropdown-header {
+        background: #18181b !important;
+        border-color: #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-dropdown-content {
+        background: #09090b !important;
+        border-color: #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-dropdown-indicator {
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-save {
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-save:hover {
+        background: #fc5200 !important;
         color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-reset {
+        background: #111111 !important;
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-reset:hover {
+        background: #dc3545 !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-footer {
+        background: #09090b !important;
+        border-color: #333333 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark {
+        background: white !important;
+        border-bottom-color: #333333 !important;
+        box-shadow: none !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border: 2px solid #fc5200 !important;
+        margin: 0px !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-bmc a {
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-bmc a:hover {
+        background: #fc5200 !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-toggle-section {
+        background: #18181b !important;
+        border-bottom-color: #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider {
+        background-color: #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-switch input:checked + .sff-slider {
+        background-color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider:before {
+        background-color: #f9fafb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-toggle {
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-toggle:hover {
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode {
+        background: #18181b !important;
+        border: 1px solid #333333 !important;
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option {
+        background: #111111 !important;
+        color: #e5e7eb !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:hover,
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:checked {
+        background: #fc5200 !important;
+        color: #111111 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode:focus-visible,
+      .sff-clean-panel.sff-theme-dark .sff-input:focus-visible,
+      .sff-clean-panel.sff-theme-dark select:focus-visible,
+      .sff-clean-panel.sff-theme-dark textarea:focus-visible {
+        outline: 2px solid #fc5200 !important;
+        outline-offset: 1px !important;
+        box-shadow: 0 0 0 1px #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn:hover {
+        background: #333333 !important;
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger {
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger:hover {
+        background: #dc3545 !important;
+        color: #111111 !important;
+      }
+
+      /* Dark mode overrides for specific elements not covered by panel class */
+      
+      /* Helper Windows in Dark Mode */
+      body[data-sff-theme="dark"] .sff-info-box {
+        background: #18181b !important;
+        border-color: #333333 !important;
+        color: #e5e7eb !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+      }
+      
+      body[data-sff-theme="dark"] .sff-info-box-close {
+        color: #9ca3af !important;
+      }
+      
+      body[data-sff-theme="dark"] .sff-info-box-close:hover {
+        color: #dc3545 !important;
+      }
+
+      /* Dropdown buttons in Dark Mode (Select All / Clear All) */
+      .sff-clean-panel.sff-theme-dark .sff-types-select {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-types-select:hover {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+      /* Devices Select Buttons Dark Mode */
+      .sff-clean-panel.sff-theme-dark .sff-devices-select {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-devices-select:hover {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      /* Unit System Buttons Dark Mode */
+      .sff-clean-panel.sff-theme-dark .sff-unit-btn {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-unit-btn:hover {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-unit-btn.active {
+        background: #fc5200 !important;
+        color: #111111 !important;
+        border-color: #fc5200 !important;
+      }
+
+      /* Dark Mode for 'Show more stats' button on feed items */
+      body[data-sff-theme="dark"] .sff-see-more-btn {
+        background: #18181b !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+      }
+      
+      body[data-sff-theme="dark"] .sff-see-more-btn:hover {
+        background: #333333 !important;
+      }
+
+      /* Dark Mode for 'Hide stats' button inside expanded stats */
+      body[data-sff-theme="dark"] .sff-hide-stats-btn {
+        background: #18181b !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+      }
+
+      body[data-sff-theme="dark"] .sff-hide-stats-btn:hover {
+        background: #333333 !important;
+      }
+      
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border: 2px solid #fc5200 !important;
+        margin: 0px !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
+      }
+
+      /* Show secondary nav on smaller screens ONLY on dashboard */
+      @media (max-width: 1479px) {
+        body[data-sff-dashboard="true"] .sff-secondary-nav {
+          display: flex !important;
+        }
+
+        /* Hide main filter button on smaller screens ONLY on dashboard */
+        body[data-sff-dashboard="true"] .sff-clean-btn {
+          display: none !important;
+        }
+
+        /* Hide main header kudos button on smaller screens ONLY on dashboard */
+        body[data-sff-dashboard="true"] #gj-kudos-li {
+          display: none !important;
+        }
+
+        /* Adjust page content to account for secondary nav ONLY on dashboard */
+        body[data-sff-dashboard="true"] {
+          padding-top: 60px !important;
+        }
+
+        /* Additional margin for main content area to ensure no overlap */
+        body[data-sff-dashboard="true"] main,
+        body[data-sff-dashboard="true"] .view {
+          margin-top: 8px !important;
+        }
+      }
+
+      /* Secondary nav filter button */
+      .sff-secondary-filter-btn {
+        padding: 6px 12px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border: 1px solid transparent !important;
+        cursor: pointer !important;
+        font-weight: 700 !important;
+        border-radius: 4px !important;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
+        text-align: center !important;
+        transition: background-color 0.15s ease !important;
+        font-size: 14px !important;
+        line-height: 1.2 !important;
+        text-transform: uppercase !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+        z-index: 1000 !important;
+      }
+
+      .sff-secondary-filter-btn:hover {
+        background: #e04a00 !important;
+      }
+
+      /* Secondary nav kudos button */
+      .sff-secondary-kudos-btn {
+        padding: 6px 12px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border: 1px solid transparent !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        text-decoration: none !important;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        line-height: 1.2 !important;
+        transition: background-color 0.15s ease !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+      }
+
+      .sff-secondary-kudos-btn:hover {
+        background: #e04a00 !important;
+      }
+
+      /* Settings View Styles */
+      .sff-settings-toggle {
+        background: none !important;
+        border: none !important;
+        cursor: pointer !important;
+        font-size: 18px !important;
+        padding: 4px !important;
+        margin-left: auto !important; /* Pushes it to the right of flex container */
+        opacity: 0.8 !important;
+        transition: opacity 0.2s !important;
+        color: #666 !important; /* Updated to match gray theme of toggle section */
+        line-height: 1 !important;
+      }
+      .sff-settings-toggle:hover {
+        opacity: 1 !important;
+      }
+      
+      .sff-view-settings {
+        display: none;
+        padding: 16px;
+      }
+      .sff-view-settings.active {
+        display: block !important;
+      }
+      .sff-view-filters.hidden {
+        display: none !important;
+      }
+      
+      .sff-settings-btn {
+        width: 100% !important;
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+        background: #f8f9fa !important;
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        text-align: center !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        transition: background-color 0.2s !important;
+      }
+      .sff-settings-btn:hover {
+        background: #e9ecef !important;
+      }
+      .sff-settings-btn.danger {
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
+        background: #fff !important;
+      }
+      .sff-settings-btn.danger:hover {
+        background: #dc3545 !important;
+        color: white !important;
+      }
+      
+      .sff-file-input {
+        display: none !important;
+      }
+      
+      .sff-settings-desc {
+        font-size: 13px !important;
+        color: #666 !important;
+        margin-bottom: 20px !important;
+        line-height: 1.4 !important;
+      }
+
+      .sff-toast {
+        position: absolute !important;
+        bottom: 20px !important;
+        left: 50% !important;
+        transform: translateX(-50%) translateY(20px) !important;
+        background: #333 !important;
+        color: white !important;
+        padding: 8px 16px !important;
+        border-radius: 4px !important;
+        font-size: 13px !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transition: all 0.3s ease !important;
+        z-index: 100 !important;
+        white-space: nowrap !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+      }
+      .sff-toast.show {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateX(-50%) translateY(0) !important;
+      }
+      .sff-toast.error {
+        background: #dc3545 !important;
       }
 
       .sff-see-more-btn {
@@ -1035,548 +1670,6 @@
         }
       }
 
-      .sff-desc {
-        font-size: 11px !important;
-        color: #666 !important;
-        margin: -2px 0 8px 22px !important;
-      }
-
-      .sff-clean-panel .sff-buttons button {
-        padding: 6px 12px !important;
-        border: 1px solid #ddd !important;
-        border-radius: 4px !important;
-        cursor: pointer !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
-      }
-
-      .sff-clean-panel .sff-save {
-        background: #fc5200 !important;
-        color: white !important;
-        border-color: #fc5200 !important;
-      }
-
-      .sff-clean-panel .sff-save:hover {
-        background: #e04700 !important;
-        border-color: #e04700 !important;
-      }
-
-      .sff-clean-panel .sff-reset {
-        background: white !important;
-        color: #fc5200 !important;
-        border-color: #fc5200 !important;
-      }
-
-      .sff-clean-panel .sff-reset:hover {
-        background: rgba(252, 82, 0, 0.05) !important;
-        color: #e04700 !important;
-        border-color: #e04700 !important;
-      }
-
-      .sff-footer {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        margin-top: 12px !important;
-        padding: 8px 12px !important;
-        background: #f8f9fa !important;
-        border: 1px solid #e9ecef !important;
-        border-radius: 6px !important;
-        gap: 8px !important;
-      }
-
-      .sff-credits {
-        text-align: left !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        font-size: 11px !important;
-        color: #666 !important;
-        flex: 1 !important;
-      }
-
-      .sff-credits p {
-        margin: 0 !important;
-        line-height: 1.3 !important;
-      }
-
-      .sff-credits p:first-child {
-        font-weight: 600 !important;
-        color: #333 !important;
-      }
-
-      .sff-credits a {
-        color: #fc5200 !important;
-        text-decoration: none !important;
-        font-weight: 700 !important;
-        transition: color 0.2s ease !important;
-      }
-
-      .sff-credits a:hover {
-        color: #e04a00 !important;
-        text-decoration: underline !important;
-      }
-
-      .sff-bmc {
-        text-align: right !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border-top: none !important;
-        flex-shrink: 0 !important;
-      }
-
-      .sff-bmc a {
-        display: inline-block !important;
-        padding: 8px 16px !important;
-        background: #FC5200 !important;
-        color: #fff !important;
-        text-decoration: none !important;
-        border-radius: 6px !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
-        transition: all 0.2s !important;
-      }
-
-      .sff-bmc a:hover {
-        background: #e04a00 !important;
-      }
-
-      .sff-copyright {
-        text-align: center !important;
-        margin-top: 6px !important;
-        padding-top: 6px !important;
-        border-top: 1px solid #eee !important;
-        font-size: 9px !important;
-        color: #aaa !important;
-      }
-
-      .sff-copyright p {
-        margin: 0 !important;
-        line-height: 1.2 !important;
-      }
-
-      /* Secondary navigation row for smaller screens */
-      .sff-secondary-nav {
-        position: fixed !important;
-        top: 55px !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 10 !important;
-        background: white !important;
-        border-bottom: 1px solid #e5e5e5 !important;
-        padding: 8px 16px !important;
-        display: none !important;
-        justify-content: flex-end !important;
-        align-items: center !important;
-        gap: 12px !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-      }
-
-      /* Dark theme overrides scoped to the filter panel and secondary nav */
-      .sff-clean-panel.sff-theme-dark {
-        background: #111111 !important;
-        border-color: #fc5200 !important;
-        box-shadow: 0 16px 40px rgba(0,0,0,0.6) !important;
-        color: #f9fafb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-header {
-        background: #18181b !important;
-        border-bottom: 1px solid #27272f !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-header h3 {
-        color: #f9fafb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close {
-        border-color: #fb923c !important;
-        color: #f9fafb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close:hover {
-        background: rgba(251, 146, 60, 0.15) !important;
-        color: #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-content {
-        background: #111111 !important;
-        color: #f9fafb !important;
-        scrollbar-width: thin;
-        scrollbar-color: #3f3f46 #09090b;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar {
-        width: 8px !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-track {
-        background: #09090b !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb {
-        background: #27272f !important;
-        border-radius: 4px !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb:hover {
-        background: #3f3f46 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-label,
-      .sff-clean-panel.sff-theme-dark h4,
-      .sff-clean-panel.sff-theme-dark p,
-      .sff-clean-panel.sff-theme-dark .sff-credits,
-      .sff-clean-panel.sff-theme-dark .sff-credits p:first-child,
-      .sff-clean-panel.sff-theme-dark .sff-copyright,
-      .sff-clean-panel.sff-theme-dark .sff-activity-count,
-      .sff-clean-panel.sff-theme-dark .sff-settings-desc,
-      .sff-clean-panel.sff-theme-dark .sff-toggle-text {
-        color: #e5e7eb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-input {
-        background: #18181b !important;
-        border-color: #27272f !important;
-        color: #e5e7eb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-chip {
-        color: #e5e7eb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-dropdown-header {
-        background: #18181b !important;
-        border-color: #27272f !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-dropdown-content {
-        background: #09090b !important;
-        border-color: #27272f !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-dropdown-indicator {
-        color: #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-save {
-        background: #111111 !important;
-        color: #fc5200 !important;
-        border-color: #fc5200 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-save:hover {
-        background: #fc5200 !important;
-        color: #111111 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-reset {
-        background: #111111 !important;
-        color: #f97316 !important;
-        border-color: #f97316 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-reset:hover {
-        background: #f97316 !important;
-        color: #111111 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-footer {
-        background: #09090b !important;
-        border-color: #27272f !important;
-      }
-
-      .sff-secondary-nav.sff-theme-dark {
-        background: #111111 !important;
-        border-bottom-color: #27272f !important;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.6) !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-bmc a {
-        background: transparent !important;
-        color: #fb923c !important;
-        border: 1px solid #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-bmc a:hover {
-        background: #fb923c !important;
-        color: #111111 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-toggle-section {
-        background: #18181b !important;
-        border-bottom-color: #27272f !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider {
-        background-color: #27272f !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-switch input:checked + .sff-slider {
-        background-color: #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider:before {
-        background-color: #f9fafb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-settings-toggle {
-        color: #e5e7eb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-settings-toggle:hover {
-        color: #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode {
-        background: #18181b !important;
-        border: 1px solid #27272f !important;
-        color: #e5e7eb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option {
-        background: #111111 !important;
-        color: #e5e7eb !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:hover,
-      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:checked {
-        background: #fb923c !important;
-        color: #111111 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-seeMoreMode:focus-visible,
-      .sff-clean-panel.sff-theme-dark .sff-input:focus-visible,
-      .sff-clean-panel.sff-theme-dark select:focus-visible,
-      .sff-clean-panel.sff-theme-dark textarea:focus-visible {
-        outline: 2px solid #fb923c !important;
-        outline-offset: 1px !important;
-        box-shadow: 0 0 0 1px #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-settings-btn {
-        background: #18181b !important;
-        color: #e5e7eb !important;
-        border: 1px solid #27272f !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-settings-btn:hover {
-        background: #27272f !important;
-        border-color: #fb923c !important;
-        color: #fb923c !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger {
-        border-color: #f97316 !important;
-        color: #f97316 !important;
-      }
-
-      .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger:hover {
-        background: #f97316 !important;
-        color: #111111 !important;
-      }
-
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
-        background: #111111 !important;
-        color: #fb923c !important;
-        border: 1px solid #fb923c !important;
-      }
-
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
-        background: #fb923c !important;
-        color: #111111 !important;
-      }
-
-      .sff-secondary-nav.sff-theme-dark .sff-notification-bell {
-        background: #111111 !important;
-        border: 1px solid #fb923c !important;
-      }
-
-      .sff-secondary-nav.sff-theme-dark .sff-notification-bell svg path {
-        fill: #fb923c !important;
-      }
-
-      /* Show secondary nav on smaller screens ONLY on dashboard */
-      @media (max-width: 1479px) {
-        body[data-sff-dashboard="true"] .sff-secondary-nav {
-          display: flex !important;
-        }
-
-        /* Hide main filter button on smaller screens ONLY on dashboard */
-        body[data-sff-dashboard="true"] .sff-clean-btn {
-          display: none !important;
-        }
-
-        /* Hide main header kudos button on smaller screens ONLY on dashboard */
-        body[data-sff-dashboard="true"] #gj-kudos-li {
-          display: none !important;
-        }
-
-        /* Adjust page content to account for secondary nav ONLY on dashboard */
-        body[data-sff-dashboard="true"] {
-          padding-top: 60px !important;
-        }
-
-        /* Additional margin for main content area to ensure no overlap */
-        body[data-sff-dashboard="true"] main,
-        body[data-sff-dashboard="true"] .view {
-          margin-top: 8px !important;
-        }
-      }
-
-      /* Secondary nav filter button */
-      .sff-secondary-filter-btn {
-        padding: 6px 12px !important;
-        background: #fc5200 !important;
-        color: white !important;
-        border: 1px solid transparent !important;
-        cursor: pointer !important;
-        font-weight: 700 !important;
-        border-radius: 4px !important;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
-        text-align: center !important;
-        transition: background-color 0.15s ease !important;
-        font-size: 14px !important;
-        line-height: 1.2 !important;
-        text-transform: uppercase !important;
-        position: relative !important;
-        z-index: 1000 !important;
-      }
-
-      .sff-secondary-filter-btn:hover {
-        background: #e04a00 !important;
-      }
-
-      .sff-secondary-filter-btn .sff-btn-sub {
-        font-weight: 500 !important;
-        text-transform: uppercase !important;
-        color: white !important;
-        opacity: 1 !important;
-        line-height: 1 !important;
-      }
-
-      /* Secondary nav kudos button */
-      .sff-secondary-kudos-btn {
-        padding: 6px 12px !important;
-        background: #fc5200 !important;
-        color: white !important;
-        border: 1px solid transparent !important;
-        border-radius: 4px !important;
-        cursor: pointer !important;
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        text-decoration: none !important;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        line-height: 1.2 !important;
-        transition: background-color 0.15s ease !important;
-        position: relative !important;
-        z-index: 1000 !important;
-      }
-
-      .sff-secondary-kudos-btn:hover {
-        background: #e04a00 !important;
-      }
-
-      /* Settings View Styles */
-      .sff-settings-toggle {
-        background: none !important;
-        border: none !important;
-        cursor: pointer !important;
-        font-size: 18px !important;
-        padding: 4px !important;
-        margin-left: auto !important; /* Pushes it to the right of flex container */
-        opacity: 0.8 !important;
-        transition: opacity 0.2s !important;
-        color: #666 !important; /* Updated to match gray theme of toggle section */
-        line-height: 1 !important;
-      }
-      .sff-settings-toggle:hover {
-        opacity: 1 !important;
-      }
-      
-      .sff-view-settings {
-        display: none;
-        padding: 16px;
-      }
-      .sff-view-settings.active {
-        display: block !important;
-      }
-      .sff-view-filters.hidden {
-        display: none !important;
-      }
-      
-      .sff-settings-btn {
-        width: 100% !important;
-        padding: 12px !important;
-        margin-bottom: 12px !important;
-        background: #f8f9fa !important;
-        border: 1px solid #ddd !important;
-        border-radius: 4px !important;
-        cursor: pointer !important;
-        font-weight: 600 !important;
-        text-align: center !important;
-        color: #333 !important;
-        font-size: 14px !important;
-        transition: background-color 0.2s !important;
-      }
-      .sff-settings-btn:hover {
-        background: #e9ecef !important;
-      }
-      .sff-settings-btn.danger {
-        color: #dc3545 !important;
-        border-color: #dc3545 !important;
-        background: #fff !important;
-      }
-      .sff-settings-btn.danger:hover {
-        background: #dc3545 !important;
-        color: white !important;
-      }
-      
-      .sff-file-input {
-        display: none !important;
-      }
-      
-      .sff-settings-desc {
-        font-size: 13px !important;
-        color: #666 !important;
-        margin-bottom: 20px !important;
-        line-height: 1.4 !important;
-      }
-
-      .sff-toast {
-        position: absolute !important;
-        bottom: 20px !important;
-        left: 50% !important;
-        transform: translateX(-50%) translateY(20px) !important;
-        background: #333 !important;
-        color: white !important;
-        padding: 8px 16px !important;
-        border-radius: 4px !important;
-        font-size: 13px !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        transition: all 0.3s ease !important;
-        z-index: 100 !important;
-        white-space: nowrap !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-      }
-      .sff-toast.show {
-        opacity: 1 !important;
-        visibility: visible !important;
-        transform: translateX(-50%) translateY(0) !important;
-      }
-      .sff-toast.error {
-        background: #dc3545 !important;
-      }
-
-      /* Notification Bell Icon - Orange Outline Style */
       .sff-notification-bell {
         display: none;
         padding: 0 !important;
@@ -1607,17 +1700,33 @@
         }
       }
 
+      .sff-notification-bell svg {
+        width: 18px !important;
+        height: 18px !important;
+      }
+
+      .sff-notification-bell svg path {
+        fill: #fc5200 !important;
+      }
+
       .sff-notification-bell:hover {
         background: rgba(252, 82, 0, 0.05) !important;
         border-color: #e04a00 !important;
       }
 
-      .sff-notification-bell svg {
-        width: 18px !important;
-        height: 18px !important;
+      /* Dark mode styles for notification bell - must come after base styles for proper cascade */
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell {
+        background: #111111 !important;
+        border: 2px solid #fc5200 !important;
+        color: #fc5200 !important;
       }
-      
-      .sff-notification-bell svg path {
+
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell:hover {
+        background: #333333 !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell svg path {
         fill: #fc5200 !important;
       }
 
@@ -1625,31 +1734,33 @@
         position: absolute !important;
         top: -6px !important;
         right: -6px !important;
-        min-width: 18px !important;
-        height: 18px !important;
         background: #dc3545 !important;
         color: white !important;
         border-radius: 9px !important;
+        padding: 0 5px !important;
         font-size: 11px !important;
         font-weight: 700 !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        text-align: center !important;
         display: none !important;
+        line-height: 1.2 !important;
+        box-sizing: border-box !important;
         align-items: center !important;
         justify-content: center !important;
-        padding: 0 5px !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
         border: 2px solid white !important;
       }
-      
+
       .sff-notification-bell .sff-notification-badge.show {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
       }
 
-      /* Notification Dropdown - Strava Style */
       .sff-notification-overlay {
         position: fixed !important;
-        top: 56px !important;
+        top: 103px !important;
         right: 10px !important;
         width: 420px !important;
         max-width: calc(100vw - 20px) !important;
@@ -1669,116 +1780,177 @@
       }
 
       .sff-notification-list-container {
-        padding: 0 !important;
-        margin: 0 !important;
+        max-height: calc(100vh - 100px) !important;
         overflow-y: auto !important;
-        max-height: 540px !important;
       }
 
       .sff-notification-item {
         display: flex !important;
-        align-items: flex-start !important;
-        padding: 16px 20px !important;
-        border-bottom: 1px solid #e5e5e5 !important;
-        background: white !important;
-        text-decoration: none !important;
-        color: #333 !important;
-        transition: background-color 0.15s ease !important;
+        padding: 12px !important;
+        border-bottom: 1px solid #eee !important;
         cursor: pointer !important;
-      }
-
-      .sff-notification-item:last-child {
-        border-bottom: none !important;
+        transition: background-color 0.2s !important;
       }
 
       .sff-notification-item:hover {
-        background: #f7f7f7 !important;
+        background: #f8f9fa !important;
       }
 
       .sff-notification-item.notification-unread {
-        background: #fef9f5 !important;
-      }
-
-      .sff-notification-item.notification-unread:hover {
-        background: #fef5ed !important;
+        background: #fff3e0 !important;
       }
 
       .sff-notification-icon {
-        width: 44px !important;
-        height: 44px !important;
+        width: 40px !important;
+        height: 40px !important;
         border-radius: 50% !important;
         margin-right: 12px !important;
-        object-fit: cover !important;
         flex-shrink: 0 !important;
       }
 
       .sff-notification-content {
         flex: 1 !important;
-        min-width: 0 !important;
       }
 
       .sff-notification-content h4 {
-        margin: 0 0 2px 0 !important;
-        font-size: 15px !important;
+        margin: 0 0 4px 0 !important;
+        font-size: 14px !important;
         font-weight: 600 !important;
-        line-height: 1.4 !important;
-        color: #242428 !important;
+        color: #333 !important;
       }
 
       .sff-notification-content p {
         margin: 0 0 4px 0 !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
+        color: #666 !important;
         line-height: 1.4 !important;
-        color: #606060 !important;
-      }
-
-      .sff-notification-content p strong {
-        font-weight: 600 !important;
-        color: #242428 !important;
       }
 
       .sff-notification-date {
-        font-size: 12px !important;
+        font-size: 11px !important;
         color: #999 !important;
-        margin-top: 2px !important;
-        display: block !important;
       }
 
-      .sff-notification-loading {
-        padding: 40px 20px !important;
+      .sff-notification-loading,
+      .sff-notification-empty,
+      .sff-notification-error {
+        padding: 20px !important;
         text-align: center !important;
         color: #666 !important;
         font-size: 14px !important;
       }
 
       .sff-notification-error {
-        padding: 20px !important;
-        text-align: center !important;
         color: #dc3545 !important;
-        font-size: 14px !important;
       }
 
-      .sff-notification-empty {
-        padding: 40px 20px !important;
-        text-align: center !important;
-        color: #999 !important;
-        font-size: 14px !important;
+      .sff-see-more-btn {
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        background: #fc5200 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 3px !important;
+        cursor: pointer !important;
+        font-weight: 600 !important;
+        transition: background-color 0.15s ease !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        line-height: 1.2 !important;
       }
 
-      /* Responsive adjustments for notification dropdown */
-      @media (max-width: 1479px) {
-        .sff-notification-overlay {
-          top: 110px !important;
-          right: 10px !important;
+      .sff-see-more-btn:hover {
+        background: #e04a00 !important;
+      }
+
+      .sff-see-more-btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+      }
+
+      .sff-expanded-stats {
+        background: #f8f9fa !important;
+        border: 1px solid #e1e4e8 !important;
+        border-radius: 6px !important;
+        padding: 16px !important;
+        margin: 12px 0 !important;
+        animation: sff-slide-down 0.3s ease-out !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      @keyframes sff-slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
 
-      @media (max-width: 760px) {
-        .sff-notification-overlay {
-          width: calc(100vw - 20px) !important;
-          max-width: 420px !important;
-          left: 10px !important;
-          right: auto !important;
+      .sff-stats-section-header {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #242428 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin: 20px 0 12px 0 !important;
+        padding-bottom: 8px !important;
+        border-bottom: 2px solid #fc5200 !important;
+      }
+
+      .sff-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+        gap: 16px 12px !important;
+      }
+
+      .sff-stat-item {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+
+      .sff-stat-label {
+        font-size: 15px !important;
+        color: #242428 !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin-bottom: 4px !important;
+      }
+
+      .sff-stat-value {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        line-height: 1.3 !important;
+      }
+
+      .sff-stat-subvalue {
+        font-size: 13px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+        margin-top: 2px !important;
+        line-height: 1.3 !important;
+      }
+      
+      .sff-expanded-stats .sff-stat-value span.sff-stat-prefix,
+      .sff-expanded-stats .sff-stat-subvalue span.sff-stat-prefix {
+        font-weight: 700 !important;
+      }
+
+      .sff-no-stats {
+        color: #666 !important;
+        font-size: 13px !important;
+        font-style: italic !important;
+        margin: 0 !important;
+      }
+
+      @media (max-width: 768px) {
+        .sff-stats-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
         }
       }
         `);
@@ -1789,29 +1961,32 @@
 
     // Utilities Module - Step 2 of modular refactoring
     const UtilsModule = {
+        init() {
+            // Bind all methods to ensure 'this' context is always correct
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] === 'function') {
+                    this[key] = this[key].bind(this);
+                }
+            }
+        },
+
         // Settings management
         async loadSettings() {
-            // console.log('SFF: UtilsModule.loadSettings called');
             const s = await Storage.get(STORAGE_KEY, DEFAULTS);
-            // console.log('SFF: Raw settings from storage:', s);
             const merged = { ...DEFAULTS, ...(s || {}) };
-            // console.log('SFF: Merged settings:', merged);
             // Migration: convert stored zeros to empty strings so placeholders show
             const numKeys = ['minKm','maxKm','minMins','maxMins','minElevM','maxElevM','minPace','maxPace'];
             for (const k of numKeys) {
                 if (merged[k] === 0 || merged[k] === '0') merged[k] = '';
             }
-
-            // Migration: derive seeMoreButtonMode from legacy boolean if not set
-            if (!merged.seeMoreButtonMode) {
-                if (merged.showSeeMoreButton === false) {
-                    merged.seeMoreButtonMode = 'never';
-                } else {
-                    merged.seeMoreButtonMode = 'always';
-                }
+            // Migration: handle old showSeeMoreButton boolean (convert to seeMoreButtonMode)
+            if (merged.showSeeMoreButton === false) {
+                merged.seeMoreButtonMode = 'never';
+                merged.showSeeMoreButton = false;
+            } else if (!merged.seeMoreButtonMode) {
+                merged.seeMoreButtonMode = 'always';
+                merged.showSeeMoreButton = true;
             }
-
-            // console.log('SFF: Final settings:', merged);
             return merged;
         },
 
@@ -1834,15 +2009,7 @@
 
         // Page detection
         isOnDashboard() {
-            const path = window.location.pathname;
-            // console.log('SFF: Checking if on dashboard, path:', path);
-            // More comprehensive dashboard detection
-            const isDashboard = path === '/dashboard' || path === '/' || 
-                              path.startsWith('/dashboard/') || path.startsWith('/home') ||
-                              // Some users might land on these pages that should also be considered dashboard
-                              path.includes('feed') || path.includes('activities');
-            // console.log('SFF: isOnDashboard result:', isDashboard);
-            return isDashboard;
+            return window.location.pathname === '/dashboard' || window.location.pathname === '/';
         },
 
         // Convert pace from min:sec format to decimal minutes
@@ -1975,7 +2142,17 @@
     };
 
     // UI Module - Step 3 of modular refactoring
+
     const UIModule = {
+        init() {
+            // Bind all methods to ensure 'this' context is always correct
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] === 'function') {
+                    this[key] = this[key].bind(this);
+                }
+            }
+        },
+
         updateActivityCount(panel) {
             const countEl = panel.querySelector('.sff-activity-count');
             if (!countEl) return;
@@ -2010,16 +2187,6 @@
                 .map(x => x.trim())
                 .filter(Boolean);
 
-            settings.recordingDevices = Array.from(panel.querySelector('.sff-devices').querySelectorAll('input[type="checkbox"][data-device]:checked'))
-                .map(input => input.dataset.device)
-                .filter(Boolean);
-
-            settings.recordingDevicesCustom = panel.querySelector('.sff-devices-custom').value
-                .split(',')
-                .map(x => x.trim())
-                .filter(Boolean)
-                .join(', ');
-
             settings.allowedAthletes = panel.querySelector('.sff-allowed-athletes').value
                 .split(',')
                 .map(x => x.trim())
@@ -2029,6 +2196,16 @@
                 .split(',')
                 .map(x => x.trim())
                 .filter(Boolean);
+
+            settings.recordingDevices = Array.from(panel.querySelector('.sff-devices').querySelectorAll('input[type="checkbox"][data-device]:checked'))
+                .map(input => input.dataset.device)
+                .filter(Boolean);
+
+            settings.recordingDevicesCustom = panel.querySelector('.sff-devices-custom').value
+                .split(',')
+                .map(x => x.trim())
+                .filter(Boolean)
+                .join(', ');
 
             const getNumOrEmpty = (selector) => {
                 const v = panel.querySelector(selector).value.trim();
@@ -2060,18 +2237,18 @@
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
             settings.hideBandok = panel.querySelector('.sff-hideBandok') ? panel.querySelector('.sff-hideBandok').checked : settings.hideBandok;
             settings.hideCoros = panel.querySelector('.sff-hideCoros') ? panel.querySelector('.sff-hideCoros').checked : settings.hideCoros;
+            settings.hideRouvy = panel.querySelector('.sff-hideRouvy') ? panel.querySelector('.sff-hideRouvy').checked : settings.hideRouvy;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
+            settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
+            LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
+            UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
             const giftChk = panel.querySelector('.sff-hideGift');
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
             const startTrialChk = panel.querySelector('.sff-hideStartTrial');
             settings.hideStartTrial = startTrialChk ? startTrialChk.checked : settings.hideStartTrial;
-            const kudosBtn = panel.querySelector('.sff-showKudosButton');
-            settings.showKudosButton = kudosBtn ? kudosBtn.checked : settings.showKudosButton;
-            const notifBell = panel.querySelector('.sff-showNotifications');
-            settings.showNotifications = notifBell ? notifBell.checked : settings.showNotifications;
 
             const themeRadio = panel.querySelector('input[name="sff-theme"]:checked');
             settings.theme = themeRadio && themeRadio.value === 'dark' ? 'dark' : 'light';
@@ -2120,7 +2297,7 @@
         },
 
         createElements() {
-            // Creating UI elements
+            // Clean Filter: Creating elements
 
             // Remove existing
             document.querySelectorAll('.sff-clean-btn, .sff-clean-panel, .sff-secondary-nav').forEach(el => el.remove());
@@ -2181,14 +2358,13 @@
             this.syncSecondaryKudosVisibility();
             this.toggleNotificationBell(); // Set initial visibility based on settings
 
-            // Create button
+            // Create button as a list item in the nav
+            const btnLi = document.createElement('li');
+            btnLi.className = 'nav-item sff-filter-nav-item';
             const btn = document.createElement('button');
             btn.className = 'sff-clean-btn';
             btn.innerHTML = '<span class="sff-btn-title">Filter <span class="sff-btn-sub">(0)</span></span>';
-            btn.style.position = 'fixed';
-            btn.style.top = '10px';
-            btn.style.right = '10px';
-            btn.style.zIndex = '2147483647';
+            btnLi.appendChild(btn);
 
             // Create panel using helper method
             const panel = this._createPanel();
@@ -2199,10 +2375,23 @@
                 secondaryNav.classList.add('sff-theme-dark');
             }
 
-            document.body.appendChild(btn);
+            // Insert button after notifications element
+            const notificationsLi = document.querySelector('li#notifications');
+            if (notificationsLi && notificationsLi.parentNode) {
+                notificationsLi.parentNode.insertBefore(btnLi, notificationsLi.nextSibling);
+            } else {
+                // Fallback: append to body if notifications element not found
+                document.body.appendChild(btnLi);
+            }
             document.body.appendChild(panel);
 
-            // UI elements added
+            // Set the initial settings icon src after the panel is in the DOM
+            const settingsIcon = panel.querySelector('#sff-settings-icon');
+            if (settingsIcon) {
+                settingsIcon.src = getSettingsIconUrl(settings.theme);
+            }
+
+            // Clean Filter: Elements added
 
             // Get secondary elements (we're only on dashboard at this point)
             const secondaryFilterBtn = document.querySelector('.sff-secondary-filter-btn');
@@ -2219,7 +2408,7 @@
                 const shouldShow = settings.enabled && settings.showKudosButton;
                 // Use setProperty with !important to override CSS rules
                 secondaryKudosBtn.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
-                // Kudos button visibility updated
+                // Secondary kudos button visibility updated
             }
         },
 
@@ -2240,70 +2429,6 @@
                     overlay.classList.remove('show');
                 }
             }
-        },
-
-        _createPanel() {
-            const panel = document.createElement('div');
-            panel.className = 'sff-clean-panel';
-
-            // Set initial styles - ensure it's hidden by default
-            panel.style.position = 'fixed';
-            panel.style.display = 'none';
-            panel.style.visibility = 'hidden';
-            panel.style.opacity = '0';
-            panel.style.zIndex = '2147483646';
-            panel.style.right = '10px';
-            panel.style.top = '60px';
-            panel.style.transition = 'opacity 0.2s ease, visibility 0.2s';
-
-            // Load position (async from extension storage)
-            Storage.get('sffPanelPos', {}).then((savedPos) => {
-                if (savedPos && (savedPos.left || savedPos.top)) {
-                    panel.style.left = savedPos.left || '';
-                    panel.style.right = savedPos.left ? 'auto' : '10px';
-                    panel.style.top = savedPos.top || '60px';
-                }
-            });
-
-            // Build panel content sections
-            const header = this._createPanelHeader();
-            const content = this._createPanelContent();
-            const resizeHandleRight = this._createResizeHandle('right');
-            const resizeHandleLeft = this._createResizeHandle('left');
-
-            panel.appendChild(header);
-            panel.appendChild(content);
-            panel.appendChild(resizeHandleRight);
-            panel.appendChild(resizeHandleLeft);
-
-            return panel;
-        },
-
-        _createPanelHeader() {
-            const header = document.createElement('div');
-            header.className = 'sff-panel-header';
-            header.innerHTML = `
-                <div class="sff-header-main">
-                    <h3>Strava Feed Filter</h3>
-                </div>
-                <button class="sff-close">×</button>
-            `;
-            return header;
-        },
-
-        _createPanelContent() {
-            const content = document.createElement('div');
-            content.className = 'sff-panel-content';
-            content.innerHTML = this._getPanelHTML();
-            return content;
-        },
-
-        _createResizeHandle(side = 'right') {
-            const handle = document.createElement('div');
-            handle.className = side === 'left' ? 'sff-resize-handle-left' : 'sff-resize-handle';
-            handle.title = 'Drag to resize';
-            handle.dataset.side = side;
-            return handle;
         },
 
         _createNotificationBell() {
@@ -2327,7 +2452,7 @@
                 </div>
             `;
 
-            document.body.appendChild(button);
+            // Append overlay to body (but NOT the button - let caller append it)
             document.body.appendChild(overlay);
 
             // Setup click handlers
@@ -2571,6 +2696,71 @@
             }
         },
 
+        _createPanel() {
+            const panel = document.createElement('div');
+            panel.className = 'sff-clean-panel';
+
+            // Set initial styles - ensure it's hidden by default
+            panel.style.position = 'fixed';
+            panel.style.display = 'none';
+            panel.style.visibility = 'hidden';
+            panel.style.opacity = '0';
+            panel.style.zIndex = '2147483646';
+            panel.style.width = '320px';
+            panel.style.right = '10px';
+            panel.style.top = '60px';
+            panel.style.transition = 'opacity 0.2s ease, visibility 0.2s';
+
+            // Load position (async from extension storage)
+            Storage.get('sffPanelPos', {}).then((savedPos) => {
+                if (savedPos && (savedPos.left || savedPos.top)) {
+                    panel.style.left = savedPos.left || '';
+                    panel.style.right = savedPos.left ? 'auto' : '10px';
+                    panel.style.top = savedPos.top || '60px';
+                }
+            });
+
+            // Build panel content sections
+            const header = this._createPanelHeader();
+            const content = this._createPanelContent();
+            const resizeHandleRight = this._createResizeHandle('right');
+            const resizeHandleLeft = this._createResizeHandle('left');
+
+            panel.appendChild(header);
+            panel.appendChild(content);
+            panel.appendChild(resizeHandleRight);
+            panel.appendChild(resizeHandleLeft);
+
+            return panel;
+        },
+
+        _createResizeHandle(side = 'right') {
+            const handle = document.createElement('div');
+            handle.className = side === 'left' ? 'sff-resize-handle-left' : 'sff-resize-handle';
+            handle.title = 'Drag to resize';
+            handle.dataset.side = side;
+            return handle;
+        },
+
+        _createPanelHeader() {
+            const header = document.createElement('div');
+            header.className = 'sff-panel-header';
+            header.innerHTML = `
+                <div class="sff-header-main">
+                    <h3>Strava Feed Filter</h3>
+                </div>
+                <button class="sff-close">×</button>
+            `;
+            return header;
+        },
+
+        _createPanelContent() {
+            const content = document.createElement('div');
+            content.className = 'sff-panel-content';
+            content.innerHTML = this._getPanelHTML();
+            return content;
+        },
+
         _getPanelHTML() {
             return `
                 <div class="sff-toast"></div>
@@ -2583,7 +2773,7 @@
                         <span class="sff-label">
                             <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
                         </span>
-                        <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; color: #666; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">⚙️</button>
+                        <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;"><img id="sff-settings-icon" src="" style="width: 30px; height: 30px; vertical-align: middle;"></button>
                     </div>
                     <div class="sff-row sff-dropdown">
                         <div class="sff-dropdown-header">
@@ -2676,50 +2866,35 @@
                         </div>
                         <div class="sff-dropdown-content">
                             <div class="sff-row">
-                                <div class="sff-label-with-info">
-                                    <label class="sff-label">Unit System</label>
-                                    <span class="sff-info-icon" data-info="Choose between metric (km, m) and imperial (miles, ft) units for all filter displays.">ℹ</span>
-                                </div>
+                                <label class="sff-label">Unit System</label>
                                 <div class="sff-unit-toggle">
                                     <button class="sff-unit-btn metric ${settings.unitSystem === 'metric' ? 'active' : ''}" data-unit="metric">Metric</button>
                                     <button class="sff-unit-btn imperial ${settings.unitSystem === 'imperial' ? 'active' : ''}" data-unit="imperial">Imperial</button>
                                 </div>
                             </div>
                             <div class="sff-row">
-                                <div class="sff-label-with-info">
-                                    <label class="sff-label" data-label-type="distance">Distance (km):</label>
-                                    <span class="sff-info-icon" data-info="Hide activities shorter than minimum or longer than maximum distance.">ℹ</span>
-                                </div>
+                                <label class="sff-label" data-label-type="distance">Distance (km):</label>
                                 <div class="sff-input-group">
                                     <input type="number" class="sff-input sff-minKm" min="0" step="0.1" value="${settings.minKm}" placeholder="Min">
                                     <input type="number" class="sff-input sff-maxKm" min="0" step="0.1" value="${settings.maxKm}" placeholder="Max">
                                 </div>
                             </div>
                             <div class="sff-row">
-                                <div class="sff-label-with-info">
-                                    <label class="sff-label" data-label-type="duration">Duration (minutes):</label>
-                                    <span class="sff-info-icon" data-info="Hide activities shorter or longer than specified duration.">ℹ</span>
-                                </div>
+                                <label class="sff-label" data-label-type="duration">Duration (minutes):</label>
                                 <div class="sff-input-group">
                                     <input type="number" class="sff-input sff-minMins" min="0" value="${settings.minMins}" placeholder="Min">
                                     <input type="number" class="sff-input sff-maxMins" min="0" value="${settings.maxMins}" placeholder="Max">
                                 </div>
                             </div>
                             <div class="sff-row">
-                                <div class="sff-label-with-info">
-                                    <label class="sff-label" data-label-type="elevation">Elevation Gain (m):</label>
-                                    <span class="sff-info-icon" data-info="Hide activities with less or more elevation gain than specified.">ℹ</span>
-                                </div>
+                                <label class="sff-label" data-label-type="elevation">Elevation Gain (m):</label>
                                 <div class="sff-input-group">
                                     <input type="number" class="sff-input sff-minElevM" min="0" value="${settings.minElevM}" placeholder="Min">
                                     <input type="number" class="sff-input sff-maxElevM" min="0" step="0.1" value="${settings.maxElevM}" placeholder="Max">
                                 </div>
                             </div>
                             <div class="sff-row">
-                                <div class="sff-label-with-info">
-                                    <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
-                                    <span class="sff-info-icon" data-info="Minimum = slowest pace (hide faster runs). Maximum = fastest pace (hide slower runs).">ℹ</span>
-                                </div>
+                                <label class="sff-label" data-label-type="pace">Pace for Runs (min/km):</label>
                                 <div class="sff-input-group">
                                     <input type="text" class="sff-input sff-minPace" value="${UtilsModule.formatPaceForDisplay(settings.minPace)}" placeholder="e.g. 7:55 (slowest)" pattern="^(\d{1,2}:\d{2}|\d+\.?\d*)$">
                                     <input type="text" class="sff-input sff-maxPace" value="${UtilsModule.formatPaceForDisplay(settings.maxPace)}" placeholder="e.g. 4:30 (fastest)" pattern="^(\d{1,2}:\d{2}|\d+\.?\d*)$">
@@ -2758,6 +2933,10 @@
                             <label class="sff-chip ${settings.hideCoros ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideCoros" ${settings.hideCoros ? 'checked' : ''}>
                                 Hide "COROS"
+                            </label>
+                            <label class="sff-chip ${settings.hideRouvy ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideRouvy" ${settings.hideRouvy ? 'checked' : ''}>
+                                Hide "Rouvy"
                             </label>
                             <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
@@ -2839,7 +3018,7 @@
                 </div>
 
                 <div class="sff-view-settings">
-                    <button class="sff-back-btn" style="background: none; border: none; cursor: pointer; color: #fc5200; font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 4px;">
+                    <button class="sff-back-btn">
                         ← Back to Filters
                     </button>
                     <p class="sff-settings-desc">
@@ -2944,7 +3123,7 @@
         },
 
         setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn) {
-            // Setting up event handlers
+            // Clean Filter: Setting up events
 
             // --- New Settings UI Events ---
             const settingsToggle = panel.querySelector('.sff-settings-toggle');
@@ -3001,6 +3180,11 @@
                             document.body.setAttribute('data-sff-theme', 'dark');
                         } else {
                             document.body.setAttribute('data-sff-theme', 'light');
+                        }
+
+                        const settingsIcon = document.getElementById('sff-settings-icon');
+                        if (settingsIcon) {
+                            settingsIcon.src = getSettingsIconUrl(settings.theme);
                         }
 
                         UtilsModule.saveSettings(settings);
@@ -3171,18 +3355,32 @@
 
             // Set dynamic version from manifest
             try {
-                const manifest = browser.runtime.getManifest();
                 const versionEl = panel.querySelector('#sff-version');
-                if (manifest && manifest.version && versionEl) {
-                    versionEl.textContent = `Version ${manifest.version}`;
+                if (versionEl) {
+                    if (ext && ext.runtime && ext.runtime.getManifest) {
+                        const manifest = ext.runtime.getManifest();
+                        if (manifest && manifest.version) {
+                            versionEl.textContent = `Version ${manifest.version}`;
+                        }
+                    } else {
+                        // Fallback version if extension API not available
+                        versionEl.textContent = 'Version 2.4.5';
+                    }
                 }
             } catch (error) {
                 // Could not get manifest version
             }
 
+            // Track if we're currently resizing to prevent click-outside from firing
+            let isCurrentlyResizing = false;
+
             // Initialize draggable and resizable
             const cleanupDraggable = this.makeDraggable(panel);
-            const cleanupResizable = this.makeResizable(panel);
+            const cleanupResizable = this.makeResizable(panel, () => {
+                isCurrentlyResizing = true;
+            }, () => {
+                isCurrentlyResizing = false;
+            });
 
             // Load saved position
             Storage.get('sffPanelPos', {}).then((savedPos) => {
@@ -3201,23 +3399,11 @@
             const handleResize = () => {
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(() => {
-                    const wasVisible = panel.style.display === 'block';
-                    if (wasVisible) {
-                        panel.style.display = 'none';
-                    }
-
                     // Sync secondary kudos button visibility on resize
                     this.syncSecondaryKudosVisibility();
 
-                    // Force reflow to ensure proper measurements
-                    void panel.offsetHeight;
-
-                    // Update position to stay in viewport
+                    // Update position to stay in viewport (without hiding panel)
                     this.keepInViewport(panel);
-
-                    if (wasVisible) {
-                        panel.style.display = 'block';
-                    }
 
                     // Save new position
                     Storage.set('sffPanelPos', {
@@ -3231,13 +3417,17 @@
 
             // Handle click outside (define first)
             const handleClickOutside = (e) => {
-                // Don't close panel if it's being resized or dragged
-                if (panel.dataset.resizing === 'true' || panel.dataset.dragging === 'true') {
+                // Don't close if we're currently resizing or just finished resizing
+                if (isCurrentlyResizing) {
                     return;
                 }
                 
+                // Check if clicking on resize handle
+                const resizeHandle = panel.querySelector('.sff-resize-handle');
+                const clickedResizeHandle = resizeHandle && resizeHandle.contains(e.target);
                 const clickedSecondaryBtn = secondaryFilterBtn && secondaryFilterBtn.contains(e.target);
-                if (!panel.contains(e.target) && !btn.contains(e.target) && !clickedSecondaryBtn) {
+                
+                if (!panel.contains(e.target) && !btn.contains(e.target) && !clickedSecondaryBtn && !clickedResizeHandle) {
                     const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
                     if (isVisible) {
                         togglePanel();
@@ -3414,7 +3604,7 @@
                         LogicModule.updateStartTrialVisibility();
                     }
 
-                    // Your challenges section (sidebar + feed cards)
+                    // Your challenges section
                     if (e.target.classList.contains('sff-hideChallenges')) {
                         settings.hideChallenges = e.target.checked;
                         UtilsModule.saveSettings(settings);
@@ -3422,28 +3612,31 @@
                         LogicModule.filterActivities();
                     }
 
-                    // Suggested friends sidebar section
+                    // Joined challenge cards
+                    if (e.target.classList.contains('sff-hideJoinedChallenges')) {
+                        settings.hideJoinedChallenges = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateJoinedChallengesVisibility();
+                        LogicModule.filterActivities();
+                    }
+
+                    // Suggested Friends
                     if (e.target.classList.contains('sff-hideSuggestedFriends')) {
                         settings.hideSuggestedFriends = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateSuggestedFriendsVisibility();
+                        LogicModule.filterActivities();
                     }
 
-                    // Your clubs sidebar section
+                    // Your Clubs
                     if (e.target.classList.contains('sff-hideYourClubs')) {
                         settings.hideYourClubs = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateYourClubsVisibility();
+                        LogicModule.filterActivities();
                     }
 
-                    // Footer visibility
-                    if (e.target.classList.contains('sff-hideFooter')) {
-                        settings.hideFooter = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateFooterVisibility();
-                    }
-
-                    // External service embeds
+                    // External embeds
                     if (e.target.classList.contains('sff-hideMyWindsock')) {
                         settings.hideMyWindsock = e.target.checked;
                         UtilsModule.saveSettings(settings);
@@ -3453,16 +3646,6 @@
                         settings.hideSummitbag = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateSummitbagVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideRunHealth')) {
-                        settings.hideRunHealth = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateRunHealthVisibility();
-                    }
-                    if (e.target.classList.contains('sff-hideWandrer')) {
-                        settings.hideWandrer = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateWandrerVisibility();
                     }
                     if (e.target.classList.contains('sff-hideBandok')) {
                         settings.hideBandok = e.target.checked;
@@ -3474,6 +3657,11 @@
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateCorosVisibility();
                     }
+                    if (e.target.classList.contains('sff-hideRouvy')) {
+                        settings.hideRouvy = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateRouvyVisibility();
+                    }
                     if (e.target.classList.contains('sff-hideJoinWorkout')) {
                         settings.hideJoinWorkout = e.target.checked;
                         UtilsModule.saveSettings(settings);
@@ -3484,28 +3672,29 @@
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateCoachCatVisibility();
                     }
-
-                    if (e.target.classList.contains('sff-hideClubPosts')) {
-                        settings.hideClubPosts = e.target.checked;
+                    // Footer
+                    if (e.target.classList.contains('sff-hideFooter')) {
+                        settings.hideFooter = e.target.checked;
                         UtilsModule.saveSettings(settings);
-                        LogicModule.filterActivities();
-                    }
-
-                    // Other activity/entry-level filters
-                    if (e.target.classList.contains('sff-hideNoMap')) {
-                        settings.hideNoMap = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.filterActivities();
-                    }
-                    if (e.target.classList.contains('sff-hideJoinedChallenges')) {
-                        settings.hideJoinedChallenges = e.target.checked;
-                        UtilsModule.saveSettings(settings);
-                        LogicModule.updateJoinedChallengesVisibility();
+                        LogicModule.updateFooterVisibility();
                     }
                     if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
                         settings.hideAthleteJoinedClub = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateAthleteJoinedClubVisibility();
+                        LogicModule.filterActivities();
+                    }
+                    
+                    // Activity visibility rules
+                    if (e.target.classList.contains('sff-hideNoMap')) {
+                        settings.hideNoMap = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.filterActivities();
+                    }
+                    if (e.target.classList.contains('sff-hideClubPosts')) {
+                        settings.hideClubPosts = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.filterActivities();
                     }
 
                     // Activity type chips
@@ -3651,12 +3840,13 @@
                 }
                 
                 // Adjust if goes off-screen at bottom
-                if (top + 150 > window.innerHeight) {
-                    top = rect.top - 160;
+                if (top + 200 > window.innerHeight) {
+                    top = rect.top - 200;
+                    if (top < 10) top = 10;
                 }
                 
-                box.style.left = left + 'px';
-                box.style.top = top + 'px';
+                box.style.left = `${left}px`;
+                box.style.top = `${top}px`;
                 
                 // Close button handler
                 box.querySelector('.sff-info-box-close').addEventListener('click', (e) => {
@@ -3684,6 +3874,7 @@
                 location.reload();
             });
 
+
             // Unit system toggle
             panel.querySelector('.sff-unit-toggle').addEventListener('click', (e) => {
                 if (e.target.matches('.sff-unit-btn')) {
@@ -3702,6 +3893,8 @@
             this.setupButtonResponsive(btn);
             this.updateActivityCount(panel);
             this.updateFilterLabels(panel, settings.unitSystem);
+
+            // Events attached
 
             // Return cleanup function for when the script is unloaded
             return () => {
@@ -3734,9 +3927,6 @@
                 const rect = panel.getBoundingClientRect();
                 startLeft = rect.left;
                 startTop = rect.top;
-
-                // Mark panel as being dragged to prevent click-outside from closing it
-                panel.dataset.dragging = 'true';
 
                 header.style.cursor = 'grabbing';
                 document.body.style.userSelect = 'none'; // Prevent text selection
@@ -3784,11 +3974,6 @@
                     isDragging = false;
                     header.style.cursor = '';
                     document.body.style.userSelect = ''; // Restore text selection
-                    
-                    // Remove dragging flag after a short delay to prevent click-outside from triggering
-                    setTimeout(() => {
-                        delete panel.dataset.dragging;
-                    }, 50);
                 }
             };
 
@@ -3810,7 +3995,7 @@
             };
         },
 
-        makeResizable(panel) {
+        makeResizable(panel, onResizeStart, onResizeEnd) {
             const handleRight = panel.querySelector('.sff-resize-handle');
             const handleLeft = panel.querySelector('.sff-resize-handle-left');
             if (!handleRight && !handleLeft) return () => {};
@@ -3840,6 +4025,9 @@
                 
                 // Mark panel as being resized to prevent click-outside from closing it
                 panel.dataset.resizing = 'true';
+                
+                // Notify that resize started
+                if (onResizeStart) onResizeStart();
                 
                 e.preventDefault();
                 e.stopPropagation();
@@ -3892,21 +4080,28 @@
                         delete panel.dataset.resizing;
                     }, 50);
                     
-                    e.preventDefault();
+                    // Prevent click outside handler from firing immediately after resize
                     e.stopPropagation();
+                    
+                    // Notify that resize ended after a short delay
+                    setTimeout(() => {
+                        if (onResizeEnd) onResizeEnd();
+                    }, 100);
+                    
+                    e.preventDefault();
                 }
             };
 
             if (handleRight) handleRight.addEventListener('mousedown', onMouseDown);
             if (handleLeft) handleLeft.addEventListener('mousedown', onMouseDown);
             document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('mouseup', onMouseUp, true); // Use capture phase
 
             return () => {
                 if (handleRight) handleRight.removeEventListener('mousedown', onMouseDown);
                 if (handleLeft) handleLeft.removeEventListener('mousedown', onMouseDown);
                 document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
+                document.removeEventListener('mouseup', onMouseUp, true);
             };
         },
 
@@ -4022,6 +4217,15 @@
 
     // Logic Module - Step 6 of modular refactoring
     const LogicModule = {
+        init() {
+            // Bind all methods to ensure 'this' context is always correct
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] === 'function') {
+                    this[key] = this[key].bind(this);
+                }
+            }
+        },
+
         // Determine if a feed node is a club post
         isClubPost(node) {
             if (!node) return false;
@@ -4188,7 +4392,7 @@
                 // Find ONLY the footer section that includes footer-specific markers
                 const markerSelector = 'a[href*="/legal/terms"], a[href*="/legal/privacy"], a[href*="/legal/cookie_policy"], #language-picker, #cpra-compliance-cta';
                 let footerSection = Array.from(document.querySelectorAll('div.FvXwlgEO > section._01jT9FUf, section._01jT9FUf'))
-                    .find(sec => sec.querySelector(markerSelector) || /©\s*\d{4}\s*Strava/i.test(sec.textContent || '')) || null;
+                    .find(sec => sec.querySelector(markerSelector) || /&copy;\s*\d{4}\s*Strava/i.test(sec.textContent || '')) || null;
                 if (!footerSection) {
                     // Fallback to canonical footer elements
                     footerSection = document.querySelector('footer, [data-testid="footer"], .global-footer, .site-footer');
@@ -4272,6 +4476,35 @@
             }
         },
 
+        updateSummitbagVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    // Find only text-containing elements (paragraphs and spans) that specifically contain summitbag content
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Only hide if this element specifically contains summitbag and not other content
+                        if (text.includes('summitbag.com') && text.length < 500) { // Limit to avoid hiding large containers
+                            if (settings.enabled && settings.hideSummitbag) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                // updateSummitbagVisibility error
+            }
+        },
+
         updateBandokVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
@@ -4330,35 +4563,6 @@
             }
         },
 
-        updateSummitbagVisibility() {
-            try {
-                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-
-                activities.forEach(activity => {
-                    // Find only text-containing elements (paragraphs and spans) that specifically contain summitbag content
-                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text');
-
-                    textElements.forEach(element => {
-                        const text = element.textContent?.trim() || '';
-                        // Only hide if this element specifically contains summitbag and not other content
-                        if (text.includes('summitbag.com') && text.length < 500) { // Limit to avoid hiding large containers
-                            if (settings.enabled && settings.hideSummitbag) {
-                                if (element.dataset.sffHiddenBy !== 'sff') {
-                                    element.dataset.sffHiddenBy = 'sff';
-                                    element.style.display = 'none';
-                                }
-                            } else if (element.dataset.sffHiddenBy === 'sff') {
-                                element.style.display = '';
-                                delete element.dataset.sffHiddenBy;
-                            }
-                        }
-                    });
-                });
-            } catch (e) {
-                // updateSummitbagVisibility error
-            }
-        },
-
         updateRunHealthVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
@@ -4385,6 +4589,35 @@
                 });
             } catch (e) {
                 // updateRunHealthVisibility error
+            }
+        },
+
+        updateRouvyVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "rouvy.com" or similar patterns
+                        const hasRouvy = /rouvy\.com/i.test(text);
+                        if (hasRouvy && text.length < 500) {
+                            if (settings.enabled && settings.hideRouvy) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                // updateRouvyVisibility error
             }
         },
 
@@ -4512,57 +4745,6 @@
             return hiddenSectionsCount;
         },
 
-        filterSingleActivity(activity) {
-            // Immediate filter for a single activity to prevent flickering
-            if (!settings.enabled) return;
-
-            const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
-            const { match: resolvedType, raw: resolvedRawType } = resolveActivityType(activity);
-            const typeText = resolvedRawType || '';
-            const normalizedTypeText = normalizeTypeLabel(typeText);
-
-            // Debug logging
-            if (!resolvedType && typeText) {
-                // Unresolved activity
-            }
-
-            let shouldHide = false;
-
-            // Quick type check for immediate hiding
-            if (resolvedType && settings.types[resolvedType.key]) {
-                shouldHide = true;
-                // Hiding activity by type
-            } else if (!resolvedType && typeText) {
-                // Fallback detection for common types
-                const isWalk = normalizedTypeText.includes('walk') || /\b(walked|walking)\b/i.test(title);
-                const isRun = normalizedTypeText.includes('run') || /\b(ran|running)\b/i.test(title);
-                const isHike = normalizedTypeText.includes('hike') || /\b(hiked|hiking)\b/i.test(title);
-                const isSwim = normalizedTypeText.includes('swim') || /\b(swam|swimming)\b/i.test(title);
-                const isRide = normalizedTypeText.includes('ride') || /\b(rode|cycling|cycle)\b/i.test(title);
-
-                if (isWalk && settings.types['Walk']) {
-                    shouldHide = true;
-                    // Hiding walk (fallback)
-                } else if (isRun && settings.types['Run']) {
-                    shouldHide = true;
-                    // Hiding run (fallback)
-                } else if (isHike && settings.types['Hike']) {
-                    shouldHide = true;
-                    // Hiding hike (fallback)
-                } else if (isSwim && settings.types['Swim']) {
-                    shouldHide = true;
-                    // Hiding swim (fallback)
-                } else if (isRide && settings.types['Ride']) {
-                    shouldHide = true;
-                    // Hiding ride (fallback)
-                }
-            }
-
-            if (shouldHide) {
-                activity.style.display = 'none';
-            }
-        },
-
         filterActivities() {
             const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
 
@@ -4683,32 +4865,16 @@
                             const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                             if (hideAnyVirtual) shouldHide = true;
                         } else {
-                            // Check for specific activity types in fallback
-                            const isWalk = normalizedTypeText.includes('walk') || /\b(walked|walking)\b/i.test(title);
-                            const isRun = normalizedTypeText.includes('run') || /\b(ran|running)\b/i.test(title);
-                            const isHike = normalizedTypeText.includes('hike') || /\b(hiked|hiking)\b/i.test(title);
-                            const isSwim = normalizedTypeText.includes('swim') || /\b(swam|swimming)\b/i.test(title);
+                            // Only check for generic ride if it's NOT virtual
+                            // Check for group ride indicators:
+                            const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
+                            const isRide = normalizedTypeText.includes('ride') || 
+                                         /\b(rode|cycling|cycle)\b/i.test(title) || 
+                                         (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
+                                         (hasGroupAvatars && !normalizedTypeText.includes('run')); // Assume group activity is a ride if not explicitly a run
                             
-                            if (isWalk && settings.types['Walk']) {
-                                shouldHide = true;
-                            } else if (isRun && settings.types['Run']) {
-                                shouldHide = true;
-                            } else if (isHike && settings.types['Hike']) {
-                                shouldHide = true;
-                            } else if (isSwim && settings.types['Swim']) {
-                                shouldHide = true;
-                            } else {
-                                // Only check for generic ride if it's NOT virtual and not another specific type
-                                // Check for group ride indicators:
-                                const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
-                                const isRide = normalizedTypeText.includes('ride') || 
-                                             /\b(rode|cycling|cycle)\b/i.test(title) || 
-                                             (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
-                                             (hasGroupAvatars && !normalizedTypeText.includes('run')); // Assume group activity is a ride if not explicitly a run
-                                
-                                if (isRide && settings.types['Ride']) {
-                                    shouldHide = true;
-                                }
+                            if (isRide) {
+                                 if (settings.types['Ride']) shouldHide = true;
                             }
                         }
                     }
@@ -4744,7 +4910,7 @@
                                     const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '');
                                     
                                     // Look for device-specific indicators in description/stats
-                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|rouvy\.com|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
                                     const match = deviceRegex.exec(searchText);
                                     if (match) {
                                         deviceFound = match[1];
@@ -4757,7 +4923,7 @@
                                             const titleText = activityTitle.textContent || '';
                                             // Only check for common virtual platforms that appear in default titles
                                             if (/\bzwift\b/i.test(titleText)) deviceFound = 'Zwift';
-                                            else if (/\brouvy\b/i.test(titleText)) deviceFound = 'Rouvy';
+                                            else if (/\brouvy\b/i.test(titleText) || /\brouvy\.com\b/i.test(titleText)) deviceFound = 'Rouvy';
                                             else if (/\bmywhoosh\b/i.test(titleText)) deviceFound = 'MyWhoosh';
                                             else if (/\btrainerroad\b/i.test(titleText)) deviceFound = 'TrainerRoad';
                                         }
@@ -4770,7 +4936,7 @@
                                     
                                     // Look in stats and description
                                     const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '') + ' ' + (statsSection?.textContent || '');
-                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|rouvy\.com|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
                                     const match = deviceRegex.exec(searchText);
                                     if (match) {
                                         deviceFound = match[1];
@@ -4821,7 +4987,7 @@
                         // If not in cache, try to find device in DOM text (scan once for first device found)
                         if (!deviceFound) {
                             const activityText = activity.textContent || '';
-                            const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                            const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|rouvy\.com|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
                             
                             const match = deviceRegex.exec(activityText);
                             if (match) {
@@ -4965,10 +5131,7 @@
                     activity.style.display = 'none';
                     hiddenCount++;
                 } else {
-                    // Only show if it's currently hidden - prevents unnecessary reflows
-                    if (activity.style.display === 'none') {
-                        activity.style.display = '';
-                    }
+                    activity.style.display = '';
                 }
             });
 
@@ -4977,6 +5140,13 @@
             const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
             if (btn) btn.textContent = `(${hiddenCount})`;
             if (secondaryBtn) secondaryBtn.textContent = `(${hiddenCount})`;
+            
+            // Manage "See More" buttons visibility based on settings
+            try {
+                this.manageSeeMoreButtons();
+            } catch (e) {
+                // manageSeeMoreButtons error
+            }
         },
 
         manageHeaderKudosButton() {
@@ -5053,6 +5223,138 @@
 
             placeButton();
         },
+        setupAutoFilter() {
+            const debouncedFilter = UtilsModule.debounce(() => {
+                try {
+                    this.filterActivities();
+                    this.updateGiftVisibility();
+                    this.updateStartTrialVisibility();
+                    this.updateChallengesVisibility();
+                    this.updateSuggestedFriendsVisibility();
+                    this.updateYourClubsVisibility();
+                    this.updateMyWindsockVisibility();
+                    this.updateWandrerVisibility();
+                    this.updateSummitbagVisibility();
+                    this.updateRunHealthVisibility();
+                    this.updateBandokVisibility();
+                    this.updateCorosVisibility();
+                    this.updateRouvyVisibility();
+                    this.updateJoinWorkoutVisibility();
+                    this.updateCoachCatVisibility();
+                    this.updateAthleteJoinedClubVisibility();
+                    this.manageSeeMoreButtons();
+                } catch (e) {
+                    // Auto-filter error
+                }
+            }, 250);
+
+            const observer = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    if (!m.addedNodes || m.addedNodes.length === 0) continue;
+                    for (const node of m.addedNodes) {
+                        if (!(node instanceof HTMLElement)) continue;
+                        if (
+                            (node.matches && node.matches('.activity, .feed-entry, [data-testid="web-feed-entry"]')) ||
+                            node.querySelector?.('.activity, .feed-entry, [data-testid="web-feed-entry"]')
+                        ) {
+                            debouncedFilter();
+                            break;
+                        }
+                    }
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            window.addEventListener('scroll', debouncedFilter, { passive: true });
+            window.__sffObserver = observer;
+        },
+
+        // Master function to apply all filters (activities and sections) based on enabled state
+        applyAllFilters() {
+            if (settings.enabled) {
+                // When filter is enabled, apply all filtering
+                this.filterActivities();
+                this.updateGiftVisibility();
+                this.updateStartTrialVisibility();
+                this.updateChallengesVisibility();
+                this.updateFooterVisibility();
+                this.updateJoinedChallengesVisibility();
+                this.updateSuggestedFriendsVisibility();
+                this.updateYourClubsVisibility();
+                this.updateMyWindsockVisibility();
+                this.updateWandrerVisibility();
+                this.updateSummitbagVisibility();
+                this.updateRunHealthVisibility();
+                this.updateBandokVisibility();
+                this.updateCorosVisibility();
+                this.updateRouvyVisibility();
+                this.updateJoinWorkoutVisibility();
+                this.updateCoachCatVisibility();
+                this.updateAthleteJoinedClubVisibility();
+                this.manageHeaderKudosButton();
+                UIModule.syncSecondaryKudosVisibility();
+                this.manageSeeMoreButtons();
+            } else {
+                // When filter is disabled, show all activities and reset sections
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+                activities.forEach(activity => {
+                    activity.style.display = '';
+                });
+
+                // Reset all sections to visible
+                const challengesSection = document.querySelector('#your-challenges');
+                if (challengesSection && challengesSection.dataset.sffHiddenBy === 'sff') {
+                    challengesSection.style.display = '';
+                    delete challengesSection.dataset.sffHiddenBy;
+                }
+
+                const suggestedFriendsSection = document.querySelector('#suggested-follows');
+                if (suggestedFriendsSection && suggestedFriendsSection.dataset.sffHiddenBy === 'sff') {
+                    suggestedFriendsSection.style.display = '';
+                    delete suggestedFriendsSection.dataset.sffHiddenBy;
+                }
+
+                const yourClubsSection = document.querySelector('#your-clubs');
+                if (yourClubsSection && yourClubsSection.dataset.sffHiddenBy === 'sff') {
+                    yourClubsSection.style.display = '';
+                    delete yourClubsSection.dataset.sffHiddenBy;
+                }
+
+                const giftLinks = document.querySelectorAll('a[href*="/gift"][href*="origin=global_nav"]');
+                giftLinks.forEach(a => {
+                    if (a.dataset.sffHiddenBy === 'sff') {
+                        a.style.display = '';
+                        delete a.dataset.sffHiddenBy;
+                    }
+                });
+                
+                // Reset Start Trial button visibility
+                const startTrialLinks = document.querySelectorAll('li.nav-item.upgrade a[href*="/subscribe"][href*="cta=free-trial"]');
+                startTrialLinks.forEach(a => {
+                    const li = a.closest('li.nav-item.upgrade');
+                    const targetElement = li || a;
+                    if (targetElement.dataset.sffHiddenBy === 'sff') {
+                        targetElement.style.display = '';
+                        delete targetElement.dataset.sffHiddenBy;
+                    }
+                });
+                // Reset footer visibility
+                this.updateFooterVisibility();
+                // Reset joined challenges
+                const entries = document.querySelectorAll('[data-testid="web-feed-entry"], .feed-entry, .activity');
+                entries.forEach(entry => {
+                    if (entry.dataset.sffHiddenChallenge === 'sff') {
+                        entry.style.display = '';
+                        delete entry.dataset.sffHiddenChallenge;
+                    }
+                });
+
+                const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
+                const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
+                if (btn) btn.textContent = '(0)';
+                if (secondaryBtn) secondaryBtn.textContent = '(0)';
+            }
+        },
 
         manageSeeMoreButtons() {
             // Determine visibility based on 3-way mode + screen width, with legacy fallback
@@ -5084,7 +5386,6 @@
             const mainActivities = document.querySelectorAll('[data-testid="web-feed-entry"]');
             
             // Also get individual activities within group activities
-            // Group activities have nested list items with activity containers
             const groupActivityContainers = [];
             mainActivities.forEach(mainActivity => {
                 const groupList = mainActivity.querySelector('ul > li > div[data-testid="entry-header"]');
@@ -5206,7 +5507,6 @@
             }
             
             // Method 1: Extract from inline-stats (ul li structure)
-            // Structure: <li><strong>VALUE</strong><div class="label">LABEL</div></li>
             doc.querySelectorAll('.inline-stats li').forEach(li => {
                 const strong = li.querySelector('strong');
                 const labelDiv = li.querySelector('.label');
@@ -5222,7 +5522,6 @@
             });
             
             // Method 2: Extract from table (avg/max stats) - used in Rides
-            // Structure: <tr><th>LABEL</th><td>AVG</td><td>MAX</td></tr>
             doc.querySelectorAll('.more-stats table tbody tr').forEach(row => {
                 const th = row.querySelector('th');
                 const tds = row.querySelectorAll('td');
@@ -5250,7 +5549,6 @@
             });
             
             // Method 2b: Extract from row/spans structure - used in Runs
-            // Structure: <div class="row"><div class="spans5">LABEL</div><div class="spans3"><strong>VALUE</strong></div></div>
             doc.querySelectorAll('.more-stats .row').forEach(row => {
                 const spans5 = row.querySelector('.spans5');
                 const spans3 = row.querySelector('.spans3');
@@ -5266,11 +5564,10 @@
             });
             
             // Method 3: Extract weather stats and icon
-            // Structure: <div class="weather-stat"><div class="weather-label">LABEL</div><div class="weather-value">VALUE</div></div>
             const weatherIcon = doc.querySelector('.weather-icon');
             if (weatherIcon) {
                 const iconClass = weatherIcon.className;
-                stats['__weatherIcon'] = iconClass; // Store icon class with special prefix
+                stats['__weatherIcon'] = iconClass;
             }
             
             doc.querySelectorAll('.weather-stat').forEach(stat => {
@@ -5286,7 +5583,7 @@
                             stats[label] = value;
                         }
                     } else {
-                        // Weather condition without value (e.g., "Windy")
+                        // Weather condition without value
                         if (label) {
                             stats[label] = '✓';
                         }
@@ -5317,12 +5614,11 @@
                 }
             }
 
-            // Extract bike/gear info - Method 2: from .gear div (newer format)
+            // Extract bike/gear info - Method 2: from .gear div
             const gearDiv = doc.querySelector('.gear');
             if (gearDiv && !stats['Bike'] && !stats['Shoes']) {
                 const gearText = gearDiv.textContent?.trim();
                 if (gearText) {
-                    // Format: "Bike: Orange Pinarello" or "Shoes: Nike Pegasus"
                     if (gearText.toLowerCase().includes('bike:')) {
                         const bikeName = gearText.replace(/^bike:\s*/i, '').trim();
                         if (bikeName) stats['Bike'] = bikeName;
@@ -5417,10 +5713,8 @@
                     // Close current grid and add section header
                     statsHTML += '</div>';
                     if (stat.weatherIcon && stat.weatherCondition) {
-                        // Weather header with icon and condition: "Weather: [icon] Clear"
                         statsHTML += `<div class="sff-stats-section-header">${stat.label}: <div class="${stat.weatherIcon}" style="display: inline-block; width: 24px; height: 24px; margin: 0 4px; vertical-align: middle;"></div>${stat.weatherCondition}</div>`;
                     } else if (stat.weatherIcon) {
-                        // Weather header with icon only
                         statsHTML += `<div class="sff-stats-section-header">${stat.label}: <div class="${stat.weatherIcon}" style="display: inline-block; width: 24px; height: 24px; margin-left: 4px; vertical-align: middle;"></div></div>`;
                     } else {
                         statsHTML += `<div class="sff-stats-section-header">${stat.label}</div>`;
@@ -5438,11 +5732,9 @@
                         statsHTML += `<span class="sff-stat-value"><b>Start:</b> ${stat.start}</span>`;
                         statsHTML += `<span class="sff-stat-subvalue"><b>End:</b> ${stat.end}</span>`;
                     } else if (stat.avg && stat.max) {
-                        // Has both avg and max
                         statsHTML += `<span class="sff-stat-value"><b>Avg:</b> ${stat.avg}</span>`;
                         statsHTML += `<span class="sff-stat-subvalue"><b>Max:</b> ${stat.max}</span>`;
                     } else {
-                        // Single value
                         statsHTML += `<span class="sff-stat-value">${stat.value}</span>`;
                     }
                     
@@ -5454,7 +5746,7 @@
             
             // Add a "Hide stats" button at the bottom
             statsHTML += '<div style="text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">';
-            statsHTML += '<button class="sff-hide-stats-btn" style="padding: 6px 16px; background: #fc4c02; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">Hide stats</button>';
+            statsHTML += '<button class="sff-hide-stats-btn" style="padding: 6px 16px; background: #fc5200; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">Hide stats</button>';
             statsHTML += '</div>';
             
             statsContainer.innerHTML = statsHTML;
@@ -5485,27 +5777,22 @@
                 });
             }
 
-            // Find the best insertion point - should be as wide as the map/images
-            // Look for the wider container that holds both content and images
+            // Find the best insertion point
             const achievementSummary = activity.querySelector('[data-testid="achievement_summary"]');
             const contentSection = activity.querySelector('.hWGNo, .ZbtW4');
             const imagesSection = activity.querySelector('[data-testid="entry-images"]');
             const kudosSection = activity.querySelector('[data-testid="kudos_comments_container"]');
             
-            // Find the parent that contains both content and images (for full width)
             let insertionPoint = null;
             
             if (kudosSection) {
-                // Insert before kudos section (after images/map) - best position for full width
                 insertionPoint = kudosSection.parentElement;
                 if (insertionPoint) {
                     kudosSection.before(statsContainer);
                 }
             } else if (imagesSection) {
-                // Insert after images section
                 imagesSection.after(statsContainer);
             } else if (achievementSummary) {
-                // Insert after achievement summary
                 const parentSection = achievementSummary.closest('.hWGNo, .ZbtW4');
                 if (parentSection) {
                     parentSection.after(statsContainer);
@@ -5513,10 +5800,8 @@
                     achievementSummary.after(statsContainer);
                 }
             } else if (contentSection) {
-                // Insert after content section
                 contentSection.after(statsContainer);
             } else {
-                // Last resort: find the activity container
                 const activityContainer = activity.querySelector('[data-testid="activity_entry_container"]');
                 if (activityContainer) {
                     activityContainer.appendChild(statsContainer);
@@ -5527,7 +5812,6 @@
         },
 
         organizeStats(rawStats) {
-            // Use all stats (including Device, Bike, Shoes, Gear)
             const filtered = { ...rawStats };
 
             const organized = [];
@@ -5539,7 +5823,7 @@
             
             // Extract and store weather icon separately
             const weatherIcon = filtered['__weatherIcon'];
-            delete filtered['__weatherIcon']; // Remove from stats to avoid displaying it
+            delete filtered['__weatherIcon'];
             
             // Extract Activity Start and End times
             const activityStart = filtered['__ActivityStart'];
@@ -5547,14 +5831,13 @@
             delete filtered['__ActivityStart'];
             delete filtered['__ActivityEnd'];
             
-            // Extract weather condition (Clear, Cloudy, etc.) for header
+            // Extract weather condition for header
             let weatherCondition = null;
             const conditionKeywords = ['Partly Cloudy', 'Mostly Cloudy', 'Overcast', 'Clear', 'Cloudy', 'Sunny', 'Rainy', 'Windy'];
             for (const keyword of conditionKeywords) {
-                // Check both exact match and lowercase match
                 if (filtered[keyword]) {
                     weatherCondition = keyword;
-                    delete filtered[keyword]; // Remove from stats to avoid duplication
+                    delete filtered[keyword];
                     break;
                 } else if (filtered[keyword.toLowerCase()]) {
                     weatherCondition = filtered[keyword.toLowerCase()];
@@ -5563,10 +5846,10 @@
                 }
             }
 
-            // Define weather-related keywords (excluding condition keywords since they're in header)
+            // Define weather-related keywords
             const weatherKeywords = ['temperature', 'humidity', 'wind', 'feels like', 'weather'];
 
-            // Normalize "Heartrate" to "Heart Rate" to avoid duplicates
+            // Normalize "Heartrate" to "Heart Rate"
             if (filtered['Heartrate Avg'] && !filtered['Heart Rate Avg']) {
                 filtered['Heart Rate Avg'] = filtered['Heartrate Avg'];
                 delete filtered['Heartrate Avg'];
@@ -5599,7 +5882,6 @@
             ];
 
             // Process grouped stats (avg/max pairs)
-            // Now stats come in as "Speed Avg" and "Speed Max" format
             statGroups.forEach(group => {
                 const avgKey = group.label + ' Avg';
                 const maxKey = group.label + ' Max';
@@ -5639,7 +5921,7 @@
             // Define gear-related keywords
             const gearKeywords = ['device', 'bike', 'shoes', 'gear'];
             
-            // Separate weather stats, time stats, and gear stats from regular stats
+            // Separate weather stats, time stats, and gear stats
             Object.keys(filtered).forEach(key => {
                 if (!processed.has(key)) {
                     const lowerKey = key.toLowerCase();
@@ -5685,7 +5967,6 @@
                     const stoppedSeconds = elapsedSeconds - movingSeconds;
                     const stoppedTime = this.formatSecondsToTime(stoppedSeconds);
                     
-                    // Insert Time stopped after Elapsed Time
                     const elapsedIndex = timeStats.indexOf(elapsedTimeStat);
                     timeStats.splice(elapsedIndex + 1, 0, {
                         label: 'Time stopped',
@@ -5694,8 +5975,7 @@
                 }
             }
             
-            // Add time stats after the grouped stats but before other stats
-            // Insert them at the beginning of the organized array
+            // Add time stats at the beginning
             organized.unshift(...timeStats);
             
             // Add Time of Day as THE FIRST stat if we have both start and end
@@ -5707,18 +5987,18 @@
                 });
             }
 
-            // Add weather section header and stats at the end if we have weather data
+            // Add weather section
             if (weatherStats.length > 0) {
                 organized.push({
                     isHeader: true,
                     label: 'Weather',
-                    weatherIcon: weatherIcon, // Pass icon class to header
-                    weatherCondition: weatherCondition // Pass condition (Clear, Cloudy, etc.)
+                    weatherIcon: weatherIcon,
+                    weatherCondition: weatherCondition
                 });
                 organized.push(...weatherStats);
             }
 
-            // Add gear section header and stats at the end if we have gear data
+            // Add gear section
             if (gearStats.length > 0) {
                 organized.push({
                     isHeader: true,
@@ -5731,7 +6011,6 @@
         },
 
         parseTimeToSeconds(timeString) {
-            // Parse time strings like "1h 23m 45s", "45m 30s", "2h 15m", "30s", "1:37:39", "43:48", etc.
             if (!timeString) return null;
             
             let totalSeconds = 0;
@@ -5740,10 +6019,8 @@
             if (timeString.includes(':')) {
                 const parts = timeString.split(':').map(p => parseInt(p.trim()));
                 if (parts.length === 3) {
-                    // HH:MM:SS format
                     totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
                 } else if (parts.length === 2) {
-                    // MM:SS format
                     totalSeconds = parts[0] * 60 + parts[1];
                 }
                 return totalSeconds;
@@ -5762,7 +6039,6 @@
         },
 
         formatSecondsToTime(seconds) {
-            // Format seconds back to "Xh Ym Zs" format
             const hours = Math.floor(seconds / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
             const secs = seconds % 60;
@@ -5774,7 +6050,7 @@
             
             return result.trim();
         },
-
+        
         parseDistanceToKm(distanceString) {
             if (!distanceString) return null;
             const cleaned = distanceString.replace(/,/g, '').trim().toLowerCase();
@@ -5798,6 +6074,8 @@
         },
 
         calculateClimbingIndex(distanceKm, elevationM) {
+            // Require a valid positive distance and a non-null elevation value.
+            // Allow elevationM === 0 so flat rides with distance still get an index.
             if (distanceKm == null || distanceKm <= 0 || elevationM == null) return null;
             const mPerKm = elevationM / distanceKm;
 
@@ -5834,18 +6112,18 @@
         climbIconImg(key, label) {
             const safeLabel = label || 'Climbing index';
             const url = this.getClimbIconUrl(key);
-            return `<img class="sff-climb-svg" src="${url}" alt="${safeLabel}">`;
+            return `<img class="sff-climb-svg sff-climb-${key}" src="${url}" alt="${safeLabel}">`;
         },
 
         getClimbIconUrl(key) {
             const fileMap = {
-                flat: 'icons/flat.svg',
-                gentle: 'icons/gentle.svg',
-                rolling: 'icons/rolling.svg',
-                hilly: 'icons/hilly.svg',
-                very_hilly: 'icons/very_hilly.svg',
-                mountanus: 'icons/mountanus.svg',
-                extreme: 'icons/extreme.svg'
+                flat: 'icons/flat_gray.svg',
+                gentle: 'icons/gentle_green.svg',
+                rolling: 'icons/rolling_green.svg',
+                hilly: 'icons/hilly_yellow.svg',
+                very_hilly: 'icons/Very_hilly_yellow.svg',
+                mountanus: 'icons/mountanus_red.svg',
+                extreme: 'icons/extreme_red.svg'
             };
             const file = fileMap[key] || fileMap.flat;
             if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
@@ -5857,154 +6135,50 @@
             return file; // fallback relative path
         },
 
-        setupAutoFilter() {
-            let isFiltering = false;
-            const debouncedFilter = UtilsModule.debounce(() => {
-                if (isFiltering) return; // Prevent concurrent filter runs
-                isFiltering = true;
-                try {
-                    this.filterActivities();
-                    this.updateGiftVisibility();
-                    this.updateStartTrialVisibility();
-                    this.updateChallengesVisibility();
-                    this.updateSuggestedFriendsVisibility();
-                    this.updateYourClubsVisibility();
-                    this.updateMyWindsockVisibility();
-                    this.updateWandrerVisibility();
-                    this.updateSummitbagVisibility();
-                    this.updateRunHealthVisibility();
-                    this.updateBandokVisibility();
-                    this.updateCorosVisibility();
-                    this.updateJoinWorkoutVisibility();
-                    this.updateCoachCatVisibility();
-                    this.updateAthleteJoinedClubVisibility();
-                    this.manageSeeMoreButtons();
-                } catch (e) {
-                    // Auto-filter error
-                } finally {
-                    isFiltering = false;
-                }
-            }, 500); // Increased debounce to reduce filter frequency
 
-            const observer = new MutationObserver((mutations) => {
-                let hasNewActivities = false;
-                
-                for (const m of mutations) {
-                    if (!m.addedNodes || m.addedNodes.length === 0) continue;
-                    for (const node of m.addedNodes) {
-                        if (!(node instanceof HTMLElement)) continue;
-                        
-                        // Immediately hide new activity nodes if they match filter criteria
-                        // This prevents flickering before debounced filter runs
-                        if (settings.enabled && node.matches && node.matches('.activity, .feed-entry, [data-testid="web-feed-entry"]')) {
-                            this.filterSingleActivity(node);
-                            hasNewActivities = true;
-                        } else if (node.querySelector?.('.activity, .feed-entry, [data-testid="web-feed-entry"]')) {
-                            // If container has activities, filter them immediately
-                            const activities = node.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                            activities.forEach(act => this.filterSingleActivity(act));
-                            hasNewActivities = true;
-                        }
-                    }
-                }
-                
-                // Only trigger debounced filter if we actually found new activities
-                if (hasNewActivities) {
-                    debouncedFilter();
-                }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-
-            // Don't filter on scroll - only when new activities are added
-            // window.addEventListener('scroll', debouncedFilter, { passive: true });
-            window.__sffObserver = observer;
-        },
-
-        // Master function to apply all filters (activities and sections) based on enabled state
-        applyAllFilters() {
-            if (settings.enabled) {
-                // When filter is enabled, apply all filtering
-                this.filterActivities();
-                this.updateGiftVisibility();
-                this.updateStartTrialVisibility();
-                this.updateChallengesVisibility();
-                this.updateFooterVisibility();
-                this.updateJoinedChallengesVisibility();
-                this.updateSuggestedFriendsVisibility();
-                this.updateYourClubsVisibility();
-                this.updateMyWindsockVisibility();
-                this.updateWandrerVisibility();
-                this.updateSummitbagVisibility();
-                this.updateRunHealthVisibility();
-                this.updateBandokVisibility();
-                this.updateCorosVisibility();
-                this.updateJoinWorkoutVisibility();
-                this.updateCoachCatVisibility();
-                this.updateAthleteJoinedClubVisibility();
-                this.manageHeaderKudosButton();
-                this.manageSeeMoreButtons();
-                UIModule.syncSecondaryKudosVisibility();
+        parseDisplayTimeToISO(displayTime) {
+            // Parse Strava's display time formats like "Today at 18:48" or "Today at 6:48 PM"
+            const now = new Date();
+            let targetDate = new Date(now);
+            const atIndex = displayTime.indexOf(' at ');
+            if (atIndex === -1) return null;
+            const datePart = displayTime.substring(0, atIndex).trim();
+            const timePart = displayTime.substring(atIndex + 4).trim();
+            if (datePart.toLowerCase() === 'today') {
+                targetDate = new Date(now);
+            } else if (datePart.toLowerCase() === 'yesterday') {
+                targetDate = new Date(now);
+                targetDate.setDate(targetDate.getDate() - 1);
             } else {
-                // When filter is disabled, show all activities and reset sections
-                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-                activities.forEach(activity => {
-                    activity.style.display = '';
-                });
-
-                // Reset all sections to visible
-                const challengesSection = document.querySelector('#your-challenges');
-                if (challengesSection && challengesSection.dataset.sffHiddenBy === 'sff') {
-                    challengesSection.style.display = '';
-                    delete challengesSection.dataset.sffHiddenBy;
+                const yearNow = now.getFullYear();
+                const parsedDate = new Date(datePart + ' ' + yearNow);
+                if (!isNaN(parsedDate.getTime())) {
+                    targetDate = parsedDate;
+                } else {
+                    return null;
                 }
-
-                const suggestedFriendsSection = document.querySelector('#suggested-follows');
-                if (suggestedFriendsSection && suggestedFriendsSection.dataset.sffHiddenBy === 'sff') {
-                    suggestedFriendsSection.style.display = '';
-                    delete suggestedFriendsSection.dataset.sffHiddenBy;
-                }
-
-                const yourClubsSection = document.querySelector('#your-clubs');
-                if (yourClubsSection && yourClubsSection.dataset.sffHiddenBy === 'sff') {
-                    yourClubsSection.style.display = '';
-                    delete yourClubsSection.dataset.sffHiddenBy;
-                }
-
-                const giftLinks = document.querySelectorAll('a[href*="/gift"][href*="origin=global_nav"]');
-                giftLinks.forEach(a => {
-                    if (a.dataset.sffHiddenBy === 'sff') {
-                        a.style.display = '';
-                        delete a.dataset.sffHiddenBy;
-                    }
-                });
-                
-                // Reset Start Trial button visibility
-                const startTrialLinks = document.querySelectorAll('li.nav-item.upgrade a[href*="/subscribe"][href*="cta=free-trial"]');
-                startTrialLinks.forEach(a => {
-                    const li = a.closest('li.nav-item.upgrade');
-                    const targetElement = li || a;
-                    if (targetElement.dataset.sffHiddenBy === 'sff') {
-                        targetElement.style.display = '';
-                        delete targetElement.dataset.sffHiddenBy;
-                    }
-                });
-                // Reset footer visibility
-                this.updateFooterVisibility();
-                // Reset joined challenges
-                const entries = document.querySelectorAll('[data-testid="web-feed-entry"], .feed-entry, .activity');
-                entries.forEach(entry => {
-                    if (entry.dataset.sffHiddenChallenge === 'sff') {
-                        entry.style.display = '';
-                        delete entry.dataset.sffHiddenChallenge;
-                    }
-                });
-
-                const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
-                const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
-                if (btn) btn.textContent = '(0)';
-                if (secondaryBtn) secondaryBtn.textContent = '(0)';
             }
-        }
+            let hours, minutes;
+            const isPM = /PM/i.test(timePart);
+            const isAM = /AM/i.test(timePart);
+            if (isPM || isAM) {
+                const timeOnly = timePart.replace(/\s*(AM|PM)/i, '').trim();
+                const [h, m] = timeOnly.split(':').map(p => parseInt(p, 10));
+                hours = h;
+                minutes = m;
+                if (isPM && hours !== 12) {
+                    hours += 12;
+                } else if (isAM && hours === 12) {
+                    hours = 0;
+                }
+            } else {
+                const [h, m] = timePart.split(':').map(p => parseInt(p, 10));
+                hours = h;
+                minutes = m;
+            }
+            targetDate.setHours(hours, minutes, 0, 0);
+            return targetDate.toISOString();
+        },
     };
 
     // Initialize utilities and update settings references
@@ -6027,13 +6201,8 @@
     // Setup global features that work on all pages
     let globalFeaturesInitialized = false;
     function setupGlobalFeatures() {
-        // console.log('SFF: setupGlobalFeatures called');
-        if (globalFeaturesInitialized) {
-            // console.log('SFF: Global features already initialized');
-            return;
-        }
+        if (globalFeaturesInitialized) return;
         globalFeaturesInitialized = true;
-        // console.log('SFF: Initializing global features');
 
         // Apply gift button hiding immediately
         LogicModule.updateGiftVisibility();
@@ -6060,6 +6229,7 @@
         LogicModule.updateRunHealthVisibility();
         LogicModule.updateBandokVisibility();
         LogicModule.updateCorosVisibility();
+        LogicModule.updateRouvyVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
 
@@ -6078,6 +6248,7 @@
             LogicModule.updateRunHealthVisibility();
             LogicModule.updateBandokVisibility();
             LogicModule.updateCorosVisibility();
+            LogicModule.updateRouvyVisibility();
             LogicModule.updateJoinWorkoutVisibility();
             LogicModule.updateCoachCatVisibility();
         });
@@ -6107,118 +6278,92 @@
         });
         handleActivity(); // Start timer
 
-        // console.log('SFF: setupGlobalFeatures completed');
         // Popup-based controls are handled via browser action; no content panel needed
     }
 
     // Initialize
-    async function init() {
-        // console.log('SFF: Init function called');
-        // Clean Filter: Initializing
-        // Current URL: checking
+    (async function main() {
+        UIModule.init();
+        LogicModule.init();
+        UtilsModule.init();
+        // console.log('SFF: Main function started');r: Initializing
 
         // Load settings before any feature uses them
         if (!settings) {
             try {
                 settings = await UtilsModule.loadSettings();
-                // console.log('SFF: Settings loaded', settings);
-                // Settings loaded
             } catch (e) {
-                // console.error('SFF: Failed to load settings', e);
                 // Failed to load settings, using defaults
                 settings = { ...DEFAULTS };
             }
         }
 
-        // console.log('SFF: Setting up global features');
         // Always setup global features on all pages
         setupGlobalFeatures();
-        // console.log('SFF: Global features setup complete');
 
         // Only create UI elements and run filtering on dashboard
-        const isDashboard = UtilsModule.isOnDashboard();
-        // console.log('SFF: Is on dashboard:', isDashboard);
-        
-        if (isDashboard) {
-            // console.log('SFF: Initializing dashboard features');
+        if (UtilsModule.isOnDashboard()) {
             // Mark body as dashboard for responsive CSS that relies on this flag
             document.body.setAttribute('data-sff-dashboard', 'true');
             
             // Always create UI elements so users can toggle filtering on/off
-            const existingPanel = document.querySelector('.sff-clean-panel');
-            // console.log('SFF: Existing panel:', existingPanel);
-            
-            if (!existingPanel) {
-                // console.log('SFF: Creating UI elements');
-                // Creating UI elements
+            if (!document.querySelector('.sff-clean-panel')) {
                 UIModule.createElements();
-                // console.log('SFF: UI elements created');
-            } else {
-                // console.log('SFF: Panel already exists');
             }
             
             // Ensure secondary kudos button is properly synchronized
-            // console.log('SFF: Syncing secondary kudos visibility');
             UIModule.syncSecondaryKudosVisibility();
             // Ensure header kudos button is created/removed according to settings immediately
-            // console.log('SFF: Managing header kudos button');
             LogicModule.manageHeaderKudosButton();
-            // Inject "See more" buttons on activities
-            // console.log('SFF: Managing see more buttons');
-            LogicModule.manageSeeMoreButtons();
-            // console.log('SFF: Filtering activities');
             LogicModule.filterActivities();
-            // console.log('SFF: Setting up auto filter');
             LogicModule.setupAutoFilter();
-            // console.log('SFF: Dashboard initialization complete');
-        } else {
-            // console.log('SFF: Not on dashboard, skipping dashboard initialization');
         }
-    }
+    })();
 
     // Listen for popup toggle messages to enable/disable and re-apply filters
     try {
-        // Use browser.runtime for Firefox (similar to how Chrome version handles both)
-        if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
-            browser.runtime.onMessage.addListener((msg) => {
-                console.log('SFF: Received message', msg);
-                if (msg && msg.type === 'SFF_TOGGLE_ENABLED') {
-                    settings.enabled = !!msg.enabled;
-                    try { UtilsModule.saveSettings(settings); } catch (e) {}
-                    // On dashboard: ensure UI exists and update toggle state
-                    if (UtilsModule.isOnDashboard()) {
-                        if (!document.querySelector('.sff-clean-panel')) {
-                            try { UIModule.createElements(); } catch (e) {}
-                        }
-                        // Update toggle checkbox and text to reflect new state
-                        const toggleCheckbox = document.querySelector('.sff-enabled-toggle');
-                        const toggleText = document.querySelector('.sff-toggle-text');
-                        if (toggleCheckbox) toggleCheckbox.checked = settings.enabled;
-                        if (toggleText) toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
-                        
-                        try { UIModule.syncSecondaryKudosVisibility(); } catch (e) {}
-                        try { LogicModule.filterActivities(); } catch (e) {}
-                        try { LogicModule.setupAutoFilter(); } catch (e) {}
+        const messageHandler = (msg) => {
+            if (msg && msg.type === 'SFF_TOGGLE_ENABLED') {
+                settings.enabled = !!msg.enabled;
+                try { UtilsModule.saveSettings(settings); } catch (e) {}
+                // On dashboard: ensure UI exists and update toggle state
+                if (UtilsModule.isOnDashboard()) {
+                    if (!document.querySelector('.sff-clean-panel')) {
+                        try { UIModule.createElements(); } catch (e) {}
                     }
-                    try { LogicModule.applyAllFilters(); } catch (e) {}
+                    // Update toggle checkbox and text to reflect new state
+                    const toggleCheckbox = document.querySelector('.sff-enabled-toggle');
+                    const toggleText = document.querySelector('.sff-toggle-text');
+                    if (toggleCheckbox) toggleCheckbox.checked = settings.enabled;
+                    if (toggleText) toggleText.textContent = `FILTER ${settings.enabled ? 'ON' : 'OFF'}`;
+                    
+                    try { UIModule.syncSecondaryKudosVisibility(); } catch (e) {}
+                    try { LogicModule.filterActivities(); } catch (e) {}
+                    try { LogicModule.setupAutoFilter(); } catch (e) {}
                 }
-                // Handle settings import/update
-                if (msg && msg.type === 'SFF_SETTINGS_UPDATED') {
-                    console.log('SFF: Settings updated, reloading');
-                    // Reload settings from storage and refresh everything
-                    UtilsModule.loadSettings().then(newSettings => {
-                        settings = newSettings;
-                        // Reload the page to apply new settings
-                        location.reload();
-                    }).catch(e => {
-                        // Failed to reload settings
-                        location.reload(); // Reload anyway
-                    });
-                }
-            });
+                try { LogicModule.applyAllFilters(); } catch (e) {}
+            }
+            // Handle settings import/update
+            if (msg && msg.type === 'SFF_SETTINGS_UPDATED') {
+                // Reload settings from storage and refresh everything
+                UtilsModule.loadSettings().then(newSettings => {
+                    settings = newSettings;
+                    // Reload the page to apply new settings
+                    location.reload();
+                }).catch(e => {
+                    // Failed to reload settings
+                    location.reload(); // Reload anyway
+                });
+            }
+        };
+        
+        // Use chrome.runtime for Chrome, browser.runtime for Firefox
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+            chrome.runtime.onMessage.addListener(messageHandler);
+        } else if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
+            browser.runtime.onMessage.addListener(messageHandler);
         }
     } catch (e) {
-        console.error('SFF: Failed to attach runtime message listener', e);
         // Failed to attach runtime message listener
     }
 
@@ -6257,10 +6402,6 @@
     setInterval(checkPageChange, 500);
 
     // Clean Filter: Setup complete
-    
-    // Initialize the extension when the script loads
-    // console.log('SFF: Calling init() for initial load');
-    init();
 
 })();
 // ===== End original script body =====

@@ -1,0 +1,14 @@
+<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ <g>
+  <title>Layer 1</title>
+  <g transform="rotate(-25, 18.125, 18.75)" id="svg_6">
+   <g id="svg_4" transform="rotate(-0.150027, 17.75, 17.8362)">
+    <circle stroke="#f59e0b" cx="11.00001" cy="22.83616" r="3.5" id="svg_1"/>
+    <circle stroke="#f59e0b" cx="24.50001" cy="22.83616" r="3.5" id="svg_2"/>
+    <path stroke="#f59e0b" d="m20.50001,11.33616a1,1 0 1 0 0,-2a1,1 0 0 0 0,2zm-3,11.5l0,-3.5l-3,-3l4,-3l2,3l2,0" id="svg_3"/>
+   </g>
+   <line stroke="#f59e0b" x1="1.32426" y1="27.28055" x2="34.92576" y2="28.76677" id="svg_5" fill="none" transform="rotate(-3.03461, 18.125, 28.0237)"/>
+  </g>
+ </g>
+
+</svg>

@@ -198,7 +198,7 @@ Choose the option that fits your browser/platform.
 ### Filter Categories
 
 | Category | Options | Description |
-|----------|---------|-------------|
+| --- | --- | --- |
 | Keywords | Text input | Hide activities containing specified words |
 | Activity Types | 20+ checkboxes | Show/hide specific activity types |
 | Distance | Min/Max sliders | Filter by activity distance |
@@ -296,7 +296,7 @@ See the difference filtering makes on your Strava feed:
 ## Changelog
 
 For the complete release notes, see [CHANGELOG.md](./CHANGELOG.md).
-Latest release: v2.4.5 (30.11.2025) - Enhanced mobile support with notification system and bidirectional panel resizing.
+Latest release: v2.6.0 (03.01.2026) - Added Rouvy filtering support and improved external service detection.
 
 ## 📄 License
 

@@ -4,7 +4,7 @@
 // @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
-// @version      2.6.0-safari-ios
+// @version      2.4.5-safari-ios
 // @license      MIT
 // @author       Inc21
 // @match        https://www.strava.com/*
@@ -50,6 +50,7 @@
         hideWandrer: false,
         hideBandok: false,
         hideCoros: false,
+        hideRouvy: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -897,7 +898,8 @@
         line-height: 1.2 !important;
         text-transform: uppercase !important;
         position: relative !important;
-        z-index: 1000 !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
         }
     
         .sff-secondary-filter-btn:hover {
@@ -922,11 +924,31 @@
         line-height: 1.2 !important;
         transition: background-color 0.15s ease !important;
         position: relative !important;
-        z-index: 1000 !important;
         }
     
         .sff-secondary-kudos-btn:hover {
         background: #e04a00 !important;
+        }
+
+        /* Dark mode styles for secondary navigation */
+        .sff-secondary-nav.sff-theme-dark {
+        background: #111111 !important;
+        border-bottom-color: #333333 !important;
+        box-shadow: none !important;
+        }
+
+        .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
+        .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
+        background: transparent !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+        margin: 1px !important;
+        }
+
+        .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
+        .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
         }
 
         .sff-view-filters, .sff-view-settings {
@@ -1454,6 +1476,7 @@
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
             settings.hideBandok = panel.querySelector('.sff-hideBandok') ? panel.querySelector('.sff-hideBandok').checked : settings.hideBandok;
             settings.hideCoros = panel.querySelector('.sff-hideCoros') ? panel.querySelector('.sff-hideCoros').checked : settings.hideCoros;
+            settings.hideRouvy = panel.querySelector('.sff-hideRouvy') ? panel.querySelector('.sff-hideRouvy').checked : settings.hideRouvy;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
@@ -1497,6 +1520,7 @@
                 LogicModule.updateRunHealthVisibility();
                 LogicModule.updateBandokVisibility();
                 LogicModule.updateCorosVisibility();
+                LogicModule.updateRouvyVisibility();
                 LogicModule.updateJoinWorkoutVisibility();
                 LogicModule.updateCoachCatVisibility();
                 LogicModule.updateAthleteJoinedClubVisibility();
@@ -1770,6 +1794,10 @@
                         <label class="sff-chip ${settings.hideCoros ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideCoros" ${settings.hideCoros ? 'checked' : ''}>
                             Hide "COROS"
+                        </label>
+                        <label class="sff-chip ${settings.hideRouvy ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideRouvy" ${settings.hideRouvy ? 'checked' : ''}>
+                            Hide "Rouvy"
                         </label>
                         <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
@@ -2279,6 +2307,11 @@
                         settings.hideCoros = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateCorosVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideRouvy')) {
+                        settings.hideRouvy = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateRouvyVisibility();
                     }
                     if (e.target.classList.contains('sff-hideRunHealth')) {
                         settings.hideRunHealth = e.target.checked;
@@ -3005,16 +3038,46 @@
                 console.warn('updateCorosVisibility error:', e);
             }
         },
-    
+
+        updateRouvyVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "rouvy.com" or similar patterns
+                        const hasRouvy = /rouvy\.com/i.test(text);
+                        if (hasRouvy && text.length < 500) {
+                            if (settings.enabled && settings.hideRouvy) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🚴 Rouvy description hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateRouvyVisibility error:', e);
+            }
+        },
+
         updateRunHealthVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
                 console.log(`🔍 Checking ${activities.length} activities for Run Health content`);
-    
+
                 activities.forEach(activity => {
                     // Find only text-containing elements (paragraphs and spans) that specifically contain Run Health content
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text');
-    
+
                     textElements.forEach(element => {
                         const text = element.textContent?.trim() || '';
                         // Only hide if this element specifically contains Run Health and not other content
@@ -3037,15 +3100,15 @@
                 console.warn('updateRunHealthVisibility error:', e);
             }
         },
-    
+
         updateJoinWorkoutVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
                 console.log(`🔍 Checking ${activities.length} activities for JOIN workout content`);
-    
+
                 activities.forEach(activity => {
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
-    
+
                     textElements.forEach(element => {
                         const text = element.textContent?.trim() || '';
                         const hasJoin = /\bJOIN workout\b/i.test(text) || text.includes('strava.com/clubs/join-cycling');
@@ -3068,15 +3131,15 @@
                 console.warn('updateJoinWorkoutVisibility error:', e);
             }
         },
-    
+
         updateCoachCatVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
                 console.log(`🔍 Checking ${activities.length} activities for CoachCat content`);
-    
+
                 activities.forEach(activity => {
                     const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
-    
+
                     textElements.forEach(element => {
                         const text = element.textContent?.trim() || '';
                         const hasCoachCat = /\bCoachCat Training Summary\b/i.test(text) || text.includes('fascatcoaching.com/app');
@@ -3099,11 +3162,11 @@
                 console.warn('updateCoachCatVisibility error:', e);
             }
         },
-    
+
         updateAthleteJoinedClubVisibility() {
             try {
                 const toHide = new Set();
-    
+
                 // 1) Header-based detection
                 const headers = document.querySelectorAll('[data-testid="group-header"]');
                 headers.forEach(header => {
@@ -3115,7 +3178,7 @@
                         toHide.add(container);
                     }
                 });
-    
+
                 // 2) Button-based detection (fallback): entries containing a "Join Club" button
                 const entries = document.querySelectorAll('[data-testid="web-feed-entry"], .feed-entry, .activity');
                 entries.forEach(entry => {
@@ -3128,7 +3191,7 @@
                         toHide.add(container);
                     }
                 });
-    
+
                 // Apply/hide or restore
                 toHide.forEach(container => {
                     if (settings.enabled && settings.hideAthleteJoinedClub) {
@@ -3146,11 +3209,11 @@
                 console.warn('updateAthleteJoinedClubVisibility error:', e);
             }
         },
-    
+
         // Count hidden sections for display in filter button
         countHiddenSections() {
             let hiddenSectionsCount = 0;
-    
+
             // Count hidden sections
             const sectionsToCheck = [
                 { selector: '#your-challenges', setting: 'hideChallenges' },
@@ -3158,25 +3221,25 @@
                 { selector: '#your-clubs', setting: 'hideYourClubs' },
                 { selector: 'div.FvXwlgEO', setting: 'hideFooter' }
             ];
-    
+
             sectionsToCheck.forEach(({ selector, setting }) => {
                 const section = document.querySelector(selector);
                 if (section && settings[setting] && section.dataset.sffHiddenBy === 'sff') {
                     hiddenSectionsCount++;
                 }
             });
-    
+
             return hiddenSectionsCount;
         },
-    
+
         filterActivities() {
             const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
-    
+
             if (!settings.enabled) {
                 activities.forEach(activity => {
                     activity.style.display = '';
                 });
-    
+
                 // Update button to show "OFF" when filtering is disabled
                 const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
                 const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
@@ -3185,12 +3248,12 @@
                 return;
             }
             let hiddenCount = 0;
-    
+
             activities.forEach(activity => {
                 // Get the primary owner of the activity
                 const ownerLink = activity.querySelector('.entry-athlete a, [data-testid="owners-name"]');
                 let athleteName = ownerLink?.textContent || '';
-                
+
                 // For "joined a club" and similar entries, check group-header
                 if (!athleteName) {
                     const groupHeader = activity.querySelector('[data-testid="group-header"]');
@@ -3204,10 +3267,10 @@
                 // Skip group activities (detected by "rode with" or similar text in buttons)
                 if (settings.ignoredAthletes.length > 0 && athleteName) {
                     // Check if this is a group activity
-                    const isGroupActivity = Array.from(activity.querySelectorAll('button')).some(btn => 
+                    const isGroupActivity = Array.from(activity.querySelectorAll('button')).some(btn =>
                         /\b(rode|ran|walked|hiked|swam)\s+with\b/i.test(btn.textContent || '')
                     );
-                    
+
                     // Only apply ignore filter to non-group activities
                     if (!isGroupActivity) {
                         const nameParts = athleteName.toLowerCase().split(/\s+/);
@@ -3224,7 +3287,7 @@
                         }
                     }
                 }
-    
+
                 // Handle club posts (robust detection)
                 const isClub = this.isClubPost(activity) || (ownerLink && ownerLink.getAttribute('href')?.includes('/clubs/'));
                 if (isClub) {
@@ -3237,9 +3300,9 @@
                     }
                     return; // Club posts are not subject to other filters
                 }
-    
+
                 // Hide commute-tagged activities early
-    
+
                 // Handle joined challenge cards separately
                 if (this.isChallengeEntry(activity)) {
                     if (settings.hideJoinedChallenges) {
@@ -3250,22 +3313,22 @@
                     }
                     return; // Do not apply activity filters to challenge cards
                 }
-    
+
                 const title = activity.querySelector('.entry-title, .activity-name, [data-testid="entry-title"], [data-testid="activity_name"]')?.textContent || '';
                 const { match: resolvedType, raw: resolvedRawType } = resolveActivityType(activity);
                 const typeText = resolvedRawType || '';
                 const normalizedTypeText = normalizeTypeLabel(typeText);
                 const isRunActivity = resolvedType ? /run$/i.test(resolvedType.key) : normalizedTypeText.includes('run');
-    
+
                 let shouldHide = false;
-    
+
                 // Keywords, Activity types, Distance, Duration, Elevation, Pace, Map, Athletes logic...
                 // [Filtering logic implementation here]
                 if (!shouldHide && settings.keywords.length > 0 && title) {
                     const hasKeyword = settings.keywords.some(keyword => keyword && title.toLowerCase().includes(keyword.toLowerCase()));
                     if (hasKeyword) shouldHide = true;
                 }
-    
+
                 // Activity types
                 if (!shouldHide && (resolvedType || typeText)) {
                     if (resolvedType) {
@@ -3276,25 +3339,25 @@
                     } else {
                         // Fallback for group activities or unresolved types
                         const isVirtual = normalizeTypeLabel(typeText).includes('virtual');
-                        
+
                         if (isVirtual) {
                             const hideAnyVirtual = TYPE_LABEL_METADATA.filter(t => t.normalized.includes('virtual')).some(t => settings.types[t.key]);
                             if (hideAnyVirtual) shouldHide = true;
                         } else {
                             // Only check for generic ride if it's NOT virtual
                             const hasGroupAvatars = !!activity.querySelector('[data-testid="avatar_group"]');
-                            const isRide = normalizeTypeLabel(typeText).includes('ride') || 
-                                         /\b(rode|cycling|cycle)\b/i.test(title) || 
+                            const isRide = normalizeTypeLabel(typeText).includes('ride') ||
+                                         /\b(rode|cycling|cycle)\b/i.test(title) ||
                                          (activity.querySelector('[data-testid="group-header"]') && /rode/i.test(activity.textContent || '')) ||
                                          (hasGroupAvatars && !normalizeTypeLabel(typeText).includes('run')); // Assume group activity is a ride if not explicitly a run
-                            
+
                             if (isRide) {
                                  if (settings.types['Ride']) shouldHide = true;
                             }
                         }
                     }
                 }
-    
+
                 if (!shouldHide && (settings.minKm > 0 || settings.maxKm > 0)) {
                     const km = UtilsModule.parseDistanceKm(activity);
                     if (km !== null) {
@@ -3303,7 +3366,7 @@
                         if (!shouldHide && settings.maxKm > 0 && val > settings.maxKm) shouldHide = true;
                     }
                 }
-    
+
                 if (!shouldHide && (settings.minMins > 0 || settings.maxMins > 0)) {
                     const secs = UtilsModule.parseDurationSeconds(activity);
                     if (secs !== null) {
@@ -3312,7 +3375,7 @@
                         if (!shouldHide && settings.maxMins > 0 && mins > settings.maxMins) shouldHide = true;
                     }
                 }
-    
+
                 if (!shouldHide && (settings.minElevM > 0 || settings.maxElevM > 0)) {
                     const elevM = UtilsModule.parseElevationM(activity);
                     if (elevM !== null) {
@@ -3321,7 +3384,7 @@
                         if (!shouldHide && settings.maxElevM > 0 && val > settings.maxElevM) shouldHide = true;
                     }
                 }
-    
+
                 if (!shouldHide && (settings.minPace > 0 || settings.maxPace > 0) && isRunActivity) {
                     // Robustly locate the Pace value within this activity card
                     let valueDiv = null;
@@ -3337,7 +3400,7 @@
                     }
                     // Fallbacks to older selectors
                     if (!valueDiv) valueDiv = activity.querySelector('.pace .value, [data-testid="pace"] .value');
-    
+
                     if (valueDiv) {
                         const timeText = (valueDiv.childNodes[0]?.textContent || valueDiv.textContent || '').trim();
                         const match = timeText.match(/^(\d+):(\d{1,2})/);
@@ -3350,6 +3413,7 @@
                                 const abbrTxt = (abbr?.textContent || '').trim().toLowerCase();
                                 const abbrTitle = (abbr?.getAttribute('title') || '').toLowerCase();
                                 const isPerMile = abbrTxt.includes('/mi') || abbrTitle.includes('mile');
+
                                 // Convert min/mi to min/km if necessary
                                 const paceVal = isPerMile ? paceMinPerUnit * 1.60934 : paceMinPerUnit;
                                 // Semantics:
@@ -3361,7 +3425,7 @@
                         }
                     }
                 }
-    
+
                 if (!shouldHide && settings.hideNoMap) {
                     // Only apply no-map rule to real activity entries
                     if (this.isActivityEntry(activity)) {
@@ -3369,7 +3433,7 @@
                         if (!map) shouldHide = true;
                     }
                 }
-    
+
                 if (shouldHide && settings.allowedAthletes.length > 0 && athleteName) {
                     const nameParts = athleteName.toLowerCase().split(/\s+/);
                     const isAllowed = settings.allowedAthletes.some(allowedName => {
@@ -3377,12 +3441,12 @@
                         const allowedNameParts = allowedName.toLowerCase().split(/\s+/);
                         return allowedNameParts.every(part => nameParts.includes(part));
                     });
-    
+
                     if (isAllowed) {
                         shouldHide = false;
                     }
                 }
-    
+
                 if (shouldHide) {
                     activity.style.display = 'none';
                     hiddenCount++;
@@ -3390,37 +3454,37 @@
                     activity.style.display = '';
                 }
             });
-    
+
             console.log(`🎯 Filtered ${hiddenCount}/${activities.length} activities`);
             const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
             const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
             if (btn) btn.textContent = `(${hiddenCount})`;
             if (secondaryBtn) secondaryBtn.textContent = `(${hiddenCount})`;
         },
-    
+
         manageHeaderKudosButton() {
             let attempts = 0;
             const maxAttempts = 10;
             const interval = 500;
-    
+
             const placeButton = () => {
                 const kudosListItem = document.getElementById('gj-kudos-li');
-    
+
                 if (!settings.enabled || !settings.showKudosButton) {
                     if (kudosListItem) kudosListItem.remove();
                     // Also ensure secondary button is hidden
                     UIModule.syncSecondaryKudosVisibility();
                     return;
                 }
-    
+
                 if (kudosListItem) {
                     // Button exists, ensure secondary is also synced
                     UIModule.syncSecondaryKudosVisibility();
                     return;
                 }
-    
+
                 const navList = document.querySelector('.user-nav.nav-group');
-    
+
                 if (navList) {
                     const newListItem = document.createElement('li');
                     newListItem.id = 'gj-kudos-li';
@@ -3429,16 +3493,16 @@
                     newListItem.style.paddingRight = '10px';
                     newListItem.style.display = 'flex';
                     newListItem.style.alignItems = 'center';
-    
+
                     const kudosBtn = document.createElement('a');
                     kudosBtn.className = 'sff-header-kudos-btn';
                     kudosBtn.href = 'javascript:void(0);';
                     kudosBtn.textContent = 'Give 👍 to Everyone';
-    
+
                     kudosBtn.addEventListener('click', () => {
                         let kudosGiven = 0;
                         const kudosButtons = document.querySelectorAll("button[data-testid='kudos_button']");
-    
+
                         kudosButtons.forEach(button => {
                             const feedEntry = button.closest('.activity, .feed-entry, [data-testid="web-feed-entry"]');
                             if (feedEntry && feedEntry.style.display !== 'none' && button.title !== 'View all kudos') {
@@ -3446,20 +3510,20 @@
                                 kudosGiven++;
                             }
                         });
-    
+
                         const originalText = kudosBtn.textContent;
                         kudosBtn.textContent = `Gave ${kudosGiven} 👍`;
                         kudosBtn.style.pointerEvents = 'none';
-    
+
                         setTimeout(() => {
                             kudosBtn.textContent = originalText;
                             kudosBtn.style.pointerEvents = 'auto';
                         }, 3000);
                     });
-    
+
                     newListItem.appendChild(kudosBtn);
                     navList.prepend(newListItem);
-    
+
                     // Sync secondary button visibility after creating main button
                     UIModule.syncSecondaryKudosVisibility();
                 } else {
@@ -3469,10 +3533,10 @@
                     }
                 }
             };
-    
+
             placeButton();
         },
-    
+
         setupAutoFilter() {
             const debouncedFilter = UtilsModule.debounce(() => {
                 try {
@@ -3489,13 +3553,14 @@
                     this.updateRunHealthVisibility();
                     this.updateBandokVisibility();
                     this.updateCorosVisibility();
+                    this.updateRouvyVisibility();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
             }, 250);
-    
+
             this.filterActivities();
-    
+
             const observer = new MutationObserver((mutations) => {
                 for (const m of mutations) {
                     if (!m.addedNodes || m.addedNodes.length === 0) continue;
@@ -3512,11 +3577,11 @@
                 }
             });
             observer.observe(document.body, { childList: true, subtree: true });
-    
+
             window.addEventListener('scroll', debouncedFilter, { passive: true });
             window.__sffObserver = observer;
         },
-    
+
         // Master function to apply all filters (activities and sections) based on enabled state
         applyAllFilters() {
             if (settings.enabled) {
@@ -3533,6 +3598,7 @@
                 this.updateRunHealthVisibility();
                 this.updateBandokVisibility();
                 this.updateCorosVisibility();
+                this.updateRouvyVisibility();
                 this.updateCommuteTagVisibility();
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
@@ -3542,26 +3608,26 @@
                 activities.forEach(activity => {
                     activity.style.display = '';
                 });
-    
+
                 // Reset all sections to visible
                 const challengesSection = document.querySelector('#your-challenges');
                 if (challengesSection && challengesSection.dataset.sffHiddenBy === 'sff') {
                     challengesSection.style.display = '';
                     delete challengesSection.dataset.sffHiddenBy;
                 }
-    
+
                 const suggestedFriendsSection = document.querySelector('#suggested-follows');
                 if (suggestedFriendsSection && suggestedFriendsSection.dataset.sffHiddenBy === 'sff') {
                     suggestedFriendsSection.style.display = '';
                     delete suggestedFriendsSection.dataset.sffHiddenBy;
                 }
-    
+
                 const yourClubsSection = document.querySelector('#your-clubs');
                 if (yourClubsSection && yourClubsSection.dataset.sffHiddenBy === 'sff') {
                     yourClubsSection.style.display = '';
                     delete yourClubsSection.dataset.sffHiddenBy;
                 }
-    
+
                 const giftLinks = document.querySelectorAll('a[href*="/gift"][href*="origin=global_nav"]');
                 giftLinks.forEach(a => {
                     if (a.dataset.sffHiddenBy === 'sff') {
@@ -3579,18 +3645,18 @@
                         delete entry.dataset.sffHiddenChallenge;
                     }
                 });
-    
+
                 // Reset external service embed activities
                 this.updateMyWindsockVisibility();
                 this.updateSummitbagVisibility();
                 this.updateRunHealthVisibility();
                 this.updateBandokVisibility();
                 this.updateCorosVisibility();
-    
+
                 // Hide kudos buttons when master toggle is off
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
-    
+
                 // Update button counter to 0
                 const btn = document.querySelector('.sff-clean-btn .sff-btn-sub');
                 const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
@@ -3631,6 +3697,7 @@
         LogicModule.updateRunHealthVisibility();
         LogicModule.updateBandokVisibility();
         LogicModule.updateCorosVisibility();
+        LogicModule.updateRouvyVisibility();
         LogicModule.updateCommuteTagVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
@@ -3649,6 +3716,7 @@
             LogicModule.updateRunHealthVisibility();
             LogicModule.updateBandokVisibility();
             LogicModule.updateCorosVisibility();
+            LogicModule.updateRouvyVisibility();
             LogicModule.updateJoinWorkoutVisibility();
             LogicModule.updateCoachCatVisibility();
             LogicModule.updateAthleteJoinedClubVisibility();

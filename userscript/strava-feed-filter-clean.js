@@ -4,7 +4,7 @@
 // @description  Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @description:en Advanced filtering for your Strava activity feed: keywords, activity types, distance, duration, elevation, pace, map presence; draggable UI; real-time updates.
 // @namespace    https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter
-// @version      2.6.0
+// @version      2.4.5
 // @license      MIT
 // @author       Inc21
 // @match        https://www.strava.com/*
@@ -50,6 +50,7 @@
         hideWandrer: false,
         hideBandok: false,
         hideCoros: false,
+        hideRouvy: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -525,15 +526,30 @@
         color: #333 !important;
       }
 
-      .sff-clean-panel .sff-input:focus {
-        outline: none !important;
-        border-color: #fc5200 !important;
-        box-shadow: 0 0 0 2px rgba(252, 82, 0, 0.1) !important;
+      .sff-secondary-nav.sff-theme-dark {
+        background: #111111 !important;
+        border-bottom-color: #333333 !important;
+        box-shadow: none !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
+        background: transparent !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+        margin: 1px !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
       }
 
       .sff-input-group {
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important; /* Increased gap */
         gap: 8px !important;
       }
 
@@ -949,6 +965,8 @@
         line-height: 1.2 !important;
         text-transform: uppercase !important;
         position: relative !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
         z-index: 1000 !important;
       }
 
@@ -974,7 +992,6 @@
         line-height: 1.2 !important;
         transition: background-color 0.15s ease !important;
         position: relative !important;
-        z-index: 1000 !important;
       }
 
       .sff-secondary-kudos-btn:hover {
@@ -1205,6 +1222,7 @@
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
             settings.hideBandok = panel.querySelector('.sff-hideBandok') ? panel.querySelector('.sff-hideBandok').checked : settings.hideBandok;
             settings.hideCoros = panel.querySelector('.sff-hideCoros') ? panel.querySelector('.sff-hideCoros').checked : settings.hideCoros;
+            settings.hideRouvy = panel.querySelector('.sff-hideRouvy') ? panel.querySelector('.sff-hideRouvy').checked : settings.hideRouvy;
             settings.hideCommuteTag = panel.querySelector('.sff-hideCommuteTag') ? panel.querySelector('.sff-hideCommuteTag').checked : settings.hideCommuteTag;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
@@ -1248,6 +1266,7 @@
                 LogicModule.updateRunHealthVisibility();
                 LogicModule.updateBandokVisibility();
                 LogicModule.updateCorosVisibility();
+                LogicModule.updateRouvyVisibility();
                 LogicModule.updateJoinWorkoutVisibility();
                 LogicModule.updateCoachCatVisibility();
                 LogicModule.updateAthleteJoinedClubVisibility();
@@ -1257,6 +1276,11 @@
             // Create secondary navigation row
             const secondaryNav = document.createElement('div');
             secondaryNav.className = 'sff-secondary-nav';
+
+            // Apply dark theme class if enabled
+            if (settings.theme === 'dark') {
+                secondaryNav.classList.add('sff-theme-dark');
+            }
 
             // Create secondary filter button
             const secondaryFilterElement = document.createElement('button');
@@ -1520,6 +1544,10 @@
                         <label class="sff-chip ${settings.hideCoros ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideCoros" ${settings.hideCoros ? 'checked' : ''}>
                             Hide "COROS"
+                        </label>
+                        <label class="sff-chip ${settings.hideRouvy ? 'checked' : ''}">
+                            <input type="checkbox" class="sff-hideRouvy" ${settings.hideRouvy ? 'checked' : ''}>
+                            Hide "Rouvy"
                         </label>
                         <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                             <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
@@ -2020,6 +2048,11 @@
                     settings.hideCoros = e.target.checked;
                     UtilsModule.saveSettings(settings);
                     LogicModule.updateCorosVisibility();
+                }
+                if (e.target.classList.contains('sff-hideRouvy')) {
+                    settings.hideRouvy = e.target.checked;
+                    UtilsModule.saveSettings(settings);
+                    LogicModule.updateRouvyVisibility();
                 }
                 if (e.target.classList.contains('sff-hideRunHealth')) {
                     settings.hideRunHealth = e.target.checked;
@@ -2702,6 +2735,36 @@
             }
         },
 
+        updateRouvyVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "rouvy.com" or similar patterns
+                        const hasRouvy = /rouvy\.com/i.test(text);
+                        if (hasRouvy && text.length < 500) {
+                            if (settings.enabled && settings.hideRouvy) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                    console.log('🚴 Rouvy description hidden:', element);
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('updateRouvyVisibility error:', e);
+            }
+        },
+
         updateWandrerVisibility() {
             try {
                 const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
@@ -3205,6 +3268,7 @@
                     this.updateRunHealthVisibility();
                     this.updateBandokVisibility();
                     this.updateCorosVisibility();
+                    this.updateRouvyVisibility();
                 } catch (e) {
                     console.error('Auto-filter error:', e);
                 }
@@ -3250,6 +3314,7 @@
                 this.updateRunHealthVisibility();
                 this.updateBandokVisibility();
                 this.updateCorosVisibility();
+                this.updateRouvyVisibility();
                 this.manageHeaderKudosButton();
                 UIModule.syncSecondaryKudosVisibility();
             } else {
@@ -3303,6 +3368,7 @@
                 this.updateRunHealthVisibility();
                 this.updateBandokVisibility();
                 this.updateCorosVisibility();
+                this.updateRouvyVisibility();
 
                 // Hide kudos buttons when master toggle is off
                 this.manageHeaderKudosButton();
@@ -3976,6 +4042,7 @@
         LogicModule.updateRunHealthVisibility();
         LogicModule.updateBandokVisibility();
         LogicModule.updateCorosVisibility();
+        LogicModule.updateRouvyVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
         LogicModule.updateAthleteJoinedClubVisibility();
@@ -3994,6 +4061,7 @@
             LogicModule.updateRunHealthVisibility();
             LogicModule.updateBandokVisibility();
             LogicModule.updateCorosVisibility();
+            LogicModule.updateRouvyVisibility();
             LogicModule.updateJoinWorkoutVisibility();
             LogicModule.updateCoachCatVisibility();
             LogicModule.updateAthleteJoinedClubVisibility();

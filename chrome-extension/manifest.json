@@ -39,14 +39,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "icons/flat.svg",
-        "icons/gentle.svg",
-        "icons/rolling.svg",
-        "icons/hilly.svg",
-        "icons/very_hilly.svg",
-        "icons/mountainous.svg",
-        "icons/mountanus.svg",
-        "icons/extreme.svg"
+        "icons/*.svg"
       ],
       "matches": ["<all_urls>"]
     }

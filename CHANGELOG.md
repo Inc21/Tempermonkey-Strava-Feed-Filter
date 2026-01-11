@@ -1,5 +1,30 @@
 # Changelog
 
+## [v2.6.0] - 03.01.2026 (Firefox & Chrome Extensions)
+
+### Features Added
+
+- **Rouvy Filtering**: Added support for filtering Rouvy activities
+  - New "Hide Rouvy" option in External Services section
+  - Detects and hides activities with "rouvy.com" in descriptions/titles
+  - Added "Rouvy" to the supported Recording Devices list
+  - Filters out activities recorded with Rouvy when using device filtering
+
+### UI Enhancements
+
+- **Panel Dark Mode**: Full dark mode support matching Strava's theme
+- **Climbing Index**: Added climbing index display with colored icons
+- **Visual Refresh**:
+  - **Settings Icon**: Updated to a modern gear icon
+  - **Navigation**: Added "Back to Filter" button for better navigation flow
+  - **Close Button**: Updated to a distinct red [X] button style
+
+### Improvements
+
+- **External Service Detection**: Enhanced detection logic for external services to look for domain names in activity text
+
+---
+
 ## [v2.5.1] - 13.12.2025 (Firefox & Chrome Extensions)
 
 ### Features Added

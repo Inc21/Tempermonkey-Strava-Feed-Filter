@@ -1,3 +1,19 @@
+function getSettingsIconUrl(theme) {
+    const iconName = theme === 'dark' ? 'gear_orange.svg' : 'gear_gray.svg';
+    const file = `icons/${iconName}`;
+    try {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+            return chrome.runtime.getURL(file);
+        }
+        if (typeof browser !== 'undefined' && browser.runtime?.getURL) {
+            return browser.runtime.getURL(file);
+        }
+    } catch (e) {
+        // Context invalidated, return relative path
+    }
+    return file; // fallback relative path
+}
+
 // Strava Feed Filter - injected page script for Chrome WebExtension
 // This is derived from userscript/userscript/strava-feed-filter-clean.js (header removed)
 // A small GM_addStyle shim is provided so existing CSS injection works.
@@ -94,6 +110,7 @@
         hideWandrer: false,
         hideBandok: false,
         hideCoros: false,
+        hideRouvy: false,
         hideJoinWorkout: false,
         hideCoachCat: false,
         hideAthleteJoinedClub: false,
@@ -265,10 +282,6 @@
     function injectStyles() {
         GM_addStyle(`
       .sff-clean-btn {
-        position: fixed !important;
-        top: 10px !important;
-        right: 10px !important;
-        z-index: 2147483647 !important;
         padding: 5px 12px !important;
         background: #fc5200 !important;
         color: white !important;
@@ -307,10 +320,23 @@
         line-height: 1 !important;
       }
 
-      /* Drop the button earlier to avoid covering header buttons */
+      .sff-filter-nav-item {
+        padding-right: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+
+      li#notifications {
+        margin-left: 0 !important;
+        margin-right: 8px !important;
+      }
+
+      /* On smaller screens, adjust positioning */
       @media (max-width: 1460px) {
         .sff-clean-btn {
-          top: 56px !important; /* drop below header a bit */
+          position: fixed !important;
+          top: 56px !important;
+          right: 10px !important;
         }
       }
 
@@ -418,7 +444,7 @@
 
       .sff-panel-header h3 {
         margin: 0 !important;
-        font-size: 14px !important;
+        font-size: 20px !important;
         user-select: none !important;
         color: white !important;
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif !important;
@@ -496,19 +522,20 @@
       }
 
       .sff-panel-header .sff-close {
-        background: none !important;
+        background: #b71c1c !important;
         border: 1px solid white !important;
         font-size: 22px !important;
         color: white !important;
         cursor: pointer !important;
         padding: 2px 6px !important;
         border-radius: 4px !important;
-        line-height: 1 !important;
+        font-weight: 800 !important; line-height: 1 !important;
       }
 
       .sff-panel-header .sff-close:hover {
-        background: rgba(255,255,255,0.2) !important;
-        color: #fc5200 !important;
+        background: #8b0000 !important;
+        color: white !important;
+        border-color: white !important;
       }
 
       .sff-panel-content {
@@ -760,7 +787,7 @@
         border: none !important;
         padding: 0 !important;
         font-size: 18px !important;
-        color: #999 !important;
+        color: #dc3545 !important;
         cursor: pointer !important;
         line-height: 1 !important;
         position: absolute !important;
@@ -769,7 +796,7 @@
       }
 
       .sff-info-box-close:hover {
-        color: #333 !important;
+        color: #dc3545 !important;
       }
 
       .sff-switch {
@@ -865,22 +892,58 @@
       body[data-sff-theme="dark"] .sff-clean-btn,
       body[data-sff-theme="dark"] .sff-secondary-filter-btn {
         background: #111111 !important;
-        color: #fb923c !important;
-        border: 1px solid #fb923c !important;
+        color: #fc5200 !important;
+        border: 2px solid #fc5200 !important;
+      }
+      body[data-sff-theme="dark"] .sff-clean-btn .sff-btn-sub,
+      body[data-sff-theme="dark"] .sff-secondary-filter-btn .sff-btn-sub {
+        color: #fc5200 !important;
       }
 
       body[data-sff-theme="dark"] .sff-header-kudos-btn:hover,
       body[data-sff-theme="dark"] .sff-clean-btn:hover,
       body[data-sff-theme="dark"] .sff-secondary-filter-btn:hover {
-        background: #fb923c !important;
-        color: #111111 !important;
+        background: #333333 !important;
+        color: #fc5200 !important;
       }
+      body[data-sff-theme="dark"] .sff-back-btn {
+        background: #18181b !important;
+        border-color: #333333 !important;
+        color: #fc5200 !important;
+      }
+      body[data-sff-theme="dark"] .sff-back-btn:hover {
+        border-color: #fc5200 !important;
+        background: #27272f !important;
+      }
+
 
       .sff-desc {
         font-size: 11px !important;
         color: #666 !important;
         margin: -2px 0 8px 22px !important;
       }
+      .sff-back-btn {
+        background: #f0f0f0 !important;
+        border: 1px solid #ccc !important;
+        cursor: pointer !important;
+        color: #333 !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+        margin-bottom: 16px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        border-radius: 4px !important;
+        width: 100% !important;
+        justify-content: center !important;
+        transition: all 0.2s ease !important;
+      }
+      .sff-back-btn:hover {
+        background: #e0e0e0 !important;
+        border-color: #bbb !important;
+      }
+
 
       .sff-clean-panel .sff-buttons button {
         padding: 6px 12px !important;
@@ -904,14 +967,14 @@
 
       .sff-clean-panel .sff-reset {
         background: white !important;
-        color: #fc5200 !important;
-        border-color: #fc5200 !important;
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
       }
 
       .sff-clean-panel .sff-reset:hover {
-        background: rgba(252, 82, 0, 0.05) !important;
-        color: #e04700 !important;
-        border-color: #e04700 !important;
+        background: rgba(220, 53, 69, 0.05) !important;
+        color: #c82333 !important;
+        border-color: #c82333 !important;
       }
 
       .sff-footer {
@@ -971,7 +1034,7 @@
       .sff-bmc a {
         display: inline-block !important;
         padding: 8px 16px !important;
-        background: #FC5200 !important;
+        background: #fc5200 !important;
         color: #fff !important;
         text-decoration: none !important;
         border-radius: 6px !important;
@@ -1013,6 +1076,7 @@
         align-items: center !important;
         gap: 12px !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        overflow: hidden !important;
       }
 
       /* Dark theme overrides scoped to the filter panel and secondary nav */
@@ -1025,21 +1089,22 @@
 
       .sff-clean-panel.sff-theme-dark .sff-panel-header {
         background: #18181b !important;
-        border-bottom: 1px solid #27272f !important;
+        border-bottom: 1px solid #333333 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-panel-header h3 {
-        color: #f9fafb !important;
+        color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close {
-        border-color: #fb923c !important;
-        color: #f9fafb !important;
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-panel-header .sff-close:hover {
-        background: rgba(251, 146, 60, 0.15) !important;
-        color: #fb923c !important;
+        background: #8b0000 !important;
+        color: #fc5200 !important;
+        border-color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-panel-content {
@@ -1058,7 +1123,7 @@
       }
 
       .sff-clean-panel.sff-theme-dark .sff-panel-content::-webkit-scrollbar-thumb {
-        background: #27272f !important;
+        background: #333333 !important;
         border-radius: 4px !important;
       }
 
@@ -1080,7 +1145,7 @@
 
       .sff-clean-panel.sff-theme-dark .sff-input {
         background: #18181b !important;
-        border-color: #27272f !important;
+        border-color: #333333 !important;
         color: #e5e7eb !important;
       }
 
@@ -1090,16 +1155,16 @@
 
       .sff-clean-panel.sff-theme-dark .sff-dropdown-header {
         background: #18181b !important;
-        border-color: #27272f !important;
+        border-color: #333333 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-dropdown-content {
         background: #09090b !important;
-        border-color: #27272f !important;
+        border-color: #333333 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-dropdown-indicator {
-        color: #fb923c !important;
+        color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-save {
@@ -1115,48 +1180,62 @@
 
       .sff-clean-panel.sff-theme-dark .sff-reset {
         background: #111111 !important;
-        color: #f97316 !important;
-        border-color: #f97316 !important;
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-reset:hover {
-        background: #f97316 !important;
+        background: #dc3545 !important;
         color: #111111 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-footer {
         background: #09090b !important;
-        border-color: #27272f !important;
+        border-color: #333333 !important;
       }
 
       .sff-secondary-nav.sff-theme-dark {
+        background: white !important;
+        border-bottom-color: #333333 !important;
+        box-shadow: none !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
         background: #111111 !important;
-        border-bottom-color: #27272f !important;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.6) !important;
+        color: #fc5200 !important;
+        border: 2px solid #fc5200 !important;
+        margin: 0px !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
+      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-bmc a {
-        background: transparent !important;
-        color: #fb923c !important;
-        border: 1px solid #fb923c !important;
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-bmc a:hover {
-        background: #fb923c !important;
+        background: #fc5200 !important;
         color: #111111 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-toggle-section {
         background: #18181b !important;
-        border-bottom-color: #27272f !important;
+        border-bottom-color: #333333 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider {
-        background-color: #27272f !important;
+        background-color: #333333 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-switch input:checked + .sff-slider {
-        background-color: #fb923c !important;
+        background-color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-switch .sff-slider:before {
@@ -1168,12 +1247,12 @@
       }
 
       .sff-clean-panel.sff-theme-dark .sff-settings-toggle:hover {
-        color: #fb923c !important;
+        color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-seeMoreMode {
         background: #18181b !important;
-        border: 1px solid #27272f !important;
+        border: 1px solid #333333 !important;
         color: #e5e7eb !important;
       }
 
@@ -1184,7 +1263,7 @@
 
       .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:hover,
       .sff-clean-panel.sff-theme-dark .sff-seeMoreMode option:checked {
-        background: #fb923c !important;
+        background: #fc5200 !important;
         color: #111111 !important;
       }
 
@@ -1192,53 +1271,112 @@
       .sff-clean-panel.sff-theme-dark .sff-input:focus-visible,
       .sff-clean-panel.sff-theme-dark select:focus-visible,
       .sff-clean-panel.sff-theme-dark textarea:focus-visible {
-        outline: 2px solid #fb923c !important;
+        outline: 2px solid #fc5200 !important;
         outline-offset: 1px !important;
-        box-shadow: 0 0 0 1px #fb923c !important;
+        box-shadow: 0 0 0 1px #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-settings-btn {
         background: #18181b !important;
         color: #e5e7eb !important;
-        border: 1px solid #27272f !important;
+        border: 1px solid #333333 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-settings-btn:hover {
-        background: #27272f !important;
-        border-color: #fb923c !important;
-        color: #fb923c !important;
+        background: #333333 !important;
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger {
-        border-color: #f97316 !important;
-        color: #f97316 !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
       }
 
       .sff-clean-panel.sff-theme-dark .sff-settings-btn.danger:hover {
-        background: #f97316 !important;
+        background: #dc3545 !important;
         color: #111111 !important;
       }
 
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn,
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn {
-        background: #111111 !important;
-        color: #fb923c !important;
-        border: 1px solid #fb923c !important;
+      /* Dark mode overrides for specific elements not covered by panel class */
+      
+      /* Helper Windows in Dark Mode */
+      body[data-sff-theme="dark"] .sff-info-box {
+        background: #18181b !important;
+        border-color: #333333 !important;
+        color: #e5e7eb !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+      }
+      
+      body[data-sff-theme="dark"] .sff-info-box-close {
+        color: #9ca3af !important;
+      }
+      
+      body[data-sff-theme="dark"] .sff-info-box-close:hover {
+        color: #dc3545 !important;
       }
 
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-filter-btn:hover,
-      .sff-secondary-nav.sff-theme-dark .sff-secondary-kudos-btn:hover {
-        background: #fb923c !important;
+      /* Dropdown buttons in Dark Mode (Select All / Clear All) */
+      .sff-clean-panel.sff-theme-dark .sff-types-select {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-types-select:hover {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+      /* Devices Select Buttons Dark Mode */
+      .sff-clean-panel.sff-theme-dark .sff-devices-select {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-devices-select:hover {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      /* Unit System Buttons Dark Mode */
+      .sff-clean-panel.sff-theme-dark .sff-unit-btn {
+        background: #18181b !important;
+        color: #e5e7eb !important;
+        border: 1px solid #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-unit-btn:hover {
+        border-color: #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-unit-btn.active {
+        background: #fc5200 !important;
         color: #111111 !important;
+        border-color: #fc5200 !important;
       }
 
-      .sff-secondary-nav.sff-theme-dark .sff-notification-bell {
-        background: #111111 !important;
-        border: 1px solid #fb923c !important;
+      /* Dark Mode for 'Show more stats' button on feed items */
+      body[data-sff-theme="dark"] .sff-see-more-btn {
+        background: #18181b !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+      }
+      
+      body[data-sff-theme="dark"] .sff-see-more-btn:hover {
+        background: #333333 !important;
       }
 
-      .sff-secondary-nav.sff-theme-dark .sff-notification-bell svg path {
-        fill: #fb923c !important;
+      /* Dark Mode for 'Hide stats' button inside expanded stats */
+      body[data-sff-theme="dark"] .sff-hide-stats-btn {
+        background: #18181b !important;
+        color: #fc5200 !important;
+        border: 1px solid #fc5200 !important;
+      }
+
+      body[data-sff-theme="dark"] .sff-hide-stats-btn:hover {
+        background: #333333 !important;
       }
 
       /* Show secondary nav on smaller screens ONLY on dashboard */
@@ -1285,7 +1423,6 @@
         line-height: 1.2 !important;
         text-transform: uppercase !important;
         position: relative !important;
-        z-index: 1000 !important;
       }
 
       .sff-secondary-filter-btn:hover {
@@ -1310,11 +1447,26 @@
         line-height: 1.2 !important;
         transition: background-color 0.15s ease !important;
         position: relative !important;
-        z-index: 1000 !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
       }
 
       .sff-secondary-kudos-btn:hover {
         background: #e04a00 !important;
+      }
+
+      /* Dark theme overrides for secondary nav buttons - must come after base styles */
+      body[data-sff-theme="dark"] .sff-secondary-filter-btn,
+      body[data-sff-theme="dark"] .sff-secondary-kudos-btn {
+        background: #111111 !important;
+        color: #fc5200 !important;
+        border: 2px solid #fc5200 !important;
+      }
+
+      body[data-sff-theme="dark"] .sff-secondary-filter-btn:hover,
+      body[data-sff-theme="dark"] .sff-secondary-kudos-btn:hover {
+        background: #333333 !important;
+        color: #fc5200 !important;
       }
 
       /* Settings View Styles */
@@ -1563,6 +1715,22 @@
         border-color: #e04a00 !important;
       }
 
+      /* Dark mode styles for notification bell - must come after base styles for proper cascade */
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell {
+        background: #111111 !important;
+        border: 2px solid #fc5200 !important;
+        color: #fc5200 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell:hover {
+        background: #333333 !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-notification-bell svg path {
+        fill: #fc5200 !important;
+      }
+
       .sff-notification-badge {
         position: absolute !important;
         top: -6px !important;
@@ -1794,6 +1962,15 @@
 
     // Utilities Module - Step 2 of modular refactoring
     const UtilsModule = {
+        init() {
+            // Bind all methods to ensure 'this' context is always correct
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] === 'function') {
+                    this[key] = this[key].bind(this);
+                }
+            }
+        },
+
         // Settings management
         async loadSettings() {
             const s = await Storage.get(STORAGE_KEY, DEFAULTS);
@@ -1966,7 +2143,17 @@
     };
 
     // UI Module - Step 3 of modular refactoring
+
     const UIModule = {
+        init() {
+            // Bind all methods to ensure 'this' context is always correct
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] === 'function') {
+                    this[key] = this[key].bind(this);
+                }
+            }
+        },
+
         updateActivityCount(panel) {
             const countEl = panel.querySelector('.sff-activity-count');
             if (!countEl) return;
@@ -2051,6 +2238,7 @@
             settings.hideWandrer = panel.querySelector('.sff-hideWandrer') ? panel.querySelector('.sff-hideWandrer').checked : settings.hideWandrer;
             settings.hideBandok = panel.querySelector('.sff-hideBandok') ? panel.querySelector('.sff-hideBandok').checked : settings.hideBandok;
             settings.hideCoros = panel.querySelector('.sff-hideCoros') ? panel.querySelector('.sff-hideCoros').checked : settings.hideCoros;
+            settings.hideRouvy = panel.querySelector('.sff-hideRouvy') ? panel.querySelector('.sff-hideRouvy').checked : settings.hideRouvy;
             settings.hideJoinWorkout = panel.querySelector('.sff-hideJoinWorkout') ? panel.querySelector('.sff-hideJoinWorkout').checked : settings.hideJoinWorkout;
             settings.hideCoachCat = panel.querySelector('.sff-hideCoachCat') ? panel.querySelector('.sff-hideCoachCat').checked : settings.hideCoachCat;
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
@@ -2068,14 +2256,15 @@
 
             if (settings.theme === 'dark') {
                 panel.classList.add('sff-theme-dark');
+                // Apply dark theme to secondary nav for proper button and bell styling
+                const secondaryNav = document.querySelector('.sff-secondary-nav');
+                if (secondaryNav) {
+                    secondaryNav.classList.add('sff-theme-dark');
+                }
             } else {
                 panel.classList.remove('sff-theme-dark');
-            }
-            const secondaryNav = document.querySelector('.sff-secondary-nav');
-            if (secondaryNav) {
-                if (settings.theme === 'dark') {
-                    secondaryNav.classList.add('sff-theme-dark');
-                } else {
+                const secondaryNav = document.querySelector('.sff-secondary-nav');
+                if (secondaryNav) {
                     secondaryNav.classList.remove('sff-theme-dark');
                 }
             }
@@ -2171,14 +2360,13 @@
             this.syncSecondaryKudosVisibility();
             this.toggleNotificationBell(); // Set initial visibility based on settings
 
-            // Create button
+            // Create button as a list item in the nav
+            const btnLi = document.createElement('li');
+            btnLi.className = 'nav-item sff-filter-nav-item';
             const btn = document.createElement('button');
             btn.className = 'sff-clean-btn';
             btn.innerHTML = '<span class="sff-btn-title">Filter <span class="sff-btn-sub">(0)</span></span>';
-            btn.style.position = 'fixed';
-            btn.style.top = '10px';
-            btn.style.right = '10px';
-            btn.style.zIndex = '2147483647';
+            btnLi.appendChild(btn);
 
             // Create panel using helper method
             const panel = this._createPanel();
@@ -2189,8 +2377,21 @@
                 secondaryNav.classList.add('sff-theme-dark');
             }
 
-            document.body.appendChild(btn);
+            // Insert button after notifications element
+            const notificationsLi = document.querySelector('li#notifications');
+            if (notificationsLi && notificationsLi.parentNode) {
+                notificationsLi.parentNode.insertBefore(btnLi, notificationsLi.nextSibling);
+            } else {
+                // Fallback: append to body if notifications element not found
+                document.body.appendChild(btnLi);
+            }
             document.body.appendChild(panel);
+
+            // Set the initial settings icon src after the panel is in the DOM
+            const settingsIcon = panel.querySelector('#sff-settings-icon');
+            if (settingsIcon) {
+                settingsIcon.src = getSettingsIconUrl(settings.theme);
+            }
 
             // Clean Filter: Elements added
 
@@ -2574,7 +2775,7 @@
                         <span class="sff-label">
                             <span class="sff-toggle-text">FILTER ${settings.enabled ? 'ON' : 'OFF'}</span>
                         </span>
-                        <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; color: #666; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">⚙️</button>
+                        <button class="sff-settings-toggle" title="Settings" style="margin-left: auto; font-size: 20px; border: none; background: none; cursor: pointer; padding: 4px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;"><img id="sff-settings-icon" src="" style="width: 30px; height: 30px; vertical-align: middle;"></button>
                     </div>
                     <div class="sff-row sff-dropdown">
                         <div class="sff-dropdown-header">
@@ -2735,6 +2936,10 @@
                                 <input type="checkbox" class="sff-hideCoros" ${settings.hideCoros ? 'checked' : ''}>
                                 Hide "COROS"
                             </label>
+                            <label class="sff-chip ${settings.hideRouvy ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-hideRouvy" ${settings.hideRouvy ? 'checked' : ''}>
+                                Hide "Rouvy"
+                            </label>
                             <label class="sff-chip ${settings.hideJoinWorkout ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-hideJoinWorkout" ${settings.hideJoinWorkout ? 'checked' : ''}>
                                 Hide "JOIN workout"
@@ -2815,7 +3020,7 @@
                 </div>
 
                 <div class="sff-view-settings">
-                    <button class="sff-back-btn" style="background: none; border: none; cursor: pointer; color: #fc5200; font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 4px;">
+                    <button class="sff-back-btn">
                         ← Back to Filters
                     </button>
                     <p class="sff-settings-desc">
@@ -2959,15 +3164,15 @@
 
                         if (settings.theme === 'dark') {
                             panel.classList.add('sff-theme-dark');
+                            // Apply dark theme to secondary nav for proper button and bell styling
+                            const secondaryNav = document.querySelector('.sff-secondary-nav');
+                            if (secondaryNav) {
+                                secondaryNav.classList.add('sff-theme-dark');
+                            }
                         } else {
                             panel.classList.remove('sff-theme-dark');
-                        }
-
-                        const secondaryNav = document.querySelector('.sff-secondary-nav');
-                        if (secondaryNav) {
-                            if (settings.theme === 'dark') {
-                                secondaryNav.classList.add('sff-theme-dark');
-                            } else {
+                            const secondaryNav = document.querySelector('.sff-secondary-nav');
+                            if (secondaryNav) {
                                 secondaryNav.classList.remove('sff-theme-dark');
                             }
                         }
@@ -2977,6 +3182,11 @@
                             document.body.setAttribute('data-sff-theme', 'dark');
                         } else {
                             document.body.setAttribute('data-sff-theme', 'light');
+                        }
+
+                        const settingsIcon = document.getElementById('sff-settings-icon');
+                        if (settingsIcon) {
+                            settingsIcon.src = getSettingsIconUrl(settings.theme);
                         }
 
                         UtilsModule.saveSettings(settings);
@@ -3448,6 +3658,11 @@
                         settings.hideCoros = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateCorosVisibility();
+                    }
+                    if (e.target.classList.contains('sff-hideRouvy')) {
+                        settings.hideRouvy = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        LogicModule.updateRouvyVisibility();
                     }
                     if (e.target.classList.contains('sff-hideJoinWorkout')) {
                         settings.hideJoinWorkout = e.target.checked;
@@ -4004,6 +4219,15 @@
 
     // Logic Module - Step 6 of modular refactoring
     const LogicModule = {
+        init() {
+            // Bind all methods to ensure 'this' context is always correct
+            for (const key of Object.keys(this)) {
+                if (typeof this[key] === 'function') {
+                    this[key] = this[key].bind(this);
+                }
+            }
+        },
+
         // Determine if a feed node is a club post
         isClubPost(node) {
             if (!node) return false;
@@ -4170,7 +4394,7 @@
                 // Find ONLY the footer section that includes footer-specific markers
                 const markerSelector = 'a[href*="/legal/terms"], a[href*="/legal/privacy"], a[href*="/legal/cookie_policy"], #language-picker, #cpra-compliance-cta';
                 let footerSection = Array.from(document.querySelectorAll('div.FvXwlgEO > section._01jT9FUf, section._01jT9FUf'))
-                    .find(sec => sec.querySelector(markerSelector) || /©\s*\d{4}\s*Strava/i.test(sec.textContent || '')) || null;
+                    .find(sec => sec.querySelector(markerSelector) || /&copy;\s*\d{4}\s*Strava/i.test(sec.textContent || '')) || null;
                 if (!footerSection) {
                     // Fallback to canonical footer elements
                     footerSection = document.querySelector('footer, [data-testid="footer"], .global-footer, .site-footer');
@@ -4367,6 +4591,35 @@
                 });
             } catch (e) {
                 // updateRunHealthVisibility error
+            }
+        },
+
+        updateRouvyVisibility() {
+            try {
+                const activities = document.querySelectorAll('.activity, .feed-entry, [data-testid="web-feed-entry"]');
+
+                activities.forEach(activity => {
+                    const textElements = activity.querySelectorAll('p, span, .text-content, .description-text, .activity-text, [data-testid="activity_description_wrapper"]');
+
+                    textElements.forEach(element => {
+                        const text = element.textContent?.trim() || '';
+                        // Match "rouvy.com" or similar patterns
+                        const hasRouvy = /rouvy\.com/i.test(text);
+                        if (hasRouvy && text.length < 500) {
+                            if (settings.enabled && settings.hideRouvy) {
+                                if (element.dataset.sffHiddenBy !== 'sff') {
+                                    element.dataset.sffHiddenBy = 'sff';
+                                    element.style.display = 'none';
+                                }
+                            } else if (element.dataset.sffHiddenBy === 'sff') {
+                                element.style.display = '';
+                                delete element.dataset.sffHiddenBy;
+                            }
+                        }
+                    });
+                });
+            } catch (e) {
+                // updateRouvyVisibility error
             }
         },
 
@@ -4659,7 +4912,7 @@
                                     const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '');
                                     
                                     // Look for device-specific indicators in description/stats
-                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|rouvy\.com|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
                                     const match = deviceRegex.exec(searchText);
                                     if (match) {
                                         deviceFound = match[1];
@@ -4672,7 +4925,7 @@
                                             const titleText = activityTitle.textContent || '';
                                             // Only check for common virtual platforms that appear in default titles
                                             if (/\bzwift\b/i.test(titleText)) deviceFound = 'Zwift';
-                                            else if (/\brouvy\b/i.test(titleText)) deviceFound = 'Rouvy';
+                                            else if (/\brouvy\b/i.test(titleText) || /\brouvy\.com\b/i.test(titleText)) deviceFound = 'Rouvy';
                                             else if (/\bmywhoosh\b/i.test(titleText)) deviceFound = 'MyWhoosh';
                                             else if (/\btrainerroad\b/i.test(titleText)) deviceFound = 'TrainerRoad';
                                         }
@@ -4685,7 +4938,7 @@
                                     
                                     // Look in stats and description
                                     const searchText = (description?.textContent || '') + ' ' + (stats?.textContent || '') + ' ' + (statsSection?.textContent || '');
-                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                                    const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|rouvy\.com|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
                                     const match = deviceRegex.exec(searchText);
                                     if (match) {
                                         deviceFound = match[1];
@@ -4736,7 +4989,7 @@
                         // If not in cache, try to find device in DOM text (scan once for first device found)
                         if (!deviceFound) {
                             const activityText = activity.textContent || '';
-                            const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
+                            const deviceRegex = /\b(Garmin|Apple|Wahoo|Samsung|Strava|Suunto|Polar|Fitbit|COROS|Bryton|MyWhoosh|Elite|Stages|Tacx|Rouvy|rouvy\.com|Zwift|TrainerRoad|Hammerhead|Peloton|Whoop)\b/gi;
                             
                             const match = deviceRegex.exec(activityText);
                             if (match) {
@@ -4987,6 +5240,7 @@
                     this.updateRunHealthVisibility();
                     this.updateBandokVisibility();
                     this.updateCorosVisibility();
+                    this.updateRouvyVisibility();
                     this.updateJoinWorkoutVisibility();
                     this.updateCoachCatVisibility();
                     this.updateAthleteJoinedClubVisibility();
@@ -5035,6 +5289,7 @@
                 this.updateRunHealthVisibility();
                 this.updateBandokVisibility();
                 this.updateCorosVisibility();
+                this.updateRouvyVisibility();
                 this.updateJoinWorkoutVisibility();
                 this.updateCoachCatVisibility();
                 this.updateAthleteJoinedClubVisibility();
@@ -5493,7 +5748,7 @@
             
             // Add a "Hide stats" button at the bottom
             statsHTML += '<div style="text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">';
-            statsHTML += '<button class="sff-hide-stats-btn" style="padding: 6px 16px; background: #fc4c02; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">Hide stats</button>';
+            statsHTML += '<button class="sff-hide-stats-btn" style="padding: 6px 16px; background: #fc5200; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">Hide stats</button>';
             statsHTML += '</div>';
             
             statsContainer.innerHTML = statsHTML;
@@ -5864,13 +6119,13 @@
 
         getClimbIconUrl(key) {
             const fileMap = {
-                flat: 'icons/flat.svg',
-                gentle: 'icons/gentle.svg',
-                rolling: 'icons/rolling.svg',
-                hilly: 'icons/hilly.svg',
-                very_hilly: 'icons/very_hilly.svg',
-                mountanus: 'icons/mountanus.svg',
-                extreme: 'icons/extreme.svg'
+                flat: 'icons/flat_gray.svg',
+                gentle: 'icons/gentle_green.svg',
+                rolling: 'icons/rolling_green.svg',
+                hilly: 'icons/hilly_yellow.svg',
+                very_hilly: 'icons/Very_hilly_yellow.svg',
+                mountanus: 'icons/mountanus_red.svg',
+                extreme: 'icons/extreme_red.svg'
             };
             const file = fileMap[key] || fileMap.flat;
             if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
@@ -5881,6 +6136,7 @@
             }
             return file; // fallback relative path
         },
+
 
         parseDisplayTimeToISO(displayTime) {
             // Parse Strava's display time formats like "Today at 18:48" or "Today at 6:48 PM"
@@ -5975,6 +6231,7 @@
         LogicModule.updateRunHealthVisibility();
         LogicModule.updateBandokVisibility();
         LogicModule.updateCorosVisibility();
+        LogicModule.updateRouvyVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
 
@@ -5993,6 +6250,7 @@
             LogicModule.updateRunHealthVisibility();
             LogicModule.updateBandokVisibility();
             LogicModule.updateCorosVisibility();
+            LogicModule.updateRouvyVisibility();
             LogicModule.updateJoinWorkoutVisibility();
             LogicModule.updateCoachCatVisibility();
         });
@@ -6026,8 +6284,11 @@
     }
 
     // Initialize
-    (async function init() {
-        // Clean Filter: Initializing
+    (async function main() {
+        UIModule.init();
+        LogicModule.init();
+        UtilsModule.init();
+        // console.log('SFF: Main function started');r: Initializing
 
         // Load settings before any feature uses them
         if (!settings) {
