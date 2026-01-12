@@ -293,11 +293,13 @@ function getSettingsIconUrl(theme) {
         text-align: center !important;
         transition: background-color 0.15s ease !important;
         display: inline-flex !important;
-        flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 1px !important;
+        gap: 6px !important;
         line-height: 1.2 !important;
+        font-size: 14px !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
       }
 
       .sff-clean-btn:hover {
@@ -308,7 +310,7 @@ function getSettingsIconUrl(theme) {
         font-size: 14px !important;
         line-height: 1.1 !important;
         text-transform: uppercase !important;
-        padding: 3px 6px !important;
+        padding: 2px 5px !important;
         margin-left: 6px !important;
       }
 
@@ -1409,7 +1411,7 @@ function getSettingsIconUrl(theme) {
 
       /* Secondary nav filter button */
       .sff-secondary-filter-btn {
-        padding: 6px 12px !important;
+        padding: 5px 12px !important;
         background: #fc5200 !important;
         color: white !important;
         border: 1px solid transparent !important;
@@ -1423,6 +1425,11 @@ function getSettingsIconUrl(theme) {
         line-height: 1.2 !important;
         text-transform: uppercase !important;
         position: relative !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
       }
 
       .sff-secondary-filter-btn:hover {
@@ -1431,7 +1438,7 @@ function getSettingsIconUrl(theme) {
 
       /* Secondary nav kudos button */
       .sff-secondary-kudos-btn {
-        padding: 6px 12px !important;
+        padding: 5px 12px !important;
         background: #fc5200 !important;
         color: white !important;
         border: 1px solid transparent !important;
@@ -6123,7 +6130,7 @@ function getSettingsIconUrl(theme) {
                 gentle: 'icons/gentle_green.svg',
                 rolling: 'icons/rolling_green.svg',
                 hilly: 'icons/hilly_yellow.svg',
-                very_hilly: 'icons/Very_hilly_yellow.svg',
+                very_hilly: 'icons/very_hilly_yellow.svg',
                 mountanus: 'icons/mountanus_red.svg',
                 extreme: 'icons/extreme_red.svg'
             };

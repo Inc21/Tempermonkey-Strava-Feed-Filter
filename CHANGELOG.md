@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.6.1] - 11.01.2026 (Firefox & Chrome Extensions)
+
+### v2.6.1 Bug Fixes
+
+- **Climbing Index Icon**: Fixed case-sensitive filename issue for "Very Hilly" icon in Firefox extension (was preventing icon display on case-sensitive filesystems)
+
 ## [v2.6.0] - 11.01.2026 (Firefox & Chrome Extensions)
 
 ### v2.6.0 Features Added
