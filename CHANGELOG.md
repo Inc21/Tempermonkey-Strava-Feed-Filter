@@ -1,5 +1,25 @@
 # Changelog
 
+## [v2.7.0] - 31.01.2026 (Firefox & Chrome Extensions)
+
+### v2.7.0 New Features
+
+- **In-Panel Update Notification Banner**
+  - Both Chrome and Firefox extensions now read their installed version from the manifest and compare it against a remote `version.json` hosted on GitHub.
+  - When a newer version is available, a compact banner appears inside the filter panel with "Update Extension" and "View Changelog" buttons plus a square red dismiss [×] that matches the existing UI.
+  - Banner respects dark mode, can be dismissed per-version, and never auto-redirects or adds permissions.
+  - Version checks are cached for 24 hours and also fall back to a bundled `version.json` so local/dev builds can test without publishing first.
+- **Keyword Preset Buttons**
+  - Added Warm Up and Cool Down preset chips above the Keywords field.
+  - Each preset inserts multiple spelling variations (warm-up, cooldown, etc.) without overwriting existing entries and works in dark mode.
+
+### v2.7.0 Improvements
+
+- Added Firefox-specific metadata (manifest version bump to 2.7.0 and AMO link) so update parity matches Chrome.
+- Introduced FORCE toggle for local testing (disabled in production) and ensured dismiss clicks don’t close the panel.
+
+---
+
 ## [v2.6.1] - 11.01.2026 (Firefox & Chrome Extensions)
 
 ### v2.6.1 Bug Fixes

@@ -1,62 +1,84 @@
-# Install the Strava Feed Filter Userscript on Safari (iOS)
+# Install Strava Feed Filter on iOS & iPadOS (Orion Browser)
 
-A step-by-step guide to installing and enabling the Strava Feed Filter userscript on Safari for iPhone/iPad.
+Strava Feed Filter (SFF) no longer ships a dedicated Safari-only userscript. Instead, you get the **full Chrome/Firefox extension experience** on iPhone and iPad by using the [Orion browser](https://orionbrowser.com/), which supports desktop-class extensions. This guide walks through the new flow for both devices.
+
+> ⚠️ **Legacy notice**: `userscript/sff-safari.user.js` is deprecated and will be removed in a future release. Please migrate to Orion as soon as possible for continued updates, dark mode, notification bell, and new filtering features.
+
+## TL;DR
+
+1. Install Orion from the App Store/TestFlight.
+2. Enable extensions inside Orion and set Strava to “Always Request Desktop Site”.
+3. Visit the Chrome Web Store (recommended) or Firefox Add-ons and install Strava Feed Filter.
+4. Open Strava inside Orion, ensure the extension is enabled, and start filtering.
 
 ## Requirements
 
-- iOS/iPadOS 15 or later.
-- A userscript manager that supports Safari on iOS. Recommended: "Userscripts" by Quoid (free).
-  - GitHub: https://github.com/quoid/userscripts
-  - App Store: https://apps.apple.com/ie/app/userscripts/id1463298887
-- The userscript file: `sff-safari.user.js`.
+- iOS/iPadOS 16 or later (latest version recommended).
+- Orion Browser by Kagi:
+  - Website: [https://orionbrowser.com/](https://orionbrowser.com/)
+  - App Store (stable): [https://apps.apple.com/app/orion-browser-by-kagi/id1484498200](https://apps.apple.com/app/orion-browser-by-kagi/id1484498200)
+  - TestFlight (beta): follow the link on the Orion site if you prefer beta builds.
+- Network access to the Chrome Web Store *or* Firefox Add-ons (desktop versions).
 
-## 1) Install the Userscripts manager
+> These steps are identical for iPhone and iPad. Screenshots may differ slightly but every toggle lives under **Orion → Settings → Extensions**.
 
-- Open the App Store and install "Userscripts" by Quoid: https://apps.apple.com/ie/app/userscripts/id1463298887
-- Project page for reference: https://github.com/quoid/userscripts
-- After install, open the app at least once so it can create its folder.
+## Step 1 – Install Orion
 
-## 2) Enable Userscripts in Safari
+1. Open the App Store on your iPhone/iPad and search for “Orion Browser by Kagi”.
+2. Install the app and launch it once so iOS registers it as an available browser.
+3. (Optional) If you are on TestFlight, accept the invite from orionbrowser.com and install the beta build the same way.
 
-- Open iOS Settings → Safari → Extensions.
-- Tap "Userscripts" and set "Allow" for Safari.
-- Under "Websites", allow it for `strava.com` (Ask/Allow → Allow).
+## Step 2 – Enable extensions & desktop mode
 
-## 3) Prepare the Userscripts folder
+1. Inside Orion, tap the **⋯** (ellipses) button → **Settings** → **Extensions**.
+2. Toggle **Allow Extensions** ON.
+3. Under “Extension Stores”, enable the stores you plan to use (Chrome Web Store and/or Firefox Add-ons).
+4. Back on any tab, tap the **aA / website menu** → **Request Desktop Site** → **On for strava.com**. (Desktop mode is required because both extension stores only load their install buttons on desktop.)
 
-- Open the Files app → Browse.
-- Locate the Userscripts folder (On My iPhone → Userscripts). If you use iCloud Drive, it may be under iCloud Drive → Userscripts.
+## Step 3 – Install via Chrome Web Store (recommended)
 
-## 4) Install the Strava Feed Filter userscript
+1. In Orion, open a new tab and visit the Strava Feed Filter listing:
+   - [https://chromewebstore.google.com/detail/geihkfcdimdmlckcgkebcdajdlmeppff](https://chromewebstore.google.com/detail/geihkfcdimdmlckcgkebcdajdlmeppff)
+2. If prompted, switch to Desktop Site (tap the **aA** icon → **Request Desktop Site**).
+3. Tap **Add to Orion** → confirm when iOS asks for permission.
+4. Orion downloads the extension and displays a confirmation toast.
+5. Go to **⋯ → Extensions** and verify “Strava Feed Filter” is toggled ON.
 
-- Download the script directly into the Userscripts folder:
-  - Raw link: https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/sff-safari.user.js
-- Alternatively, download the file in Safari and then move it into the Userscripts folder using the Files app.
-- Ensure the file name ends with `.user.js` (sff-safari.user.js).
+## Step 4 – Alternative: Firefox Add-ons
 
-## 5) Enable on Strava
+If the Chrome Web Store is blocked for you, install the Firefox build instead:
 
-- Open Safari and go to https://www.strava.com/
-- Tap the "AA" button in the address bar → Manage Extensions → ensure Userscripts is On.
-- If needed, tap Userscripts → Configure Websites → set strava.com to Allow.
-- Reload the page. You should see the Filter button appear on the Strava dashboard.
+1. Open [https://addons.mozilla.org/en-US/firefox/addon/strava-feed-filter/](https://addons.mozilla.org/en-US/firefox/addon/strava-feed-filter/) inside Orion.
+2. Request the Desktop Site if necessary.
+3. Tap **Add to Firefox** (Orion treats it the same way) and follow the prompts.
+4. Check **⋯ → Extensions** to ensure the add-on is enabled.
 
-## Updating the userscript
+## Step 5 – Use SFF on Strava (iPhone & iPad)
 
-- Replace the existing `sff-safari.user.js` in the Userscripts folder with a newer version (overwrite the file), then reload Strava.
+1. Navigate to [https://www.strava.com/dashboard](https://www.strava.com/dashboard) in Orion.
+2. Log in and wait for the Strava UI to load. You should see the familiar **Filter** button and notification bell from the desktop extension.
+3. Tap the Filter button to open the panel. All settings sync locally inside Orion just like on desktop.
+4. Optional: Pin the extension from **⋯ → Extensions → Pin** for quicker access.
 
-## Uninstalling
+## Updating the extension
 
-- Open the Files app and delete `sff-safari.user.js` from the Userscripts folder.
-- In Safari → "AA" → Manage Extensions, you can also toggle Userscripts Off.
+- Orion automatically updates installed extensions when you relaunch the browser.
+- To force an update, open **⋯ → Settings → Extensions → Update All**.
+- You can always re-install from the store links above; Orion will replace the existing copy.
 
-## Troubleshooting
+## Uninstalling / rolling back
 
-- Filter button not visible:
-  - Confirm Userscripts is enabled in Safari and allowed for strava.com.
-  - Confirm the script file exists in the Userscripts folder and ends with `.user.js`.
-  - Fully close Safari (swipe away) and relaunch.
-- Script runs but features don’t seem active:
-  - Ensure you are on the Strava dashboard (https://www.strava.com/dashboard).
-  - Check the master toggle in the panel is enabled.
-- Still stuck? Open a GitHub issue: https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues
+1. Open **⋯ → Settings → Extensions**.
+2. Toggle Strava Feed Filter OFF or tap **Remove** to uninstall it entirely.
+3. If you absolutely need the legacy userscript again (not recommended), download it from `userscript/sff-safari.user.js` and load it through a userscript manager, but future bug fixes and UI updates will not land there.
+
+## Troubleshooting tips
+
+- **Can’t open the Web Store**: Make sure “Request Desktop Site” is enabled for the store domain and that Orion’s **Extension Stores** toggle for that store is ON.
+- **Install button missing**: Scroll to the bottom of the Web Store page—the button sometimes renders off-screen on iPhone in portrait mode.
+- **Filter button not showing on Strava**:
+  1. Confirm the extension is enabled in **⋯ → Extensions**.
+  2. Refresh Strava (pull to refresh) or fully close Orion and reopen it.
+  3. Verify you are on the Dashboard (`/dashboard`).
+- **Performance issues**: Try disabling other extensions or switching Orion to the latest stable/TestFlight build.
+- Still need help? Open an issue: [GitHub Issues](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/issues)

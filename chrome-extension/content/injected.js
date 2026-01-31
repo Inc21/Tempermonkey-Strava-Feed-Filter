@@ -88,6 +88,14 @@ function getSettingsIconUrl(theme) {
 
     const STORAGE_KEY = "stravaFeedFilter";
     const POS_KEY = "stravaFeedFilterPos";
+    const VERSION_CHECK_STORAGE_KEY = 'sffVersionCheckCache';
+    const VERSION_DISMISSALS_KEY = 'sffVersionDismissals';
+    const VERSION_JSON_URL = 'https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/version.json';
+    const VERSION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+    const FORCE_UPDATE_BANNER = false; // Toggle to true for local testing, keep false for production
+    const LOCAL_VERSION_FILE = 'version.json';
+    const DEFAULT_STORE_URL = 'https://chromewebstore.google.com/detail/strava-feed-filter/geihkfcdimdmlckcgkebcdajdlmeppff';
+    const CHANGELOG_URL = 'https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/blob/main/CHANGELOG.md';
 
     const DEFAULTS = {
         keywords: [],
@@ -183,6 +191,19 @@ function getSettingsIconUrl(theme) {
         { key: "Wheelchair", label: "Wheelchair" },
         { key: "Workout", label: "Workout" },
         { key: "Yoga", label: "Yoga" }
+    ];
+
+    const KEYWORD_PRESETS = [
+        {
+            id: 'warm-up',
+            label: 'Warm Up',
+            keywords: ['warm up', 'warm-up', 'warm_up', 'warmup', 'wu']
+        },
+        {
+            id: 'cool-down',
+            label: 'Cool Down',
+            keywords: ['cool down', 'cool-down', 'cool_down', 'cooldown', 'cd']
+        }
     ];
 
     const normalizeTypeLabel = (str = '') => str.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -387,6 +408,94 @@ function getSettingsIconUrl(theme) {
         visibility: visible !important;
         opacity: 1 !important;
         transition: none !important;
+      }
+
+      .sff-update-banner {
+        display: none !important;
+        margin-bottom: 10px !important;
+        padding: 8px 10px !important;
+        border-radius: 6px !important;
+        background: #fff4ee !important;
+        border: 1px solid rgba(252, 82, 0, 0.35) !important;
+        color: #512716 !important;
+        font-size: 12px !important;
+        line-height: 1.3 !important;
+        gap: 6px !important;
+        flex-direction: column !important;
+      }
+
+      .sff-update-banner.show {
+        display: flex !important;
+      }
+
+      .sff-update-banner-text {
+        font-weight: 600 !important;
+      }
+
+      .sff-update-actions {
+        display: flex !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+      }
+
+      .sff-update-action-btn {
+        border-radius: 4px !important;
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.4px !important;
+        font-weight: 700 !important;
+        border: none !important;
+        cursor: pointer !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-decoration: none !important;
+      }
+
+      .sff-update-action-btn.primary {
+        background: #fc5200 !important;
+        color: #fff !important;
+      }
+
+      .sff-update-action-btn.secondary {
+        background: transparent !important;
+        border: 1px solid rgba(92, 44, 21, 0.4) !important;
+        color: #5c2c15 !important;
+      }
+
+      .sff-update-dismiss {
+        width: 26px !important;
+        height: 26px !important;
+        border-radius: 4px !important;
+        border: 1px solid white !important;
+        background: #b71c1c !important;
+        color: #fff !important;
+        font-size: 16px !important;
+        font-weight: 800 !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+      }
+
+      .sff-theme-dark .sff-update-banner {
+        background: #2a1b14 !important;
+        border-color: rgba(252, 82, 0, 0.4) !important;
+        color: #ffe6da !important;
+      }
+
+      .sff-theme-dark .sff-update-action-btn.secondary {
+        border-color: rgba(255, 227, 210, 0.4) !important;
+        color: #ffe3d2 !important;
+      }
+
+      .sff-theme-dark .sff-update-dismiss {
+        border-color: #fc5200 !important;
+        background: #8b0000 !important;
+        color: #ffe6da !important;
       }
       
       .sff-resize-handle {
@@ -669,9 +778,43 @@ function getSettingsIconUrl(theme) {
 
       .sff-clean-panel .sff-keywords {
         min-height: 40px !important;
-        max-height: 120px !important;
-        resize: vertical !important;
+        resize: none !important;
         line-height: 1.4 !important;
+        overflow: hidden !important;
+      }
+
+      .sff-keyword-presets {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        margin-bottom: 8px !important;
+      }
+
+      .sff-keyword-preset-btn {
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        letter-spacing: 0.3px !important;
+        text-transform: uppercase !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(0,0,0,0.15) !important;
+        background: #f4f4f6 !important;
+        color: #444 !important;
+        cursor: pointer !important;
+        transition: background 0.2s ease, color 0.2s ease !important;
+      }
+
+      .sff-keyword-preset-btn:hover {
+        background: #e9e9ee !important;
+      }
+
+      .sff-theme-dark .sff-keyword-preset-btn {
+        border-color: rgba(255,255,255,0.25) !important;
+        background: #2a2a33 !important;
+        color: #ddd !important;
+      }
+
+      .sff-theme-dark .sff-keyword-preset-btn:hover {
+        background: #3a3a44 !important;
       }
 
       .sff-types {
@@ -2149,6 +2292,167 @@ function getSettingsIconUrl(theme) {
         }
     };
 
+    const UpdateModule = {
+        async init(panel) {
+            if (!panel) return;
+
+            const currentVersion = this.getCurrentVersion();
+            if (!currentVersion) return;
+
+            const remoteData = await this.getRemoteInfo(FORCE_UPDATE_BANNER);
+            let chromeInfo = remoteData && remoteData.chrome;
+            if (!chromeInfo && FORCE_UPDATE_BANNER && currentVersion) {
+                chromeInfo = {
+                    latest: currentVersion,
+                    store_url: ''
+                };
+            }
+            if (!chromeInfo || !chromeInfo.latest) {
+                this.hideBanner(panel);
+                return;
+            }
+
+            const latestVersion = chromeInfo.latest.trim();
+            const storeUrl = chromeInfo.store_url || '';
+            const isUpToDate = this.compareVersions(currentVersion, latestVersion) >= 0;
+
+            if (!FORCE_UPDATE_BANNER && isUpToDate) {
+                this.hideBanner(panel);
+                return;
+            }
+
+            const dismissed = await Storage.get(VERSION_DISMISSALS_KEY, {});
+            if (!FORCE_UPDATE_BANNER && dismissed && dismissed[latestVersion]) {
+                this.hideBanner(panel);
+                return;
+            }
+
+            this.renderBanner(panel, latestVersion, storeUrl);
+        },
+
+        getCurrentVersion() {
+            try {
+                if (ext && ext.runtime && typeof ext.runtime.getManifest === 'function') {
+                    const manifest = ext.runtime.getManifest();
+                    return manifest && manifest.version ? manifest.version : null;
+                }
+            } catch (e) {
+                return null;
+            }
+            return null;
+        },
+
+        async getRemoteInfo(forceRefresh = false) {
+            const now = Date.now();
+            const cached = await Storage.get(VERSION_CHECK_STORAGE_KEY, null);
+
+            if (!forceRefresh && cached && cached.timestamp && cached.data) {
+                const age = now - cached.timestamp;
+                if (age < VERSION_CHECK_INTERVAL_MS) {
+                    return cached.data;
+                }
+            }
+
+            let fresh = await this.fetchRemoteInfo();
+            if (!fresh) {
+                fresh = await this.fetchLocalVersionInfo();
+            }
+            if (fresh) {
+                await Storage.set(VERSION_CHECK_STORAGE_KEY, {
+                    timestamp: now,
+                    data: fresh
+                });
+                return fresh;
+            }
+
+            return cached ? cached.data : null;
+        },
+
+        async fetchRemoteInfo() {
+            try {
+                const response = await fetch(VERSION_JSON_URL, { cache: 'no-store' });
+                if (!response.ok) {
+                    return null;
+                }
+                const data = await response.json();
+                return data && typeof data === 'object' ? data : null;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        async fetchLocalVersionInfo() {
+            try {
+                if (!ext || !ext.runtime || typeof ext.runtime.getURL !== 'function') return null;
+                const localUrl = ext.runtime.getURL(LOCAL_VERSION_FILE);
+                if (!localUrl) return null;
+                const response = await fetch(localUrl, { cache: 'no-store' });
+                if (!response.ok) {
+                    return null;
+                }
+                const data = await response.json();
+                return data && typeof data === 'object' ? data : null;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        compareVersions(current, remote) {
+            const toParts = (value) => value.split('.').map(part => Number.parseInt(part, 10) || 0);
+            const currentParts = toParts(current);
+            const remoteParts = toParts(remote);
+            const length = Math.max(currentParts.length, remoteParts.length);
+            for (let i = 0; i < length; i++) {
+                const cur = currentParts[i] || 0;
+                const rem = remoteParts[i] || 0;
+                if (cur > rem) return 1;
+                if (cur < rem) return -1;
+            }
+            return 0;
+        },
+
+        renderBanner(panel, latestVersion, storeUrl) {
+            const banner = panel.querySelector('.sff-update-banner');
+            if (!banner) return;
+
+            const safeStoreUrl = storeUrl || DEFAULT_STORE_URL;
+
+            banner.innerHTML = `
+                <div class="sff-update-banner-text">A newer version of Strava Feed Filter is available (v${latestVersion}).</div>
+                <div class="sff-update-actions">
+                    <a class="sff-update-action-btn primary" href="${safeStoreUrl}" target="_blank" rel="noopener noreferrer">Update Extension</a>
+                    <a class="sff-update-action-btn secondary" href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">View Changelog</a>
+                    <button type="button" class="sff-update-dismiss" aria-label="Dismiss update notification">×</button>
+                </div>
+            `;
+
+            banner.classList.add('show');
+
+            const dismissBtn = banner.querySelector('.sff-update-dismiss');
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    this.dismissBanner(latestVersion);
+                    this.hideBanner(panel);
+                }, { once: true });
+            }
+        },
+
+        async dismissBanner(version) {
+            const dismissed = await Storage.get(VERSION_DISMISSALS_KEY, {});
+            const updated = { ...(dismissed || {}) };
+            updated[version] = true;
+            await Storage.set(VERSION_DISMISSALS_KEY, updated);
+        },
+
+        hideBanner(panel) {
+            const banner = panel.querySelector('.sff-update-banner');
+            if (!banner) return;
+            banner.classList.remove('show');
+            banner.innerHTML = '';
+        }
+    };
+
     // UI Module - Step 3 of modular refactoring
 
     const UIModule = {
@@ -2407,6 +2711,7 @@ function getSettingsIconUrl(theme) {
             const secondaryKudosBtn = document.querySelector('.sff-secondary-kudos-btn');
 
             this.setupEvents(btn, panel, secondaryFilterBtn, secondaryKudosBtn);
+            UpdateModule.init(panel);
             return { btn, panel, secondaryFilterBtn, secondaryKudosBtn };
         },
 
@@ -2773,6 +3078,7 @@ function getSettingsIconUrl(theme) {
         _getPanelHTML() {
             return `
                 <div class="sff-toast"></div>
+                <div class="sff-update-banner" role="status" aria-live="polite"></div>
                 <div class="sff-view-filters">
                     <div class="sff-toggle-section">
                         <label class="sff-switch">
@@ -2792,6 +3098,13 @@ function getSettingsIconUrl(theme) {
                             </div>
                         </div>
                         <div class="sff-dropdown-content">
+                            <div class="sff-keyword-presets" aria-label="Quick keyword presets">
+                                ${KEYWORD_PRESETS.map(preset => `
+                                    <button type="button" class="sff-keyword-preset-btn" data-preset-id="${preset.id}">
+                                        ${preset.label}
+                                    </button>
+                                `).join('')}
+                            </div>
                             <textarea class="sff-input sff-keywords" placeholder="e.g. warm up, cool down">${settings.keywords.join(', ')}</textarea>
                         </div>
                     </div>
@@ -3139,6 +3452,17 @@ function getSettingsIconUrl(theme) {
             const filtersView = panel.querySelector('.sff-view-filters');
             const settingsView = panel.querySelector('.sff-view-settings');
             const themeRadios = panel.querySelectorAll('input[name="sff-theme"]');
+            const keywordsTextarea = panel.querySelector('.sff-keywords');
+            const autoResizeKeywords = () => {
+                if (!keywordsTextarea) return;
+                keywordsTextarea.style.height = 'auto';
+                keywordsTextarea.style.height = `${keywordsTextarea.scrollHeight}px`;
+            };
+
+            if (keywordsTextarea) {
+                autoResizeKeywords();
+                keywordsTextarea.addEventListener('input', autoResizeKeywords);
+            }
             
             if (settingsToggle) {
                 settingsToggle.addEventListener('click', (e) => {
@@ -3361,6 +3685,41 @@ function getSettingsIconUrl(theme) {
                     }
                 });
             });
+
+            // Keyword preset buttons
+            const presetButtons = panel.querySelectorAll('.sff-keyword-preset-btn');
+            if (presetButtons.length && keywordsTextarea) {
+                presetButtons.forEach(btn => {
+                    btn.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        const presetId = btn.dataset.presetId;
+                        const preset = KEYWORD_PRESETS.find(p => p.id === presetId);
+                        if (!preset) return;
+
+                        const existing = (keywordsTextarea.value || '')
+                            .split(',')
+                            .map(k => k.trim())
+                            .filter(Boolean);
+                        const uniqueKeywords = new Set(existing);
+                        let updated = false;
+
+                        preset.keywords.forEach(keyword => {
+                            if (!uniqueKeywords.has(keyword)) {
+                                uniqueKeywords.add(keyword);
+                                updated = true;
+                            }
+                        });
+
+                        if (updated) {
+                            keywordsTextarea.value = Array.from(uniqueKeywords).join(', ');
+                            autoResizeKeywords();
+                            UIModule.applySettings(panel);
+                            UtilsModule.saveSettings(settings);
+                            LogicModule.filterActivities();
+                        }
+                    });
+                });
+            }
 
             // Set dynamic version from manifest
             try {

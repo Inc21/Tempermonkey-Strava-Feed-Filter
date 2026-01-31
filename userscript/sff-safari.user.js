@@ -18,7 +18,9 @@
     
 (function() {
     'use strict';
-    
+
+    console.warn('[Strava Feed Filter] Warning: sff-safari.user.js is deprecated and will be removed in a future release. Install the Orion browser and use the extension build instead (see ios-safari-install.md).');
+
     /*
         * Copyright (c) 2025 Inc21
         * Licensed under the MIT License. See LICENSE file in the project root for full license text.

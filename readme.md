@@ -145,13 +145,12 @@ Choose the option that fits your browser/platform.
 - Or install from [GitHub Raw](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/strava-feed-filter-clean.js)
 - Manual installation: Download `userscript/strava-feed-filter-clean.js` and install via your userscript manager.
 
-### Userscript (Safari on iOS)
+### Orion Browser (iOS & iPadOS)
 
-- ▶️ Follow the dedicated guide: [ios-safari-install.md](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/blob/main/ios-safari-install.md)
-- Fallback (Raw): [ios-safari-install.md (raw)](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/ios-safari-install.md)
-- Install from GitHub (Raw): [sff-safari.user.js](https://raw.githubusercontent.com/Inc21/Tempermonkey-Strava-Feed-Filter/main/userscript/sff-safari.user.js)
-- Manual installation: Download `userscript/sff-safari.user.js` and install manually using your userscript manager.
-- Userscripts manager (Quoid): [GitHub](https://github.com/quoid/userscripts) · [App Store](https://apps.apple.com/ie/app/userscripts/id1463298887)
+- ▶️ Follow the dedicated Orion setup guide: [ios-safari-install.md](https://github.com/Inc21/Tempermonkey-Strava-Feed-Filter/blob/main/ios-safari-install.md)
+- Install Orion from the [App Store](https://apps.apple.com/app/orion-browser-by-kagi/id1484498200) or TestFlight, enable extensions, then add SFF from the [Chrome Web Store](https://chromewebstore.google.com/detail/geihkfcdimdmlckcgkebcdajdlmeppff) or [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/strava-feed-filter/).
+- Full desktop extension feature set (dark mode, notification bell, update banner) now works on iPhone/iPad via Orion.
+- Legacy userscript `userscript/sff-safari.user.js` is **deprecated** and will be removed once Orion coverage is stable.
 
 **Disclaimer:** While this userscript is designed to work on multiple browsers, it has been primarily tested on Chrome, Firefox, and Safari. Support for other browsers may vary.
 
