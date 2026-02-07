@@ -137,7 +137,8 @@ function getSettingsIconUrl(theme) {
         maxPace: "",
         unitSystem: 'metric', // 'metric' or 'imperial'
         enabled: true,
-        theme: 'light'
+        theme: 'light',
+        compactButtons: false
     };
 
     const TYPES = [
@@ -319,12 +320,127 @@ function getSettingsIconUrl(theme) {
         gap: 6px !important;
         line-height: 1.2 !important;
         font-size: 14px !important;
+        height: 32px !important;
         box-sizing: border-box !important;
         flex-shrink: 0 !important;
       }
 
       .sff-clean-btn:hover {
         background: #e04a00 !important;
+      }
+
+      /* Compact button mode — shared compact styles
+         32px total. Border is 1px (light) or 2px (dark).
+         Worst case: 32 - 4 = 28px inner.
+         Layout: 3px pad + 14px icon + 3px gap + 8px label = 28px */
+      .sff-clean-btn.sff-compact,
+      .sff-header-kudos-btn.sff-compact,
+      .sff-secondary-filter-btn.sff-compact,
+      .sff-secondary-kudos-btn.sff-compact {
+        display: block !important;
+        padding: 3px 0 0 0 !important;
+        gap: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        max-height: 32px !important;
+        box-sizing: border-box !important;
+        position: relative !important;
+        overflow: visible !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        text-indent: 0 !important;
+      }
+
+      .sff-compact .sff-btn-icon,
+      .sff-compact .sff-compact-icon {
+        display: block !important;
+        width: 100% !important;
+        height: 12px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        text-align: center !important;
+      }
+
+      .sff-compact .sff-btn-icon svg,
+      .sff-compact .sff-compact-icon svg {
+        display: inline-block !important;
+        width: 12px !important;
+        height: 12px !important;
+        fill: white !important;
+        vertical-align: top !important;
+      }
+
+      .sff-compact .sff-btn-title,
+      .sff-compact .sff-compact-label {
+        display: block !important;
+        width: 100% !important;
+        font-size: 9px !important;
+        font-weight: 800 !important;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+        letter-spacing: 0.5px !important;
+        padding: 0 !important;
+        margin: 3px 0 0 0 !important;
+        line-height: 9px !important;
+        height: 9px !important;
+        text-transform: uppercase !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        text-decoration: none !important;
+        color: inherit !important;
+      }
+
+      .sff-clean-btn.sff-compact .sff-btn-sub {
+        display: none !important;
+      }
+
+      .sff-secondary-filter-btn.sff-compact .sff-btn-sub {
+        display: none !important;
+      }
+
+      /* Filter count badge on compact SFF button */
+      .sff-compact-badge {
+        position: absolute !important;
+        top: -6px !important;
+        right: -6px !important;
+        background: #333 !important;
+        color: white !important;
+        border-radius: 9px !important;
+        padding: 0 4px !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        min-width: 16px !important;
+        height: 16px !important;
+        text-align: center !important;
+        display: none !important;
+        line-height: 1 !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+        border: none !important;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+        letter-spacing: 0 !important;
+      }
+
+      .sff-compact-badge.show {
+        display: flex !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-compact-badge,
+      body[data-sff-theme="dark"] .sff-compact-badge {
+        background: #555 !important;
+      }
+
+      /* Dark mode: compact SVG icons should use orange fill */
+      body[data-sff-theme="dark"] .sff-compact .sff-btn-icon svg,
+      body[data-sff-theme="dark"] .sff-compact .sff-compact-icon svg {
+        fill: #fc5200 !important;
+      }
+
+      .sff-secondary-nav.sff-theme-dark .sff-compact .sff-compact-icon svg {
+        fill: #fc5200 !important;
       }
 
       .sff-btn-title {
@@ -1011,7 +1127,7 @@ function getSettingsIconUrl(theme) {
       }
 
       .sff-header-kudos-btn {
-        padding: 6px 12px !important; /* Align with gift button */
+        padding: 5px 12px !important;
         background: #fc5200 !important;
         color: white !important;
         border: 1px solid transparent !important;
@@ -1025,7 +1141,23 @@ function getSettingsIconUrl(theme) {
         align-items: center !important;
         gap: 6px !important;
         line-height: 1.2 !important;
+        height: 32px !important;
+        box-sizing: border-box !important;
         transition: background-color 0.15s ease !important;
+      }
+
+      .sff-header-kudos-btn svg,
+      .sff-secondary-kudos-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+        fill: white !important;
+        vertical-align: middle !important;
+        flex-shrink: 0 !important;
+      }
+
+      body[data-sff-theme="dark"] .sff-header-kudos-btn svg,
+      body[data-sff-theme="dark"] .sff-secondary-kudos-btn svg {
+        fill: #fc5200 !important;
       }
 
       .sff-header-kudos-btn:hover {
@@ -1121,13 +1253,28 @@ function getSettingsIconUrl(theme) {
 
       .sff-footer {
         display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
         margin-top: 12px !important;
-        padding: 8px 12px !important;
+        padding: 10px 12px !important;
         background: #f8f9fa !important;
         border: 1px solid #e9ecef !important;
         border-radius: 6px !important;
+        gap: 8px !important;
+      }
+
+      .sff-footer-text {
+        font-size: 11px !important;
+        color: #555 !important;
+        text-align: center !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
+      }
+
+      .sff-footer-buttons {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
         gap: 8px !important;
       }
 
@@ -1187,6 +1334,26 @@ function getSettingsIconUrl(theme) {
 
       .sff-bmc a:hover {
         background: #e04a00 !important;
+      }
+
+      .sff-share-btn {
+        display: inline-block !important;
+        padding: 7px 16px !important;
+        background: transparent !important;
+        color: #fc5200 !important;
+        text-decoration: none !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        border: 1.5px solid #fc5200 !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+        white-space: nowrap !important;
+      }
+
+      .sff-share-btn:hover {
+        background: #fc5200 !important;
+        color: #fff !important;
       }
 
       .sff-copyright {
@@ -1333,6 +1500,21 @@ function getSettingsIconUrl(theme) {
       .sff-clean-panel.sff-theme-dark .sff-footer {
         background: #09090b !important;
         border-color: #333333 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-footer-text {
+        color: #aaa !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-share-btn {
+        background: transparent !important;
+        color: #fc5200 !important;
+        border-color: #fc5200 !important;
+      }
+
+      .sff-clean-panel.sff-theme-dark .sff-share-btn:hover {
+        background: #fc5200 !important;
+        color: #111111 !important;
       }
 
       .sff-secondary-nav.sff-theme-dark {
@@ -1581,6 +1763,7 @@ function getSettingsIconUrl(theme) {
         display: inline-flex !important;
         align-items: center !important;
         gap: 6px !important;
+        height: 32px !important;
         box-sizing: border-box !important;
         flex-shrink: 0 !important;
       }
@@ -1605,6 +1788,7 @@ function getSettingsIconUrl(theme) {
         align-items: center !important;
         gap: 6px !important;
         line-height: 1.2 !important;
+        height: 32px !important;
         transition: background-color 0.15s ease !important;
         position: relative !important;
         box-sizing: border-box !important;
@@ -2551,6 +2735,8 @@ function getSettingsIconUrl(theme) {
             settings.hideFooter = panel.querySelector('.sff-hideFooter') ? panel.querySelector('.sff-hideFooter').checked : settings.hideFooter;
             settings.hideAthleteJoinedClub = panel.querySelector('.sff-hideAthleteJoinedClub') ? panel.querySelector('.sff-hideAthleteJoinedClub').checked : settings.hideAthleteJoinedClub;
             settings.showKudosButton = panel.querySelector('.sff-showKudosButton').checked;
+            const compactChk = panel.querySelector('.sff-compactButtons');
+            settings.compactButtons = compactChk ? compactChk.checked : settings.compactButtons;
             LogicModule.manageHeaderKudosButton(); // Update button immediately on apply
             UIModule.syncSecondaryKudosVisibility(); // Sync secondary button visibility
             const giftChk = panel.querySelector('.sff-hideGift');
@@ -2645,15 +2831,26 @@ function getSettingsIconUrl(theme) {
             // Create secondary filter button
             const secondaryFilterElement = document.createElement('button');
             secondaryFilterElement.className = 'sff-secondary-filter-btn';
-            secondaryFilterElement.innerHTML = 'Filter <span class="sff-btn-sub">(0)</span>';
+            if (settings.compactButtons) {
+                secondaryFilterElement.classList.add('sff-compact');
+                secondaryFilterElement.innerHTML = '<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .8 1.6L14 14v5.5a1 1 0 0 1-.5.87l-3 1.5A1 1 0 0 1 9 21v-7L2.2 4.6A1 1 0 0 1 3 4z"/></svg></span><span class="sff-compact-label">SFF</span><span class="sff-compact-badge">0</span>';
+            } else {
+                secondaryFilterElement.innerHTML = 'Filter <span class="sff-btn-sub">(0)</span>';
+            }
 
             // Create secondary kudos button (will be shown/hidden based on settings)
             const secondaryKudosElement = document.createElement('a');
             secondaryKudosElement.className = 'sff-secondary-kudos-btn';
             secondaryKudosElement.href = 'javascript:void(0);';
-            secondaryKudosElement.textContent = 'Give 👍 to Everyone';
+            if (settings.compactButtons) {
+                secondaryKudosElement.classList.add('sff-compact');
+                secondaryKudosElement.innerHTML = '<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg></span><span class="sff-compact-label">ALL</span>';
+            } else {
+                secondaryKudosElement.innerHTML = 'Give <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg> to All';
+            }
             // Use setProperty with !important to override CSS rules
-            secondaryKudosElement.style.setProperty('display', settings.showKudosButton ? 'inline-flex' : 'none', 'important');
+            const kudosDisplay = settings.showKudosButton ? (settings.compactButtons ? 'block' : 'inline-flex') : 'none';
+            secondaryKudosElement.style.setProperty('display', kudosDisplay, 'important');
 
             // Create notification bell with new JSON endpoint approach
             const notificationBell = this._createNotificationBell();
@@ -2671,7 +2868,12 @@ function getSettingsIconUrl(theme) {
             btnLi.className = 'nav-item sff-filter-nav-item';
             const btn = document.createElement('button');
             btn.className = 'sff-clean-btn';
-            btn.innerHTML = '<span class="sff-btn-title">Filter <span class="sff-btn-sub">(0)</span></span>';
+            if (settings.compactButtons) {
+                btn.classList.add('sff-compact');
+                btn.innerHTML = '<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .8 1.6L14 14v5.5a1 1 0 0 1-.5.87l-3 1.5A1 1 0 0 1 9 21v-7L2.2 4.6A1 1 0 0 1 3 4z"/></svg></span><span class="sff-compact-label">SFF</span><span class="sff-compact-badge">0</span>';
+            } else {
+                btn.innerHTML = '<span class="sff-btn-title">Filter <span class="sff-btn-sub">(0)</span></span>';
+            }
             btnLi.appendChild(btn);
 
             // Create panel using helper method
@@ -2710,13 +2912,76 @@ function getSettingsIconUrl(theme) {
             return { btn, panel, secondaryFilterBtn, secondaryKudosBtn };
         },
 
+        applyCompactMode() {
+            const FUNNEL_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .8 1.6L14 14v5.5a1 1 0 0 1-.5.87l-3 1.5A1 1 0 0 1 9 21v-7L2.2 4.6A1 1 0 0 1 3 4z"/></svg>';
+            const THUMBSUP_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg>';
+            const isCompact = settings.compactButtons;
+
+            // Header filter button
+            const filterBtn = document.querySelector('.sff-clean-btn');
+            if (filterBtn) {
+                if (isCompact) {
+                    filterBtn.classList.add('sff-compact');
+                    filterBtn.innerHTML = `<span class="sff-compact-icon">${FUNNEL_SVG}</span><span class="sff-compact-label">SFF</span><span class="sff-compact-badge">0</span>`;
+                } else {
+                    filterBtn.classList.remove('sff-compact');
+                    filterBtn.innerHTML = '<span class="sff-btn-title">Filter <span class="sff-btn-sub">(0)</span></span>';
+                }
+            }
+
+            // Secondary filter button
+            const secFilterBtn = document.querySelector('.sff-secondary-filter-btn');
+            if (secFilterBtn) {
+                if (isCompact) {
+                    secFilterBtn.classList.add('sff-compact');
+                    secFilterBtn.innerHTML = `<span class="sff-compact-icon">${FUNNEL_SVG}</span><span class="sff-compact-label">SFF</span><span class="sff-compact-badge">0</span>`;
+                } else {
+                    secFilterBtn.classList.remove('sff-compact');
+                    secFilterBtn.innerHTML = 'Filter <span class="sff-btn-sub">(0)</span>';
+                }
+            }
+
+            // Header kudos button
+            const kudosBtn = document.querySelector('.sff-header-kudos-btn');
+            if (kudosBtn) {
+                if (isCompact) {
+                    kudosBtn.classList.add('sff-compact');
+                    kudosBtn.innerHTML = `<span class="sff-compact-icon">${THUMBSUP_SVG}</span><span class="sff-compact-label">ALL</span>`;
+                } else {
+                    kudosBtn.classList.remove('sff-compact');
+                    kudosBtn.innerHTML = 'Give <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg> to All';
+                }
+            }
+
+            // Secondary kudos button
+            const secKudosBtn = document.querySelector('.sff-secondary-kudos-btn');
+            if (secKudosBtn) {
+                if (isCompact) {
+                    secKudosBtn.classList.add('sff-compact');
+                    secKudosBtn.innerHTML = `<span class="sff-compact-icon">${THUMBSUP_SVG}</span><span class="sff-compact-label">ALL</span>`;
+                    secKudosBtn.style.setProperty('display', settings.showKudosButton ? 'block' : 'none', 'important');
+                } else {
+                    secKudosBtn.classList.remove('sff-compact');
+                    secKudosBtn.innerHTML = 'Give <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg> to All';
+                    secKudosBtn.style.setProperty('display', settings.showKudosButton ? 'inline-flex' : 'none', 'important');
+                }
+            }
+
+            // Sync header kudos button visibility with showKudosButton setting
+            LogicModule.manageHeaderKudosButton();
+
+            // Re-run filter to update badge/count
+            LogicModule.filterActivities();
+        },
+
         // Synchronize secondary kudos button visibility with settings
         syncSecondaryKudosVisibility() {
             const secondaryKudosBtn = document.querySelector('.sff-secondary-kudos-btn');
             if (secondaryKudosBtn) {
                 const shouldShow = settings.enabled && settings.showKudosButton;
                 // Use setProperty with !important to override CSS rules
-                secondaryKudosBtn.style.setProperty('display', shouldShow ? 'inline-flex' : 'none', 'important');
+                const displayVal = shouldShow ? (settings.compactButtons ? 'block' : 'inline-flex') : 'none';
+                secondaryKudosBtn.style.setProperty('display', displayVal, 'important');
                 // Secondary kudos button visibility updated
             }
         },
@@ -3321,11 +3586,15 @@ function getSettingsIconUrl(theme) {
                         <button class="sff-btn-action sff-save">Apply & Refresh</button>
                     </div>
                     <div class="sff-footer">
+                        <p class="sff-footer-text">If you find this extension useful, please support my work and help spread the word!</p>
+                        <div class="sff-footer-buttons">
+                            <div class="sff-bmc">
+                                <a href="https://www.buymeacoffee.com/inc21" target="_blank">☕ Buy me a coffee</a>
+                            </div>
+                            <button class="sff-share-btn" title="Share this extension">📤 Share</button>
+                        </div>
                         <div class="sff-credits">
                             <p>Developed By: <a href="https://github.com/Inc21" target="_blank">Inc21</a></p>
-                        </div>
-                        <div class="sff-bmc">
-                            <a href="https://www.buymeacoffee.com/inc21" target="_blank">☕ Buy me a coffee</a>
                         </div>
                     </div>
                     <div class="sff-copyright">
@@ -3368,7 +3637,7 @@ function getSettingsIconUrl(theme) {
                         <div class="sff-label-with-info">
                             <label class="sff-chip ${settings.showKudosButton ? 'checked' : ''}">
                                 <input type="checkbox" class="sff-showKudosButton" ${settings.showKudosButton ? 'checked' : ''}>
-                                Show "Give 👍 to Everyone" button
+                                Show "Give 👍 to All" button
                             </label>
                             <span class="sff-info-icon" data-info="Adds a convenient button to the header that automatically gives kudos to all currently visible activities on your feed. Great for quickly supporting your friends!">?</span>
                         </div>
@@ -3381,6 +3650,16 @@ function getSettingsIconUrl(theme) {
                                 Show notifications bell (mobile)
                             </label>
                             <span class="sff-info-icon" data-info="Displays a notification bell icon on mobile screens (≤990px width) so you can easily check your Strava notifications without navigating away from the feed.">?</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 7.5px;">
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.compactButtons ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-compactButtons" ${settings.compactButtons ? 'checked' : ''}>
+                                Use compact header buttons
+                            </label>
+                            <span class="sff-info-icon" data-info="Switches the Filter and Kudos header buttons to smaller, icon-based buttons that take up less space in the navigation bar.">?</span>
                         </div>
                     </div>
                     
@@ -3716,6 +3995,37 @@ function getSettingsIconUrl(theme) {
                 });
             });
 
+            // Share extension button
+            const shareBtn = panel.querySelector('.sff-share-btn');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const shareUrl = DEFAULT_STORE_URL;
+                    const shareData = {
+                        title: 'Strava Feed Filter',
+                        text: 'Check out Strava Feed Filter — advanced filtering for your Strava activity feed!',
+                        url: shareUrl
+                    };
+                    try {
+                        if (navigator.share) {
+                            await navigator.share(shareData);
+                        } else {
+                            await navigator.clipboard.writeText(shareUrl);
+                            UIModule.showToast(panel, 'Link copied to clipboard!', 'success');
+                        }
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            try {
+                                await navigator.clipboard.writeText(shareUrl);
+                                UIModule.showToast(panel, 'Link copied to clipboard!', 'success');
+                            } catch {
+                                UIModule.showToast(panel, 'Could not share. Copy this link: ' + shareUrl, 'error');
+                            }
+                        }
+                    }
+                });
+            }
+
             // Set dynamic version from manifest
             try {
                 const versionEl = panel.querySelector('#sff-version');
@@ -3880,12 +4190,16 @@ function getSettingsIconUrl(theme) {
                         }
                     });
 
-                    const originalText = secondaryKudosBtn.textContent;
-                    secondaryKudosBtn.textContent = `Gave ${kudosGiven} 👍`;
+                    const originalHTML = secondaryKudosBtn.innerHTML;
+                    if (settings.compactButtons) {
+                        secondaryKudosBtn.innerHTML = `<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg></span><span class="sff-compact-label">${kudosGiven}</span>`;
+                    } else {
+                        secondaryKudosBtn.innerHTML = `Gave ${kudosGiven} <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg>`;
+                    }
                     secondaryKudosBtn.style.pointerEvents = 'none';
 
                     setTimeout(() => {
-                        secondaryKudosBtn.textContent = originalText;
+                        secondaryKudosBtn.innerHTML = originalHTML;
                         secondaryKudosBtn.style.pointerEvents = 'auto';
                     }, 3000);
                 });
@@ -3951,6 +4265,13 @@ function getSettingsIconUrl(theme) {
                         settings.showNotifications = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         UIModule.toggleNotificationBell();
+                    }
+
+                    // Compact buttons toggle
+                    if (e.target.classList.contains('sff-compactButtons')) {
+                        settings.compactButtons = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        UIModule.applyCompactMode();
                     }
 
                     // Gift button
@@ -5121,6 +5442,9 @@ function getSettingsIconUrl(theme) {
                 const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
                 if (btn) btn.textContent = 'OFF';
                 if (secondaryBtn) secondaryBtn.textContent = 'OFF';
+                document.querySelectorAll('.sff-compact-badge').forEach(badge => {
+                    badge.classList.remove('show');
+                });
                 return;
             }
             let hiddenCount = 0;
@@ -5503,6 +5827,16 @@ function getSettingsIconUrl(theme) {
             const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
             if (btn) btn.textContent = `(${hiddenCount})`;
             if (secondaryBtn) secondaryBtn.textContent = `(${hiddenCount})`;
+
+            // Update compact badges
+            document.querySelectorAll('.sff-compact-badge').forEach(badge => {
+                badge.textContent = hiddenCount;
+                if (hiddenCount > 0) {
+                    badge.classList.add('show');
+                } else {
+                    badge.classList.remove('show');
+                }
+            });
             
             // Manage "See More" buttons visibility based on settings
             try {
@@ -5547,7 +5881,12 @@ function getSettingsIconUrl(theme) {
                     const kudosBtn = document.createElement('a');
                     kudosBtn.className = 'sff-header-kudos-btn';
                     kudosBtn.href = 'javascript:void(0);';
-                    kudosBtn.textContent = 'Give 👍 to Everyone';
+                    if (settings.compactButtons) {
+                        kudosBtn.classList.add('sff-compact');
+                        kudosBtn.innerHTML = '<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg></span><span class="sff-compact-label">ALL</span>';
+                    } else {
+                        kudosBtn.innerHTML = 'Give <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg> to All';
+                    }
 
                     kudosBtn.addEventListener('click', () => {
                         let kudosGiven = 0;
@@ -5561,12 +5900,16 @@ function getSettingsIconUrl(theme) {
                             }
                         });
 
-                        const originalText = kudosBtn.textContent;
-                        kudosBtn.textContent = `Gave ${kudosGiven} 👍`;
+                        const originalHTML = kudosBtn.innerHTML;
+                        if (settings.compactButtons) {
+                            kudosBtn.innerHTML = `<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg></span><span class="sff-compact-label">${kudosGiven}</span>`;
+                        } else {
+                            kudosBtn.innerHTML = `Gave ${kudosGiven} <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg>`;
+                        }
                         kudosBtn.style.pointerEvents = 'none';
 
                         setTimeout(() => {
-                            kudosBtn.textContent = originalText;
+                            kudosBtn.innerHTML = originalHTML;
                             kudosBtn.style.pointerEvents = 'auto';
                         }, 3000);
                     });
@@ -5716,6 +6059,10 @@ function getSettingsIconUrl(theme) {
                 const secondaryBtn = document.querySelector('.sff-secondary-filter-btn .sff-btn-sub');
                 if (btn) btn.textContent = '(0)';
                 if (secondaryBtn) secondaryBtn.textContent = '(0)';
+                document.querySelectorAll('.sff-compact-badge').forEach(badge => {
+                    badge.textContent = '0';
+                    badge.classList.remove('show');
+                });
             }
         },
 

@@ -12,6 +12,13 @@
 - **Keyword Preset Buttons**
   - Added Warm Up and Cool Down preset chips above the Keywords field.
   - Each preset inserts multiple spelling variations (warm-up, cooldown, etc.) without overwriting existing entries and works in dark mode.
+- **Compact Header Buttons**
+  - New "Compact Buttons" toggle in Appearance settings replaces the full-size Filter and Kudos header buttons with 32×32px icon+label squares that match the notification bell size.
+  - Filter button shows a funnel icon with "SFF" label; Kudos button shows a thumbs-up icon with "ALL" label. Both use inline SVG for consistent white icon rendering.
+  - Filter count badge (dark gray with white bold text) appears on the compact SFF button when filters are active.
+  - Setting applies immediately without page reload and respects dark mode.
+- **Share Button**
+  - Shortened "Share extension" to "Share" and prevented text wrapping on narrow panels.
 
 ### v2.7.0 Improvements
 
