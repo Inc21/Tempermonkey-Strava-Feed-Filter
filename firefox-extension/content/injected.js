@@ -138,7 +138,8 @@ function getSettingsIconUrl(theme) {
         unitSystem: 'metric', // 'metric' or 'imperial'
         enabled: true,
         theme: 'light',
-        compactButtons: false
+        compactButtons: false,
+        mobileResponsive: true
     };
 
     const TYPES = [
@@ -1716,7 +1717,7 @@ function getSettingsIconUrl(theme) {
         color: #fc5200 !important;
       }
 
-      /* Show secondary nav on smaller screens ONLY on dashboard */
+      /* Show secondary nav on smaller screens on dashboard */
       @media (max-width: 1479px) {
         body[data-sff-dashboard="true"] .sff-secondary-nav {
           display: flex !important;
@@ -1740,8 +1741,13 @@ function getSettingsIconUrl(theme) {
         /* Additional margin for main content area to ensure no overlap */
         body[data-sff-dashboard="true"] main,
         body[data-sff-dashboard="true"] .view {
-          margin-top: 8px !important;
+          margin-top: 48px !important;
         }
+      }
+
+      /* Show secondary nav on activity pages (all screen sizes) */
+      body:not([data-sff-dashboard="true"]) .sff-secondary-nav {
+        display: flex !important;
       }
 
       /* Secondary nav filter button */
@@ -2343,6 +2349,10 @@ function getSettingsIconUrl(theme) {
             return window.location.pathname === '/dashboard' || window.location.pathname === '/';
         },
 
+        isOnActivityPage() {
+            return /^\/activities\/\d+/.test(window.location.pathname);
+        },
+
         // Convert pace from min:sec format to decimal minutes
         // "7:55" -> 7.917, "7.5" -> 7.5, "" -> ""
         parsePaceInput(value) {
@@ -2743,6 +2753,9 @@ function getSettingsIconUrl(theme) {
             settings.hideGiveGift = giftChk ? giftChk.checked : settings.hideGiveGift;
             const startTrialChk = panel.querySelector('.sff-hideStartTrial');
             settings.hideStartTrial = startTrialChk ? startTrialChk.checked : settings.hideStartTrial;
+            
+            const mobileResponsiveChk = panel.querySelector('.sff-mobileResponsive');
+            settings.mobileResponsive = mobileResponsiveChk ? mobileResponsiveChk.checked : settings.mobileResponsive;
 
             const themeRadio = panel.querySelector('input[name="sff-theme"]:checked');
             settings.theme = themeRadio && themeRadio.value === 'dark' ? 'dark' : 'light';
@@ -2798,6 +2811,12 @@ function getSettingsIconUrl(theme) {
 
             // Only create elements on dashboard
             const isDashboardPage = UtilsModule.isOnDashboard();
+            console.log('[SFF-DEBUG] createElements called', {
+                isDashboard: isDashboardPage,
+                pathname: window.location.pathname,
+                existingNav: !!document.querySelector('.sff-secondary-nav'),
+                existingPanel: !!document.querySelector('.sff-clean-panel')
+            });
 
             // Set dashboard attribute for CSS targeting
             if (isDashboardPage) {
@@ -2821,7 +2840,90 @@ function getSettingsIconUrl(theme) {
                 LogicModule.updateJoinWorkoutVisibility();
                 LogicModule.updateCoachCatVisibility();
                 LogicModule.updateAthleteJoinedClubVisibility();
-                return; // Exit early, no UI elements needed on non-dashboard pages
+
+                // On non-dashboard pages, still show a minimal secondary nav with filter/settings button
+                const miniNav = document.createElement('div');
+                miniNav.className = 'sff-secondary-nav';
+
+                // Create Back to Feed button
+                const backToFeedBtn = document.createElement('button');
+                backToFeedBtn.className = 'sff-back-to-feed-btn';
+                
+                // Set initial content and style based on compact mode
+                if (settings.compactButtons) {
+                    backToFeedBtn.classList.add('sff-compact');
+                    backToFeedBtn.innerHTML = '<span class="sff-compact-icon" style="margin-right:0;"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg></span>';
+                    backToFeedBtn.style.cssText = 'margin-right: auto; padding: 0.375rem; background: transparent; border: 2px solid #fc5200; color: #fc5200; cursor: pointer; height: 32px; width: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: background-color 0.15s ease, color 0.15s ease; box-sizing: border-box;';
+                } else {
+                    backToFeedBtn.innerHTML = '← Back to Feed';
+                    backToFeedBtn.style.cssText = 'margin-right: auto; padding: 0.375rem 0.75rem; font-size: 0.875rem; background: transparent; border: 2px solid #fc5200; color: #fc5200; cursor: pointer; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; height: 32px; display: inline-flex; align-items: center; border-radius: 4px; font-family: "Roboto", sans-serif; transition: background-color 0.15s ease, color 0.15s ease; box-sizing: border-box;';
+                }
+                
+                // Add hover effect via JS since it's inline styled
+                backToFeedBtn.addEventListener('mouseover', () => {
+                    backToFeedBtn.style.backgroundColor = '#fc5200';
+                    backToFeedBtn.style.color = 'white';
+                });
+                backToFeedBtn.addEventListener('mouseout', () => {
+                    backToFeedBtn.style.backgroundColor = 'transparent';
+                    backToFeedBtn.style.color = '#fc5200';
+                });
+                
+                // Wire up back to feed navigation
+                backToFeedBtn.addEventListener('click', () => {
+                    if (document.referrer && document.referrer.includes('strava.com/dashboard')) {
+                        window.history.back();
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                });
+
+                const miniFilterBtn = document.createElement('button');
+                miniFilterBtn.className = 'sff-secondary-filter-btn';
+                if (settings.compactButtons) {
+                    miniFilterBtn.classList.add('sff-compact');
+                    miniFilterBtn.innerHTML = '<span class="sff-compact-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .8 1.6L14 14v5.5a1 1 0 0 1-.5.87l-3 1.5A1 1 0 0 1 9 21v-7L2.2 4.6A1 1 0 0 1 3 4z"/></svg></span><span class="sff-compact-label">SFF</span>';
+                } else {
+                    miniFilterBtn.innerHTML = 'FILTER';
+                }
+
+                miniNav.appendChild(backToFeedBtn);
+                miniNav.appendChild(miniFilterBtn);
+
+                if (settings.theme === 'dark') {
+                    miniNav.classList.add('sff-theme-dark');
+                }
+
+                document.body.appendChild(miniNav);
+
+                // Create panel for settings access on non-dashboard pages
+                const panel = this._createPanel();
+                if (settings.theme === 'dark') {
+                    panel.classList.add('sff-theme-dark');
+                }
+                document.body.appendChild(panel);
+
+                const settingsIcon = panel.querySelector('#sff-settings-icon');
+                if (settingsIcon) {
+                    settingsIcon.src = getSettingsIconUrl(settings.theme);
+                }
+
+                // Wire up the filter button to toggle the panel
+                miniFilterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    panel.style.display = panel.style.display === 'none' || !panel.style.display ? 'block' : 'none';
+                });
+
+                // Close panel when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (panel.style.display === 'block' && !panel.contains(e.target) && !miniFilterBtn.contains(e.target)) {
+                        panel.style.display = 'none';
+                    }
+                });
+
+                this.setupEvents(null, panel, miniFilterBtn, null);
+                UpdateModule.init(panel);
+                return;
             }
 
             // Create secondary navigation row
@@ -2915,7 +3017,9 @@ function getSettingsIconUrl(theme) {
         applyCompactMode() {
             const FUNNEL_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .8 1.6L14 14v5.5a1 1 0 0 1-.5.87l-3 1.5A1 1 0 0 1 9 21v-7L2.2 4.6A1 1 0 0 1 3 4z"/></svg>';
             const THUMBSUP_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 22V11l4.5-9a1.5 1.5 0 0 1 2.7.5L13 7h6a2 2 0 0 1 2 2.4l-1.8 9A2 2 0 0 1 17.2 20H7zm-2 0H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2v11z"/></svg>';
+            const BACKARROW_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>';
             const isCompact = settings.compactButtons;
+            const isDashboardPage = UtilsModule.isOnDashboard();
 
             // Header filter button
             const filterBtn = document.querySelector('.sff-clean-btn');
@@ -2934,10 +3038,24 @@ function getSettingsIconUrl(theme) {
             if (secFilterBtn) {
                 if (isCompact) {
                     secFilterBtn.classList.add('sff-compact');
-                    secFilterBtn.innerHTML = `<span class="sff-compact-icon">${FUNNEL_SVG}</span><span class="sff-compact-label">SFF</span><span class="sff-compact-badge">0</span>`;
+                    secFilterBtn.innerHTML = `<span class="sff-compact-icon">${FUNNEL_SVG}</span><span class="sff-compact-label">SFF</span>${isDashboardPage ? '<span class="sff-compact-badge">0</span>' : ''}`;
                 } else {
                     secFilterBtn.classList.remove('sff-compact');
-                    secFilterBtn.innerHTML = 'Filter <span class="sff-btn-sub">(0)</span>';
+                    secFilterBtn.innerHTML = isDashboardPage ? 'Filter <span class="sff-btn-sub">(0)</span>' : 'FILTER';
+                }
+            }
+
+            // Back to Feed button
+            const backBtn = document.querySelector('.sff-back-to-feed-btn');
+            if (backBtn) {
+                if (isCompact) {
+                    backBtn.classList.add('sff-compact');
+                    backBtn.innerHTML = `<span class="sff-compact-icon" style="margin-right:0;">${BACKARROW_SVG}</span>`;
+                    backBtn.style.cssText = 'margin-right: auto; padding: 0.375rem; background: transparent; border: 2px solid #fc5200; color: #fc5200; cursor: pointer; height: 32px; width: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: background-color 0.15s ease, color 0.15s ease; box-sizing: border-box;';
+                } else {
+                    backBtn.classList.remove('sff-compact');
+                    backBtn.innerHTML = '← Back to Feed';
+                    backBtn.style.cssText = 'margin-right: auto; padding: 0.375rem 0.75rem; font-size: 0.875rem; background: transparent; border: 2px solid #fc5200; color: #fc5200; cursor: pointer; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; height: 32px; display: inline-flex; align-items: center; border-radius: 4px; font-family: "Roboto", sans-serif; transition: background-color 0.15s ease, color 0.15s ease; box-sizing: border-box;';
                 }
             }
 
@@ -3611,6 +3729,16 @@ function getSettingsIconUrl(theme) {
                         Manage your Strava Feed Filter settings.
                     </p>
                     
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.mobileResponsive ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-mobileResponsive" ${settings.mobileResponsive ? 'checked' : ''}>
+                                Enable Mobile Responsiveness
+                            </label>
+                            <span class="sff-info-icon" data-info="Makes activity pages mobile-friendly with a compact single-column layout, hides footer clutter, and adds the secondary navigation bar. Responsive design from 350px to 765px.">?</span>
+                        </div>
+                    </div>
+                    
                     <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Header Settings</h4>
                     
                     <div style="margin-bottom: 7.5px;">
@@ -3696,6 +3824,16 @@ function getSettingsIconUrl(theme) {
                             <option value="smallOnly" ${settings.seeMoreButtonMode === 'smallOnly' ? 'selected' : ''}>Only on small screens (≤ 990px)</option>
                             <option value="never" ${settings.seeMoreButtonMode === 'never' ? 'selected' : ''}>Never show</option>
                         </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 7.5px;">
+                        <div class="sff-label-with-info">
+                            <label class="sff-chip ${settings.mobileResponsive ? 'checked' : ''}">
+                                <input type="checkbox" class="sff-mobileResponsive" ${settings.mobileResponsive ? 'checked' : ''}>
+                                Mobile responsive activity pages
+                            </label>
+                            <span class="sff-info-icon" data-info="Makes activity detail pages mobile-friendly by converting the desktop grid layout into a single-column stack on small screens (≤768px). Also remembers your scroll position on the dashboard so you return to the same spot after viewing an activity.">?</span>
+                        </div>
                     </div>
                     
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
@@ -4100,7 +4238,7 @@ function getSettingsIconUrl(theme) {
                 const clickedResizeHandle = resizeHandle && resizeHandle.contains(e.target);
                 const clickedSecondaryBtn = secondaryFilterBtn && secondaryFilterBtn.contains(e.target);
                 
-                if (!panel.contains(e.target) && !btn.contains(e.target) && !clickedSecondaryBtn && !clickedResizeHandle) {
+                if (!panel.contains(e.target) && (!btn || !btn.contains(e.target)) && !clickedSecondaryBtn && !clickedResizeHandle) {
                     const isVisible = panel.style.display === 'block' && panel.style.visibility !== 'hidden';
                     if (isVisible) {
                         togglePanel();
@@ -4163,10 +4301,12 @@ function getSettingsIconUrl(theme) {
             };
 
             // Toggle panel on button click
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                togglePanel();
-            });
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    togglePanel();
+                });
+            }
 
             // Setup secondary filter button event (only if exists)
             if (secondaryFilterBtn) {
@@ -4361,6 +4501,12 @@ function getSettingsIconUrl(theme) {
                         settings.hideFooter = e.target.checked;
                         UtilsModule.saveSettings(settings);
                         LogicModule.updateFooterVisibility();
+                    }
+                    // Mobile responsive
+                    if (e.target.classList.contains('sff-mobileResponsive')) {
+                        settings.mobileResponsive = e.target.checked;
+                        UtilsModule.saveSettings(settings);
+                        applyMobileResponsive();
                     }
                     if (e.target.classList.contains('sff-hideAthleteJoinedClub')) {
                         settings.hideAthleteJoinedClub = e.target.checked;
@@ -4574,7 +4720,9 @@ function getSettingsIconUrl(theme) {
 
             // Setup responsive behavior
             this.setupWindowResize(panel);
-            this.setupButtonResponsive(btn);
+            if (btn) {
+                this.setupButtonResponsive(btn);
+            }
             this.updateActivityCount(panel);
             this.updateFilterLabels(panel, settings.unitSystem);
 
@@ -6907,6 +7055,1078 @@ function getSettingsIconUrl(theme) {
 
     // Observe DOM for new activities and re-apply filters automatically
 
+    // ==== SFF SECTION: MOBILE RESPONSIVE & SCROLL PERSISTENCE ====
+    const SCROLL_POS_KEY = 'sffDashboardScrollY';
+    let mobileStyleEl = null;
+
+    const SFF_MOBILE_ATTR = 'data-sff-mobile';
+    const SFF_TINY_VERTICAL_SCROLL_THRESHOLD = 3;
+    let sffLastTouchY = null;
+
+    // Strava forces a min-width on the viewport, so window.innerWidth and CSS
+    // media queries never reflect the real browser window size.  We use
+    // window.outerWidth instead and drive everything from JS.
+    const SFF_MOBILE_BREAKPOINT = 765;
+
+    function sffIsMobileWidth() {
+        return window.outerWidth <= SFF_MOBILE_BREAKPOINT;
+    }
+
+    function injectMobileResponsiveCSS() {
+        if (mobileStyleEl) return; // Already injected
+        // CSS here is a safety net; the heavy lifting is done by inline styles in JS.
+        // No @media query — the attribute is only set when outerWidth <= breakpoint.
+        mobileStyleEl = GM_addStyle(`
+            /* SFF Mobile Responsive - Activity Pages */
+
+            /* ======== NUCLEAR MOBILE RESET ======== */
+            /* Force ALL elements inside the page to respect mobile width */
+            body[data-sff-mobile],
+            body[data-sff-mobile] * {
+                max-width: 100vw !important;
+                box-sizing: border-box !important;
+            }
+
+            body[data-sff-mobile] {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            body[data-sff-mobile] div.view,
+            body[data-sff-mobile] div#view {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            /* Kill ALL floats inside page content */
+            body[data-sff-mobile] .page.container *,
+            body[data-sff-mobile] .container *,
+            body[data-sff-mobile] [class*="container"] * {
+                float: none !important;
+            }
+
+            /* Force all grid columns to full width */
+            body[data-sff-mobile] [class*="spans"],
+            body[data-sff-mobile] [class*="span"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                float: none !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+
+            /* Force all .row to be flex column */
+            body[data-sff-mobile] .row {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+            }
+
+            /* ---- Hide left sidenav ---- */
+            body[data-sff-mobile] nav.sidenav,
+            body[data-sff-mobile] .sidenav {
+                display: none !important;
+                width: 0 !important;
+                min-width: 0 !important;
+                overflow: hidden !important;
+            }
+
+            /* ---- Page container ---- */
+            body[data-sff-mobile] div.page.container,
+            body[data-sff-mobile] .page.container,
+            body[data-sff-mobile] .container {
+                width: 100% !important;
+                max-width: 100vw !important;
+                min-width: 0 !important;
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
+            }
+
+            /* ---- Heading section ---- */
+            body[data-sff-mobile] section#heading,
+            body[data-sff-mobile] #heading {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 2px 0 !important;
+                float: none !important;
+                border-bottom: none !important;
+            }
+
+            body[data-sff-mobile] section#heading header,
+            body[data-sff-mobile] #heading header {
+                padding: 0 !important;
+                margin-bottom: 2px !important;
+            }
+
+            /* Compact title and badge */
+            body[data-sff-mobile] h2.text-title3 {
+                font-size: 1.1rem !important;
+                line-height: 1.3 !important;
+                margin: 0 !important;
+                padding: 4px 0 !important;
+            }
+
+            body[data-sff-mobile] .badge.premium {
+                font-size: 0.65rem !important;
+                padding: 2px 4px !important;
+            }
+
+            /* Force heading h2 and title to left-align */
+            body[data-sff-mobile] #heading h1,
+            body[data-sff-mobile] #heading h2,
+            body[data-sff-mobile] #heading h3,
+            body[data-sff-mobile] h2.text-title3,
+            body[data-sff-mobile] .text-title3 {
+                text-align: left !important;
+                width: 100% !important;
+                float: none !important;
+                margin: 0 0 4px 0 !important;
+            }
+
+            /* ---- Activity summary container: stack columns ---- */
+            body[data-sff-mobile] .activity-summary-container {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+
+            /* ---- Collapsable container ---- */
+            body[data-sff-mobile] .collapsable,
+            body[data-sff-mobile] .container-fluid {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            /* ---- Prevent title and profile image overflow ---- */
+            body[data-sff-mobile] h1.activity-name,
+            body[data-sff-mobile] .activity-name,
+            body[data-sff-mobile] [data-testid="activity_name"] {
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                max-width: 100% !important;
+                font-size: 1.25rem !important;
+            }
+
+            /* ---- Activity summary: avatar + details row ---- */
+            body[data-sff-mobile] .activity-summary .media,
+            body[data-sff-mobile] .activity-summary .avatar-badge,
+            body[data-sff-mobile] .details-container {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow: hidden !important;
+            }
+
+            body[data-sff-mobile] .activity-summary .pull-left,
+            body[data-sff-mobile] .activity-summary .avatar-content,
+            body[data-sff-mobile] .details-container .avatar {
+                float: none !important;
+                flex-shrink: 0 !important;
+                width: 40px !important;
+                height: 40px !important;
+            }
+
+            body[data-sff-mobile] .details-container .avatar img {
+                width: 40px !important;
+                height: 40px !important;
+                border-radius: 50% !important;
+            }
+
+            body[data-sff-mobile] .activity-summary .media-body,
+            body[data-sff-mobile] .details {
+                min-width: 0 !important;
+                overflow: hidden !important;
+                flex: 1 !important;
+                text-align: left !important;
+            }
+
+            /* ---- Social/sharing row ---- */
+            body[data-sff-mobile] .social,
+            body[data-sff-mobile] .sharing {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 3px !important;
+                width: 100% !important;
+                float: none !important;
+                padding: 2px 0 !important;
+                margin: 2px 0 !important;
+            }
+
+            body[data-sff-mobile] .social button,
+            body[data-sff-mobile] .social a {
+                font-size: 0.75rem !important;
+                padding: 4px 8px !important;
+            }
+
+            /* ---- Inline stats responsive ---- */
+            body[data-sff-mobile] ul.inline-stats {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 4px !important;
+                padding: 2px 0 !important;
+                margin: 2px 0 !important;
+            }
+
+            body[data-sff-mobile] ul.inline-stats li {
+                flex: 1 1 auto !important;
+                min-width: 70px !important;
+                padding: 4px !important;
+            }
+
+            body[data-sff-mobile] .inline-stats strong {
+                font-size: 1rem !important;
+            }
+
+            body[data-sff-mobile] .inline-stats .label {
+                font-size: 0.7rem !important;
+            }
+
+            /* ---- More stats table ---- */
+            body[data-sff-mobile] .more-stats,
+            body[data-sff-mobile] .section.more-stats {
+                margin: 2px 0 !important;
+                padding: 4px 0 !important;
+            }
+
+            body[data-sff-mobile] .more-stats table {
+                width: 100% !important;
+                table-layout: auto !important;
+                font-size: 0.8rem !important;
+            }
+
+            body[data-sff-mobile] .more-stats td,
+            body[data-sff-mobile] .more-stats th {
+                padding: 3px 4px !important;
+            }
+
+            /* ---- Weather section ---- */
+            body[data-sff-mobile] .section.weather {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                padding: 2px 0 !important;
+                margin: 2px 0 !important;
+            }
+
+            body[data-sff-mobile] .weather-stats {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 8px 16px !important;
+                width: 100% !important;
+            }
+
+            body[data-sff-mobile] .weather-column {
+                flex: 1 1 auto !important;
+                min-width: 120px !important;
+            }
+
+            /* ---- Map fills full width ---- */
+            body[data-sff-mobile] #map-canvas,
+            body[data-sff-mobile] .activity-map,
+            body[data-sff-mobile] .mapboxgl-map,
+            body[data-sff-mobile] [data-testid="activity-map"],
+            body[data-sff-mobile] #overview-map {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 300px !important;
+                min-height: 200px !important;
+            }
+
+            /* ---- Elevation chart ---- */
+            body[data-sff-mobile] #elevation-chart,
+            body[data-sff-mobile] .chart-container,
+            body[data-sff-mobile] #chart-container,
+            body[data-sff-mobile] #elevation-profile {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+            }
+
+            /* ---- Segment efforts table ---- */
+            body[data-sff-mobile] .segments-list,
+            body[data-sff-mobile] table.segments,
+            body[data-sff-mobile] table.unstyled {
+                width: 100% !important;
+                overflow-x: auto !important;
+                display: block !important;
+            }
+
+            body[data-sff-mobile] table {
+                width: 100% !important;
+                font-size: 0.8rem !important;
+            }
+
+            body[data-sff-mobile] table td,
+            body[data-sff-mobile] table th {
+                padding: 3px 4px !important;
+                font-size: 0.75rem !important;
+            }
+
+            /* ---- Segment detail page ---- */
+            body[data-sff-mobile] .segment-effort-detail,
+            body[data-sff-mobile] .segment-effort-detail-container,
+            body[data-sff-mobile] #segment-effort-detail,
+            body[data-sff-mobile] #segment-effort {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 6px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Segment leaderboard / comparison */
+            body[data-sff-mobile] .leaderboard,
+            body[data-sff-mobile] .comparison-chart,
+            body[data-sff-mobile] .effort-compare {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+            }
+
+            /* ---- Global header responsive ---- */
+            body[data-sff-mobile] #global-header .container,
+            body[data-sff-mobile] #global-header nav.nav-bar {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            /* ---- Kudos/comments section ---- */
+            body[data-sff-mobile] .give-kudos,
+            body[data-sff-mobile] .kudos-comments {
+                flex-wrap: wrap !important;
+            }
+
+            /* ==== COMPACT MOBILE LAYOUT ==== */
+
+            /* ---- Reduce global vertical spacing ---- */
+            body[data-sff-mobile] section,
+            body[data-sff-mobile] .section {
+                margin-bottom: 8px !important;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+            }
+
+            /* ---- Compact header: smaller avatar, tighter layout ---- */
+            body[data-sff-mobile] .details-container .avatar {
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            body[data-sff-mobile] .details-container .avatar img {
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            body[data-sff-mobile] .details-container {
+                gap: 8px !important;
+                margin-bottom: 4px !important;
+            }
+
+            /* ---- Compact activity name ---- */
+            body[data-sff-mobile] h1.activity-name,
+            body[data-sff-mobile] .activity-name {
+                font-size: 1.1rem !important;
+                margin-bottom: 2px !important;
+                line-height: 1.3 !important;
+            }
+
+            /* ---- Compact heading section ---- */
+            body[data-sff-mobile] section#heading {
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+                margin-bottom: 0 !important;
+            }
+
+            body[data-sff-mobile] section#heading header {
+                margin-bottom: 4px !important;
+            }
+
+            /* ---- Compact inline stats (Distance, Time, Elevation) ---- */
+            body[data-sff-mobile] ul.inline-stats {
+                margin-top: 4px !important;
+                margin-bottom: 4px !important;
+                gap: 4px !important;
+            }
+
+            body[data-sff-mobile] ul.inline-stats li {
+                min-width: 60px !important;
+                padding: 2px 4px !important;
+            }
+
+            body[data-sff-mobile] ul.inline-stats li strong {
+                font-size: 1.4rem !important;
+            }
+
+            body[data-sff-mobile] ul.inline-stats li .stat-subtext,
+            body[data-sff-mobile] ul.inline-stats li .unit {
+                font-size: 0.7rem !important;
+            }
+
+            /* ---- Compact secondary stats row ---- */
+            body[data-sff-mobile] .secondary-stats {
+                margin-top: 2px !important;
+                margin-bottom: 4px !important;
+                gap: 4px !important;
+            }
+
+            /* ---- Tighter more-stats / Avg-Max table ---- */
+            body[data-sff-mobile] .more-stats {
+                margin-top: 4px !important;
+                margin-bottom: 4px !important;
+            }
+
+            body[data-sff-mobile] .more-stats table td,
+            body[data-sff-mobile] .more-stats table th {
+                padding: 2px 6px !important;
+                font-size: 0.8rem !important;
+            }
+
+            /* ---- Compact device info ---- */
+            body[data-sff-mobile] .device-info,
+            body[data-sff-mobile] .gear-name {
+                font-size: 0.75rem !important;
+                margin-top: 2px !important;
+                margin-bottom: 2px !important;
+            }
+
+            /* ---- Compact weather ---- */
+            body[data-sff-mobile] .section.weather {
+                gap: 4px !important;
+                padding: 4px 0 !important;
+            }
+
+            body[data-sff-mobile] .weather-stats {
+                gap: 4px 8px !important;
+                font-size: 0.8rem !important;
+            }
+
+            /* ---- Compact map ---- */
+            body[data-sff-mobile] #map-canvas,
+            body[data-sff-mobile] .activity-map,
+            body[data-sff-mobile] .mapboxgl-map,
+            body[data-sff-mobile] [data-testid="activity-map"],
+            body[data-sff-mobile] #overview-map {
+                height: 250px !important;
+                min-height: 180px !important;
+                margin-top: 4px !important;
+                margin-bottom: 4px !important;
+            }
+
+            /* ---- Compact elevation chart ---- */
+            body[data-sff-mobile] #elevation-chart,
+            body[data-sff-mobile] .chart-container,
+            body[data-sff-mobile] #chart-container {
+                margin-top: 2px !important;
+                margin-bottom: 4px !important;
+            }
+
+            /* ---- Compact segments ---- */
+            body[data-sff-mobile] .segments-list,
+            body[data-sff-mobile] table.segments {
+                font-size: 0.75rem !important;
+            }
+
+            body[data-sff-mobile] table.segments td,
+            body[data-sff-mobile] table.segments th {
+                padding: 3px 4px !important;
+            }
+
+            /* ---- Reduce padding on activity-summary sections ---- */
+            body[data-sff-mobile] .activity-summary-container .spans8,
+            body[data-sff-mobile] .activity-summary-container .spans4 {
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+
+            /* ---- Compact comments/social section ---- */
+            body[data-sff-mobile] .comments,
+            body[data-sff-mobile] .social {
+                margin-top: 4px !important;
+                margin-bottom: 4px !important;
+            }
+
+            /* ---- Reduce top-level page padding ---- */
+            body[data-sff-mobile] div.page.container {
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+            }
+
+            /* ---- Compact global header ---- */
+            body[data-sff-mobile] #global-header {
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+
+            body[data-sff-mobile] #global-header .container {
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+            }
+
+            /* ---- Reduce row margins ---- */
+            body[data-sff-mobile] .row {
+                margin-bottom: 4px !important;
+            }
+
+            /* ---- Compact kudos/give-kudos bar ---- */
+            body[data-sff-mobile] .give-kudos,
+            body[data-sff-mobile] .kudos-comments {
+                margin-top: 2px !important;
+                margin-bottom: 4px !important;
+                font-size: 0.85rem !important;
+            }
+
+            /* ---- Hide footer sections on activity pages ---- */
+            body[data-sff-mobile] footer.achievements,
+            body[data-sff-mobile] .footer-achievements,
+            body[data-sff-mobile] footer .footer-promos,
+            body[data-sff-mobile] footer .footer-global,
+            body[data-sff-mobile] .footer-promos,
+            body[data-sff-mobile] .footer-global {
+                display: none !important;
+            }
+
+            /* ---- Hide entire footer on mobile activity pages ---- */
+            body[data-sff-mobile] > footer,
+            body[data-sff-mobile] body > footer {
+                display: none !important;
+            }
+
+            /* ---- Secondary nav positioning on activity pages ---- */
+            body[data-sff-mobile] .sff-secondary-nav {
+                margin-top: 0px !important;
+                z-index: 1000 !important;
+            }
+
+            body[data-sff-mobile]:not([data-sff-dashboard="true"]) main,
+            body[data-sff-mobile]:not([data-sff-dashboard="true"]) .view {
+                padding-top: 50px !important;
+            }
+        `);
+    }
+
+    // Store original viewport content so we can restore it
+    let sffOriginalViewport = null;
+
+    function removeMobileResponsiveCSS() {
+        if (mobileStyleEl) {
+            mobileStyleEl.remove();
+            mobileStyleEl = null;
+        }
+        document.body.removeAttribute(SFF_MOBILE_ATTR);
+        // Remove inline styles we may have set
+        document.querySelectorAll('[data-sff-mobile-inline]').forEach(el => {
+            el.style.cssText = '';
+            el.removeAttribute('data-sff-mobile-inline');
+        });
+        // Restore html/body styles
+        document.documentElement.style.removeProperty('min-width');
+        document.documentElement.style.removeProperty('width');
+        document.documentElement.style.removeProperty('overflow-x');
+        document.documentElement.style.removeProperty('overflow-y');
+        document.body.style.removeProperty('min-width');
+        document.body.style.removeProperty('width');
+        document.body.style.removeProperty('overflow-x');
+        document.body.style.removeProperty('overflow-y');
+        // Restore original viewport
+        if (sffOriginalViewport !== null) {
+            const vpMeta = document.querySelector('meta[name="viewport"]');
+            if (vpMeta) vpMeta.setAttribute('content', sffOriginalViewport);
+            sffOriginalViewport = null;
+        }
+    }
+
+    function applyTinyVerticalScrollFix() {
+        const clearClamp = (el) => {
+            if (!el) return;
+            el.style.removeProperty('overflow-y');
+            el.style.removeProperty('overscroll-behavior-y');
+        };
+
+        const docEl = document.documentElement;
+        const body = document.body;
+
+        if (!sffIsMobileWidth()) {
+            window.__sffTinyClampActive = false;
+            clearClamp(docEl);
+            clearClamp(body);
+            document.querySelectorAll('[data-sff-scroll-clamp="1"]').forEach(el => {
+                clearClamp(el);
+                el.removeAttribute('data-sff-scroll-clamp');
+            });
+        }
+        const viewportHeight = window.innerHeight || docEl.clientHeight;
+        const fullHeight = Math.max(
+            docEl.scrollHeight,
+            docEl.offsetHeight,
+            body ? body.scrollHeight : 0,
+            body ? body.offsetHeight : 0
+        );
+        const overflow = fullHeight - viewportHeight;
+        let clampActive = false;
+
+        // Keep root overscroll contained on mobile to reduce rubber-band drag.
+        docEl.style.setProperty('overscroll-behavior-y', 'none', 'important');
+        if (body) body.style.setProperty('overscroll-behavior-y', 'none', 'important');
+
+        if (overflow > 0 && overflow <= SFF_TINY_VERTICAL_SCROLL_THRESHOLD) {
+            docEl.style.setProperty('overflow-y', 'hidden', 'important');
+            if (body) body.style.setProperty('overflow-y', 'hidden', 'important');
+            clampActive = true;
+        } else {
+            docEl.style.removeProperty('overflow-y');
+            if (body) body.style.removeProperty('overflow-y');
+        }
+
+        // Strava sometimes scrolls inside #view/.view instead of body.
+        // Clamp any tiny-overflow scrolling container the same way.
+        const candidates = document.querySelectorAll('#view, .view, main, [role="main"], .page.container');
+        candidates.forEach(el => {
+            const localOverflow = (el.scrollHeight || 0) - (el.clientHeight || 0);
+            if (localOverflow > 0 && localOverflow <= SFF_TINY_VERTICAL_SCROLL_THRESHOLD) {
+                el.style.setProperty('overflow-y', 'hidden', 'important');
+                el.style.setProperty('overscroll-behavior-y', 'none', 'important');
+                el.setAttribute('data-sff-scroll-clamp', '1');
+                clampActive = true;
+            } else if (el.hasAttribute('data-sff-scroll-clamp')) {
+                clearClamp(el);
+                el.removeAttribute('data-sff-scroll-clamp');
+            }
+        });
+
+        // Header spacing normalization for mobile pages where top padding can
+        // introduce a tiny drag range.
+        const globalHeader = document.querySelector('#global-header');
+        if (globalHeader) {
+            const headerH = Math.max(0, Math.round(globalHeader.getBoundingClientRect().height || globalHeader.offsetHeight || 0));
+            const topOffset = headerH > 0 ? `${headerH}px` : '0px';
+            globalHeader.style.setProperty('position', 'fixed', 'important');
+            globalHeader.style.setProperty('top', '0', 'important');
+            globalHeader.style.setProperty('left', '0', 'important');
+            globalHeader.style.setProperty('right', '0', 'important');
+            globalHeader.style.setProperty('margin-top', '0', 'important');
+            globalHeader.style.setProperty('padding-top', '0', 'important');
+
+            // If any ancestor of the header has a transform/perspective/filter,
+            // it can create a containing block that causes a fixed header to
+            // scroll with the page. Neutralize those so the header truly pins
+            // to the viewport.
+            let ancestor = globalHeader.parentElement;
+            while (ancestor && ancestor !== document.body && ancestor !== document.documentElement) {
+                const cs = getComputedStyle(ancestor);
+                if (cs && cs.transform && cs.transform !== 'none') {
+                    ancestor.style.setProperty('transform', 'none', 'important');
+                }
+                if (cs && cs.perspective && cs.perspective !== 'none') {
+                    ancestor.style.setProperty('perspective', 'none', 'important');
+                }
+                if (cs && cs.filter && cs.filter !== 'none') {
+                    ancestor.style.setProperty('filter', 'none', 'important');
+                }
+                ancestor = ancestor.parentElement;
+            }
+
+            if (body) {
+                body.style.setProperty('margin-top', topOffset, 'important');
+                body.style.setProperty('padding-top', '0', 'important');
+            }
+        }
+
+        window.__sffTinyClampActive = clampActive;
+    }
+
+    function setupTinyScrollTouchGuard() {
+        if (window.__sffTinyScrollTouchGuardSetup) return;
+        window.__sffTinyScrollTouchGuardSetup = true;
+
+        const onTouchStart = (e) => {
+            sffLastTouchY = e.touches && e.touches[0] ? e.touches[0].clientY : null;
+        };
+
+        const onTouchMove = (e) => {
+            if (!sffIsMobileWidth()) return;
+            if (!e.touches || !e.touches[0]) return;
+
+            const target = e.target;
+            if (target && (target.closest('input, textarea, select, [contenteditable="true"]'))) return;
+
+            const y = e.touches[0].clientY;
+            const dy = sffLastTouchY === null ? 0 : y - sffLastTouchY;
+            sffLastTouchY = y;
+
+            const scroller = document.scrollingElement || document.documentElement;
+            const atTop = (scroller.scrollTop || window.scrollY || 0) <= 0;
+            const maxScroll = Math.max(0, (scroller.scrollHeight || 0) - (window.innerHeight || scroller.clientHeight || 0));
+            const atBottom = (scroller.scrollTop || window.scrollY || 0) >= maxScroll;
+
+            // Prevent only edge overscroll (rubber-band), keep normal scrolling.
+            if (((atTop && dy > 0) || (atBottom && dy < 0) || window.__sffTinyClampActive) && e.cancelable) {
+                e.preventDefault();
+            }
+        };
+
+        const onTouchEnd = () => {
+            sffLastTouchY = null;
+        };
+
+        // Capture-phase listeners are more reliable on Firefox mobile for edge drag.
+        window.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+        window.addEventListener('touchend', onTouchEnd, { passive: true, capture: true });
+
+        document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+        document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+        document.addEventListener('touchend', onTouchEnd, { passive: true, capture: true });
+    }
+
+    function setupTinyScrollSnap() {
+        // Intentionally left as a no-op; top scroll snapping was removed to
+        // avoid interfering with normal scrolling behavior.
+    }
+
+    function applyMobileInlineOverrides(forceApply) {
+        // Apply inline styles to critical elements that Strava's CSS overrides.
+        // Inline styles with !important beat any stylesheet rule.
+        const isMobile = forceApply || sffIsMobileWidth();
+
+        if (!isMobile) {
+            // Remove inline overrides at desktop widths
+            document.body.removeAttribute(SFF_MOBILE_ATTR);
+            document.querySelectorAll('[data-sff-mobile-inline]').forEach(el => {
+                el.style.cssText = '';
+                el.removeAttribute('data-sff-mobile-inline');
+            });
+            applyTinyVerticalScrollFix();
+            return;
+        }
+
+        // Ensure the attribute is on body so CSS rules also fire
+        document.body.setAttribute(SFF_MOBILE_ATTR, '1');
+
+        // Override Strava's viewport meta tag to allow true mobile-width rendering.
+        // Without this, the page renders at ~1248px and the browser just zooms out.
+        let vpMeta = document.querySelector('meta[name="viewport"]');
+        if (vpMeta) {
+            if (sffOriginalViewport === null) {
+                sffOriginalViewport = vpMeta.getAttribute('content');
+            }
+            vpMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0');
+        } else {
+            vpMeta = document.createElement('meta');
+            vpMeta.name = 'viewport';
+            vpMeta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0';
+            document.head.appendChild(vpMeta);
+        }
+
+        // Remove min-width from html and body that Strava forces
+        document.documentElement.style.setProperty('min-width', '0', 'important');
+        document.documentElement.style.setProperty('width', '100%', 'important');
+        document.documentElement.style.setProperty('overflow-x', 'hidden', 'important');
+        document.body.style.setProperty('min-width', '0', 'important');
+        document.body.style.setProperty('width', '100%', 'important');
+        document.body.style.setProperty('overflow-x', 'hidden', 'important');
+
+        const setInline = (el, css) => {
+            if (!el) return;
+            el.setAttribute('data-sff-mobile-inline', '1');
+            // Use setProperty for each rule to properly override existing inline styles
+            css.split(';').forEach(rule => {
+                rule = rule.trim();
+                if (!rule) return;
+                const imp = rule.includes('!important');
+                rule = rule.replace('!important', '').trim();
+                const colonIdx = rule.indexOf(':');
+                if (colonIdx < 0) return;
+                const prop = rule.substring(0, colonIdx).trim();
+                const val = rule.substring(colonIdx + 1).trim();
+                if (prop && val) {
+                    el.style.setProperty(prop, val, imp ? 'important' : '');
+                }
+            });
+        };
+
+        const setInlineAll = (selector, css) => {
+            document.querySelectorAll(selector).forEach(el => setInline(el, css));
+        };
+
+        // ======== NUCLEAR DOM WALK ========
+        // Walk every element in the page and force anything wider than viewport to shrink.
+        // Also kill all floats and fixed widths inside the main content area.
+        const vw = window.innerWidth || 375;
+        const walkAndFix = (root) => {
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+            let node;
+            while (node = walker.nextNode()) {
+                // Skip SFF's own elements and script/style tags
+                if (node.classList && (node.classList.contains('sff-secondary-nav') || node.classList.contains('sff-clean-panel'))) continue;
+                if (node.tagName === 'SCRIPT' || node.tagName === 'STYLE' || node.tagName === 'LINK' || node.tagName === 'SVG' || node.tagName === 'path') continue;
+
+                const cs = getComputedStyle(node);
+
+                // Force any element wider than viewport to shrink
+                const computedW = parseFloat(cs.width);
+                if (computedW > vw) {
+                    node.style.setProperty('width', '100%', 'important');
+                    node.style.setProperty('max-width', '100%', 'important');
+                    node.style.setProperty('min-width', '0', 'important');
+                    node.setAttribute('data-sff-mobile-inline', '1');
+                }
+
+                // Kill floats
+                if (cs.float !== 'none') {
+                    node.style.setProperty('float', 'none', 'important');
+                    node.setAttribute('data-sff-mobile-inline', '1');
+                }
+
+                // Kill min-width that's wider than viewport
+                const computedMinW = parseFloat(cs.minWidth);
+                if (computedMinW > vw) {
+                    node.style.setProperty('min-width', '0', 'important');
+                    node.setAttribute('data-sff-mobile-inline', '1');
+                }
+
+                // Kill negative margins (Strava grid uses margin-left: -10px etc)
+                const ml = parseFloat(cs.marginLeft);
+                if (ml < 0) {
+                    node.style.setProperty('margin-left', '0', 'important');
+                    node.setAttribute('data-sff-mobile-inline', '1');
+                }
+            }
+        };
+
+        // Walk from the view container or body
+        const walkRoot = document.querySelector('div.view') || document.querySelector('#view') || document.body;
+        walkAndFix(walkRoot);
+
+        // Also fix the global header
+        const globalHeader = document.querySelector('#global-header');
+        if (globalHeader) walkAndFix(globalHeader);
+
+        // ======== TARGETED OVERRIDES ========
+
+        // Page container — compact padding
+        setInline(document.querySelector('.page.container'),
+            'width:100%!important;max-width:100vw!important;min-width:0!important;padding:0 8px!important;box-sizing:border-box!important;overflow-x:hidden!important;');
+
+        // Sidenav — hide
+        setInlineAll('nav.sidenav, .sidenav',
+            'display:none!important;width:0!important;min-width:0!important;');
+
+        // View container
+        setInlineAll('div.view, div#view',
+            'overflow-x:hidden!important;width:100%!important;min-width:0!important;margin-top:0!important;');
+
+        // Global header — compact
+        setInline(document.querySelector('#global-header'),
+            'padding:0!important;');
+        setInlineAll('#global-header .container, #global-header nav.nav-bar',
+            'width:100%!important;max-width:100%!important;padding:0 6px!important;');
+
+        // ---- COMPACT SPACING ----
+        setInlineAll('section, .section',
+            'margin-bottom:4px!important;padding-top:2px!important;padding-bottom:2px!important;');
+
+        setInlineAll('.row',
+            'margin-bottom:2px!important;display:flex!important;flex-direction:column!important;width:100%!important;');
+
+        // Inline stats
+        setInlineAll('ul.inline-stats',
+            'margin:4px 0!important;padding:0!important;gap:2px!important;display:flex!important;flex-wrap:wrap!important;');
+
+        // More-stats
+        setInlineAll('.more-stats, .secondary-stats, .extra-stats',
+            'margin:2px 0!important;padding:0!important;');
+
+        // Details container (avatar + name)
+        setInline(document.querySelector('.details-container'),
+            'margin-bottom:2px!important;gap:6px!important;display:flex!important;flex-direction:row!important;align-items:flex-start!important;');
+
+        // Avatar — smaller
+        setInlineAll('.details-container .avatar, .details-container .avatar img',
+            'width:36px!important;height:36px!important;');
+
+        // Activity name
+        setInlineAll('h1.activity-name, .activity-name, [data-testid="activity_name"]',
+            'font-size:1rem!important;margin:0 0 2px 0!important;line-height:1.2!important;');
+
+        // Kudos/comments bar
+        setInlineAll('.give-kudos, .kudos-comments, .social, .comments',
+            'margin:2px 0!important;padding:2px 0!important;');
+
+        // Weather
+        setInlineAll('.section.weather, .weather-stats',
+            'margin:2px 0!important;padding:2px 0!important;gap:4px!important;');
+
+        // Device/gear
+        setInlineAll('.device-info, .gear-name',
+            'margin:1px 0!important;font-size:0.75rem!important;');
+
+        // Map
+        setInlineAll('#map-canvas, .activity-map, .mapboxgl-map, [data-testid="activity-map"], #overview-map',
+            'margin:4px 0!important;width:100%!important;');
+
+        // Elevation
+        setInlineAll('#elevation-chart, .chart-container, #chart-container, #elevation-profile',
+            'margin:2px 0!important;width:100%!important;');
+
+        // Spinners
+        setInlineAll('.elev-chart-large.spinner, .spinner.streams-loader',
+            'margin:0!important;padding:0!important;');
+
+        // Heading border
+        setInlineAll('section#heading, #heading',
+            'border-bottom:none!important;');
+
+        // Ride overview
+        setInline(document.querySelector('section#ride-overview'),
+            'border:none!important;margin:0!important;padding:2px 0!important;');
+
+        // Tables
+        setInlineAll('table',
+            'width:100%!important;font-size:0.8rem!important;');
+        setInlineAll('table td, table th',
+            'padding:3px 4px!important;');
+
+        // Log what we fixed
+        const fixedCount = document.querySelectorAll('[data-sff-mobile-inline]').length;
+        console.log('[SFF-DEBUG] Nuclear walk fixed', fixedCount, 'elements. innerWidth:', window.innerWidth, 'outerWidth:', window.outerWidth);
+
+        // Strava can introduce a tiny 1-3px vertical overflow on mobile.
+        // Clamp only that tiny overflow; keep normal page scrolling intact.
+        applyTinyVerticalScrollFix();
+        requestAnimationFrame(applyTinyVerticalScrollFix);
+    }
+
+    function applyMobileResponsive() {
+        setupTinyScrollTouchGuard();
+        console.log('[SFF-DEBUG] applyMobileResponsive called', {
+            hasSettings: !!settings,
+            enabled: settings?.enabled,
+            mobileResponsive: settings?.mobileResponsive,
+            pathname: window.location.pathname,
+            isActivity: UtilsModule.isOnActivityPage(),
+            outerWidth: window.outerWidth,
+            innerWidth: window.innerWidth,
+            isMobile: sffIsMobileWidth()
+        });
+        if (!settings || !settings.enabled || !settings.mobileResponsive) {
+            removeMobileResponsiveCSS();
+            applyTinyVerticalScrollFix();
+            return;
+        }
+        if (UtilsModule.isOnActivityPage()) {
+            injectMobileResponsiveCSS();
+            console.log('[SFF-DEBUG] CSS injected, isMobile:', sffIsMobileWidth(), 'outerWidth:', window.outerWidth);
+            if (sffIsMobileWidth()) {
+                applyMobileInlineOverrides(true);
+                // Deep DOM dump to discover actual Strava selectors
+                const dumpTree = (parent, depth) => {
+                    if (depth > 6) return;
+                    Array.from(parent.children).forEach(child => {
+                        const cs = getComputedStyle(child);
+                        const tag = child.tagName.toLowerCase();
+                        const cls = child.className ? ('.' + (typeof child.className === 'string' ? child.className.trim().replace(/\s+/g, '.') : '')) : '';
+                        const id = child.id ? ('#' + child.id) : '';
+                        const w = cs.width, mw = cs.minWidth, fl = cs.float, d = cs.display, pos = cs.position;
+                        const mt = cs.marginTop, ml = cs.marginLeft;
+                        const hasSff = child.hasAttribute('data-sff-mobile-inline') ? ' [SFF]' : '';
+                        const indent = '  '.repeat(depth);
+                        console.log(`[SFF-DOM] ${indent}<${tag}${id}${cls}> w:${w} minW:${mw} float:${fl} disp:${d} pos:${pos} mt:${mt} ml:${ml}${hasSff}`);
+                        dumpTree(child, depth + 1);
+                    });
+                };
+                // Dump from body > .view or body > div.view
+                const viewEl = document.querySelector('div.view') || document.querySelector('#view') || document.querySelector('.page.container');
+                if (viewEl) {
+                    console.log('[SFF-DOM] === FULL PAGE TREE (from ' + viewEl.tagName + '#' + (viewEl.id||'') + '.' + (viewEl.className||'') + ') ===');
+                    dumpTree(viewEl, 0);
+                } else {
+                    console.log('[SFF-DOM] === FULL BODY TREE ===');
+                    dumpTree(document.body, 0);
+                }
+            }
+            // Re-apply on resize using outerWidth
+            if (!window.__sffResizeHandler) {
+                window.__sffResizeHandler = () => {
+                    if (!UtilsModule.isOnActivityPage()) return;
+                    if (sffIsMobileWidth()) {
+                        applyMobileInlineOverrides(true);
+                    } else {
+                        applyMobileInlineOverrides(false);
+                    }
+                };
+                window.addEventListener('resize', window.__sffResizeHandler, { passive: true });
+            }
+        } else {
+            removeMobileResponsiveCSS();
+            applyTinyVerticalScrollFix();
+        }
+
+        // Apply tiny-scroll clamp globally (even when not on activity pages), since
+        // Strava can introduce a 1-3px page overflow on its own.
+        if (!window.__sffTinyScrollFixHandler) {
+            window.__sffTinyScrollFixHandler = () => {
+                applyTinyVerticalScrollFix();
+                requestAnimationFrame(applyTinyVerticalScrollFix);
+            };
+            window.addEventListener('resize', window.__sffTinyScrollFixHandler, { passive: true });
+            window.addEventListener('orientationchange', window.__sffTinyScrollFixHandler, { passive: true });
+            window.addEventListener('pageshow', window.__sffTinyScrollFixHandler, { passive: true });
+        }
+
+        applyTinyVerticalScrollFix();
+        requestAnimationFrame(applyTinyVerticalScrollFix);
+    }
+
+    // Scroll position persistence for dashboard feed
+    function setupScrollPersistence() {
+        if (!settings || !settings.mobileResponsive) return;
+
+        if (UtilsModule.isOnDashboard()) {
+            // Restore scroll position if saved
+            try {
+                const savedY = sessionStorage.getItem(SCROLL_POS_KEY);
+                if (savedY !== null) {
+                    const y = parseInt(savedY, 10);
+                    if (!isNaN(y) && y > 0) {
+                        // Delay to allow Strava's infinite scroll to load content
+                        const tryRestore = (attempts) => {
+                            if (attempts <= 0) return;
+                            window.scrollTo(0, y);
+                            // If we haven't scrolled far enough, the content may not be loaded yet
+                            if (window.scrollY < y * 0.9 && attempts > 1) {
+                                setTimeout(() => tryRestore(attempts - 1), 300);
+                            }
+                        };
+                        setTimeout(() => tryRestore(5), 500);
+                    }
+                    sessionStorage.removeItem(SCROLL_POS_KEY);
+                }
+            } catch (e) {}
+
+            // Save scroll position when clicking activity links
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href*="/activities/"]');
+                if (link && UtilsModule.isOnDashboard()) {
+                    try {
+                        sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY));
+                    } catch (e) {}
+                }
+            }, true);
+        }
+    }
+
     // ==== SFF SECTION: INIT BOOTSTRAP ====
     // Setup global features that work on all pages
     let globalFeaturesInitialized = false;
@@ -6942,6 +8162,12 @@ function getSettingsIconUrl(theme) {
         LogicModule.updateRouvyVisibility();
         LogicModule.updateJoinWorkoutVisibility();
         LogicModule.updateCoachCatVisibility();
+
+        // Apply mobile responsive layout on activity pages
+        applyMobileResponsive();
+
+        // Setup scroll position persistence for dashboard feed
+        setupScrollPersistence();
 
         // Setup observer for dynamically loaded content to hide gift buttons and challenges
         const observer = new MutationObserver(() => {
@@ -7011,15 +8237,24 @@ function getSettingsIconUrl(theme) {
         // Always setup global features on all pages
         setupGlobalFeatures();
 
-        // Only create UI elements and run filtering on dashboard
+        // Always create UI elements (dashboard full panel or activity page minimal nav)
+        console.log('[SFF-DEBUG] Init check', {
+            pathname: window.location.pathname,
+            hasPanel: !!document.querySelector('.sff-clean-panel'),
+            hasNav: !!document.querySelector('.sff-secondary-nav'),
+            isDashboard: UtilsModule.isOnDashboard()
+        });
+        if (!document.querySelector('.sff-clean-panel') && !document.querySelector('.sff-secondary-nav')) {
+            console.log('[SFF-DEBUG] Calling createElements from init');
+            UIModule.createElements();
+        } else {
+            console.log('[SFF-DEBUG] Skipping createElements - elements already exist');
+        }
+
+        // Dashboard-specific initialization
         if (UtilsModule.isOnDashboard()) {
             // Mark body as dashboard for responsive CSS that relies on this flag
             document.body.setAttribute('data-sff-dashboard', 'true');
-            
-            // Always create UI elements so users can toggle filtering on/off
-            if (!document.querySelector('.sff-clean-panel')) {
-                UIModule.createElements();
-            }
             
             // Ensure secondary kudos button is properly synchronized
             UIModule.syncSecondaryKudosVisibility();
@@ -7082,6 +8317,9 @@ function getSettingsIconUrl(theme) {
     const checkPageChange = () => {
         if (window.location.pathname !== currentPath) {
             currentPath = window.location.pathname;
+
+            // Re-apply mobile responsive on every navigation
+            applyMobileResponsive();
 
             if (UtilsModule.isOnDashboard()) {
                 // We navigated to dashboard, initialize dashboard-specific features

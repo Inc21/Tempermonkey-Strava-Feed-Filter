@@ -32,7 +32,8 @@
     minPace: "",
     maxPace: "",
     unitSystem: 'metric',
-    enabled: true
+    enabled: true,
+    mobileResponsive: true
   };
 
   function loadSettings(){
